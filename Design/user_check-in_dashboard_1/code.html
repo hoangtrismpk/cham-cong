@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Desktop User Dashboard - Dark Mode</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#00f2ff", // Neon Blue
+                        "primary-dark": "#00d1db",
+                        "background-dark": "#0a0f14",
+                        "card-dark": "#121922",
+                        "sidebar-dark": "#0d131a",
+                        "border-dark": "#1e293b",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"]
+                    },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        @layer base {
+            body {
+                @apply bg-background-dark text-slate-300 font-display;
+            }
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .neon-glow {
+            text-shadow: 0 0 10px rgba(0, 242, 255, 0.4);
+        }
+        .neon-border {
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.15);
+        }
+    </style>
+</head>
+<body class="overflow-hidden">
+<div class="flex h-screen w-full bg-background-dark">
+<aside class="w-64 flex flex-col bg-sidebar-dark border-r border-border-dark">
+<div class="p-6 flex items-center gap-3">
+<div class="size-8 bg-primary/20 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-xl">schedule</span>
+</div>
+<h1 class="text-white text-xl font-bold tracking-tight">TimeKeep</h1>
+</div>
+<nav class="flex-1 px-4 space-y-1 mt-4">
+<a class="flex items-center gap-3 px-4 py-3 text-primary bg-primary/10 rounded-xl font-medium transition-all" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                    Dashboard
+                </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined">history</span>
+                    Timesheets
+                </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+                    Schedule
+                </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined">analytics</span>
+                    Reports
+                </a>
+<div class="pt-4 pb-2 px-4">
+<p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Account</p>
+</div>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+                    Settings
+                </a>
+</nav>
+<div class="p-4 border-t border-border-dark">
+<div class="flex items-center gap-3 p-2">
+<div class="w-10 h-10 rounded-full bg-slate-800 border border-border-dark flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-400">person</span>
+</div>
+<div class="flex-1 overflow-hidden">
+<p class="text-sm font-semibold text-white truncate">Alex Johnson</p>
+<p class="text-xs text-slate-500 truncate">Software Engineer</p>
+</div>
+</div>
+</div>
+</aside>
+<main class="flex-1 flex flex-col overflow-y-auto">
+<header class="h-16 flex items-center justify-between px-8 border-b border-border-dark bg-background-dark/50 backdrop-blur-md sticky top-0 z-10">
+<div class="flex items-center gap-4">
+<span class="text-slate-500 font-medium">Monday, Oct 23, 2023</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-800/50 hover:bg-slate-800 text-slate-300 transition-colors">
+<span class="material-symbols-outlined text-xl">notifications</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-800/50 hover:bg-slate-800 text-slate-300 transition-colors">
+<span class="material-symbols-outlined text-xl">dark_mode</span>
+</button>
+</div>
+</header>
+<div class="p-8 max-w-7xl mx-auto w-full space-y-8">
+<div class="bg-card-dark rounded-[2rem] border border-border-dark p-12 overflow-hidden relative">
+<div class="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
+<div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
+<div class="flex flex-col items-center md:items-start space-y-4">
+<h2 class="text-slate-400 font-medium tracking-wide uppercase text-sm">Current Time</h2>
+<div class="flex items-baseline gap-4 font-mono">
+<span class="text-7xl font-bold text-white neon-glow">09:41</span>
+<span class="text-3xl text-primary font-bold">58</span>
+<span class="text-2xl text-slate-500 font-medium">AM</span>
+</div>
+<div class="flex items-center gap-2 text-slate-400 bg-slate-800/50 px-4 py-2 rounded-full border border-border-dark">
+<span class="material-symbols-outlined text-sm text-primary">location_on</span>
+<span class="text-sm">Headquarters - New York, NY</span>
+</div>
+</div>
+<div class="flex flex-col items-center space-y-6">
+<button class="group relative flex items-center justify-center w-56 h-56 rounded-full bg-slate-900 border-4 border-slate-800 hover:border-primary/50 transition-all duration-500 neon-border">
+<div class="absolute inset-4 rounded-full border-2 border-dashed border-slate-700 group-hover:rotate-180 transition-transform duration-[4000ms]"></div>
+<div class="flex flex-col items-center gap-2">
+<span class="material-symbols-outlined text-5xl text-primary mb-2">fingerprint</span>
+<span class="text-white text-xl font-bold tracking-widest">CHECK IN</span>
+</div>
+</button>
+<p class="text-slate-500 text-sm italic font-medium">Ready to start your 8-hour shift?</p>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+<div class="bg-card-dark rounded-3xl border border-border-dark p-8">
+<div class="flex items-center justify-between mb-8">
+<h3 class="text-white text-lg font-bold">Weekly Progress</h3>
+<span class="text-xs font-bold text-primary px-3 py-1 bg-primary/10 rounded-full border border-primary/20">32h / 40h</span>
+</div>
+<div class="space-y-6">
+<div class="flex items-end justify-between h-32 gap-3 px-2">
+<div class="flex-1 flex flex-col items-center gap-3 group">
+<div class="w-full bg-slate-800 rounded-lg relative overflow-hidden h-24">
+<div class="absolute bottom-0 w-full bg-primary/40 h-[100%]"></div>
+</div>
+<span class="text-xs text-slate-500 font-bold">MON</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-3 group">
+<div class="w-full bg-slate-800 rounded-lg relative overflow-hidden h-24">
+<div class="absolute bottom-0 w-full bg-primary/40 h-[95%]"></div>
+</div>
+<span class="text-xs text-slate-500 font-bold">TUE</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-3 group">
+<div class="w-full bg-slate-800 rounded-lg relative overflow-hidden h-24">
+<div class="absolute bottom-0 w-full bg-primary/40 h-[98%]"></div>
+</div>
+<span class="text-xs text-slate-500 font-bold">WED</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-3 group">
+<div class="w-full bg-slate-800 rounded-lg relative overflow-hidden h-24">
+<div class="absolute bottom-0 w-full bg-primary/40 h-[92%]"></div>
+</div>
+<span class="text-xs text-slate-500 font-bold">THU</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-3 group">
+<div class="w-full bg-slate-800 rounded-lg relative overflow-hidden h-24">
+<div class="absolute bottom-0 w-full bg-primary h-[15%]"></div>
+</div>
+<span class="text-xs text-primary font-bold">FRI</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-3 opacity-30">
+<div class="w-full bg-slate-800 rounded-lg h-24"></div>
+<span class="text-xs text-slate-500 font-bold">SAT</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-3 opacity-30">
+<div class="w-full bg-slate-800 rounded-lg h-24"></div>
+<span class="text-xs text-slate-500 font-bold">SUN</span>
+</div>
+</div>
+<div class="pt-6 border-t border-border-dark flex justify-between items-center">
+<span class="text-slate-400 text-sm">On track to meet your weekly goal</span>
+<span class="text-primary text-sm font-bold">80%</span>
+</div>
+</div>
+</div>
+<div class="bg-card-dark rounded-3xl border border-border-dark p-8">
+<div class="flex items-center justify-between mb-8">
+<h3 class="text-white text-lg font-bold">Today's Logs</h3>
+<button class="text-slate-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<div class="space-y-4">
+<div class="flex items-center gap-4 p-4 rounded-2xl bg-slate-800/30 border border-border-dark hover:border-primary/30 transition-all cursor-default group">
+<div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-xl">login</span>
+</div>
+<div class="flex-1">
+<p class="text-white font-semibold text-sm">Shift Started</p>
+<p class="text-slate-500 text-xs">Headquarters - Main Office</p>
+</div>
+<div class="text-right">
+<p class="text-white font-mono text-sm font-bold group-hover:text-primary transition-colors">08:00 AM</p>
+<p class="text-slate-500 text-[10px] uppercase font-bold">Clock In</p>
+</div>
+</div>
+<div class="flex items-center gap-4 p-4 rounded-2xl bg-slate-800/30 border border-border-dark hover:border-primary/30 transition-all cursor-default group">
+<div class="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500">
+<span class="material-symbols-outlined text-xl">restaurant</span>
+</div>
+<div class="flex-1">
+<p class="text-white font-semibold text-sm">Lunch Break</p>
+<p class="text-slate-500 text-xs">Breakroom 2nd Floor</p>
+</div>
+<div class="text-right">
+<p class="text-white font-mono text-sm font-bold group-hover:text-orange-500 transition-colors">12:30 PM</p>
+<p class="text-slate-500 text-[10px] uppercase font-bold">Upcoming</p>
+</div>
+</div>
+<div class="flex items-center gap-4 p-4 rounded-2xl bg-slate-800/30 border border-border-dark opacity-50">
+<div class="w-10 h-10 rounded-xl bg-slate-700 flex items-center justify-center text-slate-400">
+<span class="material-symbols-outlined text-xl">logout</span>
+</div>
+<div class="flex-1">
+<p class="text-white font-semibold text-sm">End of Shift</p>
+<p class="text-slate-500 text-xs">Scheduled Departure</p>
+</div>
+<div class="text-right">
+<p class="text-white font-mono text-sm font-bold">05:00 PM</p>
+<p class="text-slate-500 text-[10px] uppercase font-bold">Scheduled</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+</body></html>

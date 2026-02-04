@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mobile Leave Request Form</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>.material-symbols-outlined {
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24
+    }
+select {
+    appearance: none;
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuBi9D9M6JHr5QbhouRkm5Os0S4YtkouBsMpwHwT3dyHnmxTR3iCy4TTpJifndN9ywx9B4RmD_R9VjjpEKFcSEQey1YuCG4gBkI7x9oGgJ1l9-WU_NNGlsu0S1jgdUUoCWlLT5ApSAGIcKAH0tjUj7dWpiE8FcJOYuhu8h-MC12XGwhyqFiOW9fBIvOis6RpzHPemhGi0HtjLZC9JZG6Ha_5T2StsRZcTUUiVohBZzcBx1Pu-dexhSwAF7epdgH3rqVBRjIQhHIUmENq);
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem
+    }</style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display">
+<div class="relative flex h-screen w-full flex-col bg-background-light dark:bg-background-dark overflow-hidden">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-[#233648] px-6 py-4 bg-background-light dark:bg-background-dark">
+<div class="flex items-center gap-3 text-white">
+<div class="flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-2xl">event_busy</span>
+</div>
+<h2 class="text-white text-lg font-bold leading-tight tracking-[-0.015em]">Leave Request</h2>
+</div>
+<button class="flex items-center justify-center rounded-lg h-10 w-10 bg-[#233648] text-white">
+<span class="material-symbols-outlined text-xl">close</span>
+</button>
+</header>
+<main class="flex-1 overflow-y-auto pb-24">
+<div class="max-w-[480px] mx-auto w-full">
+<!-- Progress Indicator -->
+<div class="flex flex-col gap-3 p-6">
+<div class="flex gap-6 justify-between items-center">
+<p class="text-white text-base font-medium leading-normal">Request Details</p>
+<p class="text-[#92adc9] text-sm font-normal leading-normal">Step 1 of 3</p>
+</div>
+<div class="rounded-full bg-[#324d67] h-2 w-full">
+<div class="h-2 rounded-full bg-primary" style="width: 33%;"></div>
+</div>
+</div>
+<!-- Headline -->
+<h3 class="text-white tracking-tight text-2xl font-bold leading-tight px-6 pt-2 pb-4">New Request</h3>
+<!-- Form Section: Type -->
+<div class="px-6 py-3">
+<label class="flex flex-col w-full">
+<p class="text-white text-sm font-semibold leading-normal pb-2 uppercase tracking-wider">Leave Type</p>
+<select class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-2 focus:ring-primary border border-[#324d67] bg-[#192633] h-16 px-4 text-base font-normal leading-normal">
+<option disabled="" selected="" value="">Select category</option>
+<option value="vacation">🌴 Vacation</option>
+<option value="sick">🤒 Sick Leave</option>
+<option value="personal">🏠 Personal Time</option>
+<option value="unpaid">📄 Unpaid Leave</option>
+</select>
+</label>
+</div>
+<!-- Form Section: Duration -->
+<div class="px-6 pt-6">
+<h3 class="text-white text-sm font-semibold leading-tight uppercase tracking-wider pb-4">Duration</h3>
+<div class="grid grid-cols-2 gap-4">
+<label class="flex flex-col">
+<p class="text-[#92adc9] text-xs font-medium pb-2">Start Date</p>
+<div class="relative">
+<input class="form-input flex w-full rounded-xl text-white border border-[#324d67] bg-[#192633] h-14 px-4 text-sm focus:ring-2 focus:ring-primary" type="date"/>
+<span class="material-symbols-outlined absolute right-3 top-4 text-[#92adc9] pointer-events-none text-xl">calendar_month</span>
+</div>
+</label>
+<label class="flex flex-col">
+<p class="text-[#92adc9] text-xs font-medium pb-2">End Date</p>
+<div class="relative">
+<input class="form-input flex w-full rounded-xl text-white border border-[#324d67] bg-[#192633] h-14 px-4 text-sm focus:ring-2 focus:ring-primary" type="date"/>
+<span class="material-symbols-outlined absolute right-3 top-4 text-[#92adc9] pointer-events-none text-xl">calendar_month</span>
+</div>
+</label>
+</div>
+</div>
+<!-- Form Section: Options -->
+<div class="px-6 py-6 space-y-4">
+<div class="flex items-center justify-between p-4 rounded-xl border border-[#324d67] bg-[#192633]">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#92adc9]">schedule</span>
+<span class="text-white font-medium">Half Day Request</span>
+</div>
+<div class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-[#324d67] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</div>
+</div>
+</div>
+<!-- Form Section: Reason -->
+<div class="px-6 py-3">
+<label class="flex flex-col w-full">
+<p class="text-white text-sm font-semibold leading-normal pb-2 uppercase tracking-wider">Reason (Optional)</p>
+<textarea class="form-input flex w-full min-w-0 flex-1 resize-none rounded-xl text-white focus:outline-0 focus:ring-2 focus:ring-primary border border-[#324d67] bg-[#192633] p-4 text-base font-normal leading-normal placeholder:text-[#92adc9]" placeholder="Briefly explain your request..." rows="3"></textarea>
+</label>
+</div>
+</div>
+</main>
+<!-- Bottom Action Bar -->
+<div class="fixed bottom-0 left-0 right-0 p-6 bg-background-light dark:bg-background-dark border-t border-[#233648] flex justify-center">
+<div class="max-w-[480px] w-full flex gap-4">
+<button class="flex-1 h-14 rounded-xl border border-[#324d67] text-white font-bold text-base hover:bg-[#233648] transition-colors">
+                    Back
+                </button>
+<button class="flex-[2] h-14 rounded-xl bg-primary text-white font-bold text-base shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors">
+                    Continue
+                </button>
+</div>
+</div>
+</div>
+</body></html>

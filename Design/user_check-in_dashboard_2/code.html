@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>User Timesheets - Dark Mode</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#00f2ff", // Neon Blue
+                        "primary-dark": "#00d1db",
+                        "background-dark": "#0a0f14",
+                        "card-dark": "#121922",
+                        "sidebar-dark": "#0d131a",
+                        "border-dark": "#1e293b",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"]
+                    },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        @layer base {
+            body {
+                @apply bg-background-dark text-slate-300 font-display;
+            }
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .neon-glow {
+            text-shadow: 0 0 10px rgba(0, 242, 255, 0.4);
+        }
+        .neon-border {
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.1);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            @apply bg-background-dark;
+        }
+        ::-webkit-scrollbar-thumb {
+            @apply bg-slate-800 rounded-full;
+        }
+    </style>
+</head>
+<body class="overflow-hidden">
+<div class="flex h-screen w-full bg-background-dark">
+<aside class="w-64 flex flex-col bg-sidebar-dark border-r border-border-dark flex-shrink-0">
+<div class="p-6 flex items-center gap-3">
+<div class="size-8 bg-primary/20 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-xl">schedule</span>
+</div>
+<h1 class="text-white text-xl font-bold tracking-tight">TimeKeep</h1>
+</div>
+<nav class="flex-1 px-4 space-y-1 mt-4">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                    Dashboard
+                </a>
+<a class="flex items-center gap-3 px-4 py-3 text-primary bg-primary/10 rounded-xl font-medium transition-all" href="#">
+<span class="material-symbols-outlined">history</span>
+                    Timesheets
+                </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+                    Schedule
+                </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined">analytics</span>
+                    Reports
+                </a>
+<div class="pt-4 pb-2 px-4">
+<p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Account</p>
+</div>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+                    Settings
+                </a>
+</nav>
+<div class="p-4 border-t border-border-dark">
+<div class="flex items-center gap-3 p-2">
+<div class="w-10 h-10 rounded-full bg-slate-800 border border-border-dark flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-400">person</span>
+</div>
+<div class="flex-1 overflow-hidden">
+<p class="text-sm font-semibold text-white truncate">Alex Johnson</p>
+<p class="text-xs text-slate-500 truncate">Software Engineer</p>
+</div>
+</div>
+</div>
+</aside>
+<main class="flex-1 flex flex-col overflow-y-auto">
+<header class="h-20 flex items-center justify-between px-8 border-b border-border-dark bg-background-dark/50 backdrop-blur-md sticky top-0 z-10">
+<div class="flex flex-col">
+<h2 class="text-white text-2xl font-bold tracking-tight">My Timesheets</h2>
+<p class="text-slate-500 text-sm">Review and manage your work logs</p>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-3 bg-slate-800/40 border border-border-dark rounded-xl px-4 py-2 text-slate-300">
+<span class="material-symbols-outlined text-primary text-xl">calendar_today</span>
+<span class="text-sm font-medium">Oct 1 - Oct 31, 2023</span>
+<span class="material-symbols-outlined text-slate-500 text-lg ml-2 cursor-pointer">expand_more</span>
+</div>
+<div class="h-8 w-[1px] bg-border-dark mx-2"></div>
+<button class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-800/50 hover:bg-slate-800 text-slate-300 transition-colors">
+<span class="material-symbols-outlined text-xl">file_download</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-800/50 hover:bg-slate-800 text-slate-300 transition-colors">
+<span class="material-symbols-outlined text-xl">notifications</span>
+</button>
+</div>
+</header>
+<div class="p-8 max-w-7xl mx-auto w-full space-y-8">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="bg-card-dark rounded-2xl border border-border-dark p-6 neon-border">
+<div class="flex items-center justify-between mb-4">
+<span class="p-2 bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined text-primary">timer</span>
+</span>
+<span class="text-xs text-green-500 font-bold bg-green-500/10 px-2 py-1 rounded">+12% vs last mo</span>
+</div>
+<p class="text-slate-500 text-sm font-medium">Total Hours Worked</p>
+<h3 class="text-white text-3xl font-bold mt-1 font-mono">164.5<span class="text-lg text-slate-500 ml-1">hrs</span></h3>
+</div>
+<div class="bg-card-dark rounded-2xl border border-border-dark p-6">
+<div class="flex items-center justify-between mb-4">
+<span class="p-2 bg-orange-500/10 rounded-lg">
+<span class="material-symbols-outlined text-orange-500">bolt</span>
+</span>
+<span class="text-xs text-slate-500 font-medium">Cap: 20h/mo</span>
+</div>
+<p class="text-slate-500 text-sm font-medium">Overtime</p>
+<h3 class="text-white text-3xl font-bold mt-1 font-mono">08.2<span class="text-lg text-slate-500 ml-1">hrs</span></h3>
+</div>
+<div class="bg-card-dark rounded-2xl border border-border-dark p-6">
+<div class="flex items-center justify-between mb-4">
+<span class="p-2 bg-purple-500/10 rounded-lg">
+<span class="material-symbols-outlined text-purple-500">event_available</span>
+</span>
+<span class="text-xs text-slate-500 font-medium">22 total workdays</span>
+</div>
+<p class="text-slate-500 text-sm font-medium">Days Present</p>
+<h3 class="text-white text-3xl font-bold mt-1 font-mono">21<span class="text-lg text-slate-500 ml-1">/ 22</span></h3>
+</div>
+</div>
+<div class="bg-card-dark rounded-3xl border border-border-dark overflow-hidden">
+<div class="p-6 border-b border-border-dark flex items-center justify-between bg-slate-800/20">
+<h3 class="text-white font-bold">Daily Logs</h3>
+<div class="flex gap-2">
+<div class="relative">
+<input class="bg-background-dark border-border-dark rounded-lg pl-9 pr-4 py-1.5 text-sm focus:ring-primary focus:border-primary text-slate-300 w-64" placeholder="Search logs..." type="text"/>
+<span class="material-symbols-outlined absolute left-2.5 top-2 text-slate-500 text-lg">search</span>
+</div>
+<button class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 border border-border-dark">
+<span class="material-symbols-outlined text-sm">filter_list</span>
+                                Filter
+                            </button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-border-dark">
+<th class="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">Date</th>
+<th class="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">Day</th>
+<th class="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">Check-In</th>
+<th class="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">Check-Out</th>
+<th class="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">Break Duration</th>
+<th class="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">Total Hours</th>
+<th class="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">Status</th>
+<th class="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-500"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-dark">
+<tr class="hover:bg-white/[0.02] transition-colors group">
+<td class="px-6 py-4">
+<span class="text-white font-medium">Oct 23, 2023</span>
+</td>
+<td class="px-6 py-4 text-slate-400">Monday</td>
+<td class="px-6 py-4 font-mono text-sm">08:00 AM</td>
+<td class="px-6 py-4 font-mono text-sm">05:15 PM</td>
+<td class="px-6 py-4 text-slate-400 text-sm">1h 15m</td>
+<td class="px-6 py-4">
+<span class="text-primary font-bold font-mono">8h 00m</span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-green-500/10 text-green-500 border border-green-500/20">
+<span class="w-1 h-1 rounded-full bg-green-500"></span>
+                                            APPROVED
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="p-1 hover:text-white transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined">edit_square</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-white/[0.02] transition-colors group">
+<td class="px-6 py-4">
+<span class="text-white font-medium">Oct 20, 2023</span>
+</td>
+<td class="px-6 py-4 text-slate-400">Friday</td>
+<td class="px-6 py-4 font-mono text-sm">08:12 AM</td>
+<td class="px-6 py-4 font-mono text-sm">04:52 PM</td>
+<td class="px-6 py-4 text-slate-400 text-sm">0h 45m</td>
+<td class="px-6 py-4">
+<span class="text-primary font-bold font-mono">7h 55m</span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+<span class="w-1 h-1 rounded-full bg-amber-500"></span>
+                                            PENDING
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="p-1 hover:text-white transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined">edit_square</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-white/[0.02] transition-colors group">
+<td class="px-6 py-4">
+<span class="text-white font-medium">Oct 19, 2023</span>
+</td>
+<td class="px-6 py-4 text-slate-400">Thursday</td>
+<td class="px-6 py-4 font-mono text-sm">07:55 AM</td>
+<td class="px-6 py-4 font-mono text-sm">06:05 PM</td>
+<td class="px-6 py-4 text-slate-400 text-sm">1h 00m</td>
+<td class="px-6 py-4">
+<span class="text-primary font-bold font-mono">9h 10m</span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-green-500/10 text-green-500 border border-green-500/20">
+<span class="w-1 h-1 rounded-full bg-green-500"></span>
+                                            APPROVED
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="p-1 hover:text-white transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined">edit_square</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-white/[0.02] transition-colors group">
+<td class="px-6 py-4">
+<span class="text-white font-medium">Oct 18, 2023</span>
+</td>
+<td class="px-6 py-4 text-slate-400">Wednesday</td>
+<td class="px-6 py-4 font-mono text-sm">08:00 AM</td>
+<td class="px-6 py-4 font-mono text-sm">05:00 PM</td>
+<td class="px-6 py-4 text-slate-400 text-sm">1h 00m</td>
+<td class="px-6 py-4">
+<span class="text-primary font-bold font-mono">8h 00m</span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-green-500/10 text-green-500 border border-green-500/20">
+<span class="w-1 h-1 rounded-full bg-green-500"></span>
+                                            APPROVED
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="p-1 hover:text-white transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined">edit_square</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-white/[0.02] transition-colors group">
+<td class="px-6 py-4">
+<span class="text-white font-medium">Oct 17, 2023</span>
+</td>
+<td class="px-6 py-4 text-slate-400">Tuesday</td>
+<td class="px-6 py-4 font-mono text-sm">08:05 AM</td>
+<td class="px-6 py-4 font-mono text-sm">04:30 PM</td>
+<td class="px-6 py-4 text-slate-400 text-sm">0h 45m</td>
+<td class="px-6 py-4">
+<span class="text-primary font-bold font-mono">7h 40m</span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-800 text-slate-400 border border-border-dark">
+<span class="w-1 h-1 rounded-full bg-slate-500"></span>
+                                            DRAFT
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="p-1 hover:text-white transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined">edit_square</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 border-t border-border-dark bg-slate-800/10 flex items-center justify-between">
+<span class="text-xs text-slate-500">Showing 5 of 21 entries</span>
+<div class="flex gap-1">
+<button class="px-3 py-1 rounded bg-slate-800 border border-border-dark text-white text-xs hover:bg-slate-700 transition-colors">Prev</button>
+<button class="px-3 py-1 rounded bg-primary text-background-dark font-bold text-xs">1</button>
+<button class="px-3 py-1 rounded bg-slate-800 border border-border-dark text-slate-400 text-xs hover:bg-slate-700 transition-colors">2</button>
+<button class="px-3 py-1 rounded bg-slate-800 border border-border-dark text-slate-400 text-xs hover:bg-slate-700 transition-colors">3</button>
+<button class="px-3 py-1 rounded bg-slate-800 border border-border-dark text-white text-xs hover:bg-slate-700 transition-colors">Next</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+</body></html>

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>User Settings Profile - Dark Mode</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style type="text/tailwindcss">
+        :root {
+            --neon-accent: #22d3ee;
+            --neon-secondary: #a855f7;
+            --surface-dark: #0f172a;
+            --surface-lighter: #1e293b;
+        }
+        @layer base {
+            ::-webkit-scrollbar {
+                width: 6px;
+            }
+            ::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            ::-webkit-scrollbar-thumb {
+                background: #334155;
+                border-radius: 10px;
+            }
+            ::-webkit-scrollbar-thumb:hover {
+                background: #475569;
+            }
+            input:focus, select:focus {
+                @apply outline-none ring-2 ring-primary/50 border-primary/50;
+            }
+        }
+        .toggle-checkbox:checked {
+            @apply right-0 border-primary bg-primary;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            @apply bg-primary/20;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#22d3ee",
+                        "accent-purple": "#a855f7",
+                        "background-dark": "#020617",
+                        "surface-dark": "#0f172a",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-dark font-display text-slate-100 min-h-screen">
+<div class="flex flex-col min-h-screen w-full">
+<header class="flex items-center justify-between px-8 py-4 bg-surface-dark/50 backdrop-blur-md border-b border-slate-800 shrink-0 sticky top-0 z-50">
+<div class="flex items-center gap-3">
+<div class="text-primary size-10 bg-primary/10 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(34,211,238,0.2)]">
+<span class="material-symbols-outlined text-2xl">timer</span>
+</div>
+<h2 class="text-white text-xl font-black tracking-tight">TimeKeep <span class="text-primary">Pro</span></h2>
+</div>
+<div class="flex items-center gap-10">
+<nav class="hidden lg:flex items-center gap-8">
+<a class="text-slate-400 text-sm font-semibold hover:text-white transition-colors" href="#">Dashboard</a>
+<a class="text-slate-400 text-sm font-semibold hover:text-white transition-colors" href="#">Attendance</a>
+<a class="text-slate-400 text-sm font-semibold hover:text-white transition-colors" href="#">Schedule</a>
+<a class="text-slate-400 text-sm font-semibold hover:text-white transition-colors" href="#">Reports</a>
+</nav>
+<div class="flex items-center gap-4 border-l border-slate-800 pl-8">
+<button class="text-slate-400 hover:text-white"><span class="material-symbols-outlined">notifications</span></button>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-9 ring-2 ring-primary/30" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCNjSfJziB-lIisIdlVtt-eWT8qWEWIaB_kDsHK3WpwrG-Ivzl1bjPKLI8Cl2qJxalqgy2Wr7MsLNeD7s4GFGSNkaO0afP_maZ7a1_d8aiFTApwoiT2FJ0kvqw-vt6gpDguXz7M4yqt1r1GrN9cLZhN5xQ4koqvCdELxmyFQd4iNrlTtnb7xLIJ2hlfKOtNUPHkNGapuayJHOj88Br99ofX-9tXkb9ObdTvQgapDg9hTiUJ-qLpXiubKzDpLHP47IcNg_IxwuQ9DV1r");'></div>
+</div>
+</div>
+</header>
+<main class="flex-1 max-w-[1600px] mx-auto w-full p-6 lg:p-10 flex flex-col gap-8">
+<div>
+<h1 class="text-4xl font-black tracking-tight text-white mb-2">User Settings</h1>
+<p class="text-slate-400 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">manage_accounts</span>
+                Manage your profile, security, and preferences
+            </p>
+</div>
+<div class="flex flex-col lg:flex-row gap-8 items-start">
+<aside class="w-full lg:w-64 shrink-0">
+<nav class="flex flex-col gap-1 p-2 bg-surface-dark rounded-2xl border border-slate-800 shadow-xl">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/10 text-primary font-bold transition-all border border-primary/20" href="#">
+<span class="material-symbols-outlined">person</span>
+<span>General</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800/50 hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined">security</span>
+<span>Security</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800/50 hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined">notifications</span>
+<span>Notifications</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800/50 hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Preferences</span>
+</a>
+</nav>
+</aside>
+<div class="flex-1 flex flex-col gap-6 w-full">
+<section class="bg-surface-dark rounded-2xl border border-slate-800 shadow-xl overflow-hidden">
+<div class="p-6 border-b border-slate-800">
+<h3 class="text-xl font-bold text-white">Profile Settings</h3>
+</div>
+<div class="p-8 space-y-8">
+<div class="flex flex-col sm:flex-row items-center gap-6">
+<div class="relative">
+<div class="size-24 rounded-full bg-center bg-cover ring-4 ring-primary/20" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCNjSfJziB-lIisIdlVtt-eWT8qWEWIaB_kDsHK3WpwrG-Ivzl1bjPKLI8Cl2qJxalqgy2Wr7MsLNeD7s4GFGSNkaO0afP_maZ7a1_d8aiFTApwoiT2FJ0kvqw-vt6gpDguXz7M4yqt1r1GrN9cLZhN5xQ4koqvCdELxmyFQd4iNrlTtnb7xLIJ2hlfKOtNUPHkNGapuayJHOj88Br99ofX-9tXkb9ObdTvQgapDg9hTiUJ-qLpXiubKzDpLHP47IcNg_IxwuQ9DV1r");'></div>
+<button class="absolute -bottom-1 -right-1 bg-primary text-slate-950 p-1.5 rounded-full shadow-lg hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-sm block">edit</span>
+</button>
+</div>
+<div class="flex flex-col gap-2">
+<h4 class="text-white font-bold text-lg">Alex Rivera</h4>
+<p class="text-slate-400 text-sm">Update your avatar and personal details</p>
+<button class="mt-1 px-4 py-2 bg-slate-800 text-slate-200 text-xs font-bold rounded-lg border border-slate-700 hover:bg-slate-700 transition-colors w-max">Change Photo</button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="space-y-2">
+<label class="text-xs font-black uppercase tracking-widest text-slate-500">Full Name</label>
+<input class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-200 text-sm" type="text" value="Alex Rivera"/>
+</div>
+<div class="space-y-2">
+<label class="text-xs font-black uppercase tracking-widest text-slate-500">Email Address</label>
+<input class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-200 text-sm" type="email" value="alex.rivera@company.com"/>
+</div>
+<div class="space-y-2">
+<label class="text-xs font-black uppercase tracking-widest text-slate-500">Department</label>
+<div class="w-full bg-slate-800/50 border border-slate-800 rounded-xl px-4 py-3 text-slate-400 text-sm cursor-not-allowed flex items-center justify-between">
+<span>Engineering &amp; Development</span>
+<span class="material-symbols-outlined text-sm">lock</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="bg-surface-dark rounded-2xl border border-slate-800 shadow-xl overflow-hidden">
+<div class="p-6 border-b border-slate-800">
+<h3 class="text-xl font-bold text-white">Security</h3>
+</div>
+<div class="p-8 space-y-8">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="space-y-2">
+<label class="text-xs font-black uppercase tracking-widest text-slate-500">New Password</label>
+<input class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-200 text-sm" placeholder="••••••••" type="password"/>
+</div>
+<div class="space-y-2">
+<label class="text-xs font-black uppercase tracking-widest text-slate-500">Confirm Password</label>
+<input class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-200 text-sm" placeholder="••••••••" type="password"/>
+</div>
+</div>
+<div class="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-800">
+<div class="flex items-center gap-4">
+<div class="text-accent-purple size-10 bg-accent-purple/10 rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined">security_update_good</span>
+</div>
+<div>
+<p class="text-white font-bold text-sm">Two-Factor Authentication</p>
+<p class="text-slate-500 text-xs">Add an extra layer of security to your account</p>
+</div>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-slate-400 border-4 border-slate-900 appearance-none cursor-pointer outline-none transition-all duration-300 translate-x-0 checked:translate-x-6" id="toggle-2fa" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-700 cursor-pointer" for="toggle-2fa"></label>
+</div>
+</div>
+</div>
+</section>
+<section class="bg-surface-dark rounded-2xl border border-slate-800 shadow-xl overflow-hidden">
+<div class="p-6 border-b border-slate-800">
+<h3 class="text-xl font-bold text-white">Notification Preferences</h3>
+</div>
+<div class="p-8">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+<div class="space-y-6">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-primary text-xl">mail</span>
+<h4 class="text-sm font-black uppercase tracking-widest text-slate-400">Email Notifications</h4>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-sm text-slate-300">Check-in Reminders</span>
+<div class="relative inline-block w-10 align-middle select-none">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-slate-400 border-4 border-slate-900 appearance-none cursor-pointer checked:translate-x-5" id="email-checkin" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-slate-700 cursor-pointer" for="email-checkin"></label>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-sm text-slate-300">Schedule Changes</span>
+<div class="relative inline-block w-10 align-middle select-none">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-slate-400 border-4 border-slate-900 appearance-none cursor-pointer checked:translate-x-5" id="email-schedule" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-slate-700 cursor-pointer" for="email-schedule"></label>
+</div>
+</div>
+</div>
+<div class="space-y-6">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-primary text-xl">notifications_active</span>
+<h4 class="text-sm font-black uppercase tracking-widest text-slate-400">Push Notifications</h4>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-sm text-slate-300">Check-in Reminders</span>
+<div class="relative inline-block w-10 align-middle select-none">
+<input class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-slate-400 border-4 border-slate-900 appearance-none cursor-pointer checked:translate-x-5" id="push-checkin" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-slate-700 cursor-pointer" for="push-checkin"></label>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-sm text-slate-300">Schedule Changes</span>
+<div class="relative inline-block w-10 align-middle select-none">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-slate-400 border-4 border-slate-900 appearance-none cursor-pointer checked:translate-x-5" id="push-schedule" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-slate-700 cursor-pointer" for="push-schedule"></label>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="bg-surface-dark rounded-2xl border border-slate-800 shadow-xl overflow-hidden">
+<div class="p-6 border-b border-slate-800">
+<h3 class="text-xl font-bold text-white">Display Settings</h3>
+</div>
+<div class="p-8">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="text-primary size-10 bg-primary/10 rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined">dark_mode</span>
+</div>
+<div>
+<p class="text-white font-bold text-sm">Theme Selection</p>
+<p class="text-slate-500 text-xs">Switch between light and dark visual styles</p>
+</div>
+</div>
+<div class="flex bg-slate-900 p-1 rounded-xl border border-slate-800">
+<button class="flex items-center gap-2 px-4 py-2 rounded-lg text-slate-500 text-xs font-bold transition-all">
+<span class="material-symbols-outlined text-sm">light_mode</span>
+                                    Light
+                                </button>
+<button class="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-slate-950 text-xs font-black shadow-lg">
+<span class="material-symbols-outlined text-sm">dark_mode</span>
+                                    Dark
+                                </button>
+</div>
+</div>
+</div>
+</section>
+<div class="flex items-center justify-end gap-4 mt-4 pb-10">
+<button class="px-8 py-3 rounded-xl bg-slate-800 text-white text-sm font-bold hover:bg-slate-700 transition-all border border-slate-700">
+                        Discard Changes
+                    </button>
+<button class="px-10 py-3 rounded-xl bg-primary text-slate-950 text-sm font-black hover:scale-105 transition-all shadow-[0_0_20px_rgba(34,211,238,0.3)]">
+                        Save Settings
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<footer class="mt-auto flex items-center justify-between text-slate-500 text-[10px] uppercase font-bold tracking-widest px-10 py-6 border-t border-slate-900 bg-background-dark/80">
+<p>© 2023 TimeKeep Productivity Solutions</p>
+<div class="flex gap-6">
+<a class="hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="hover:text-primary transition-colors" href="#">Security</a>
+<a class="hover:text-primary transition-colors" href="#">Support</a>
+</div>
+</footer>
+</div>
+
+</body></html>

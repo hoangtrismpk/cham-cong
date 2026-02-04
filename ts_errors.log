@@ -1,0 +1,11 @@
+components/ui/command.tsx(53,9): error TS2322: Type '{ children: Element; className: string; showCloseButton: boolean; }' is not assignable to type 'IntrinsicAttributes & Omit<DialogContentProps & RefAttributes<HTMLDivElement>, "ref"> & RefAttributes<...>'.
+  Property 'showCloseButton' does not exist on type 'IntrinsicAttributes & Omit<DialogContentProps & RefAttributes<HTMLDivElement>, "ref"> & RefAttributes<...>'.
+supabase/functions/check-reminder/index.ts(2,30): error TS2307: Cannot find module 'jsr:@supabase/supabase-js@2' or its corresponding type declarations.
+supabase/functions/check-reminder/index.ts(3,19): error TS2307: Cannot find module 'npm:firebase-admin@12.0.0' or its corresponding type declarations.
+supabase/functions/check-reminder/index.ts(7,35): error TS2304: Cannot find name 'Deno'.
+supabase/functions/check-reminder/index.ts(15,1): error TS2304: Cannot find name 'Deno'.
+supabase/functions/check-reminder/index.ts(15,19): error TS7006: Parameter 'req' implicitly has an 'any' type.
+supabase/functions/check-reminder/index.ts(18,29): error TS2304: Cannot find name 'Deno'.
+supabase/functions/check-reminder/index.ts(19,29): error TS2304: Cannot find name 'Deno'.
+supabase/functions/check-reminder/index.ts(71,42): error TS7006: Parameter 't' implicitly has an 'any' type.
+supabase/functions/check-reminder/index.ts(101,53): error TS18046: 'err' is of type 'unknown'.

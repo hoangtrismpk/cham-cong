@@ -1,0 +1,237 @@
+// Vietnamese translations
+export const vi = {
+    // Common
+    common: {
+        loading: 'Đang tải...',
+        error: 'Lỗi',
+        success: 'Thành công',
+        cancel: 'Hủy',
+        confirm: 'Xác nhận',
+        save: 'Lưu',
+        delete: 'Xóa',
+        edit: 'Sửa',
+        view: 'Xem',
+        search: 'Tìm kiếm',
+        back: 'Quay lại',
+    },
+
+    // Navigation
+    nav: {
+        dashboard: 'Tổng quan',
+        timesheets: 'Bảng chấm công',
+        schedule: 'Lịch làm việc',
+        reports: 'Báo cáo',
+        settings: 'Cài đặt',
+        signOut: 'Đăng xuất',
+        account: 'Tài khoản',
+    },
+
+    // Dashboard
+    dashboard: {
+        currentTime: 'Thời gian hiện tại',
+        location: 'Trụ sở FHB Vietnam',
+        checkIn: 'CLOCK IN',
+        checkOut: 'CLOCK OUT',
+        locating: 'Đang kiểm tra...',
+        done: 'HOÀN THÀNH',
+        checkedInMessage: 'Chào mừng bạn. Chúc bạn 1 ngày làm việc hiệu quả nhé 👍',
+        readyToStart: 'Chào {{name}}, bạn sẵn sàng cho một ngày làm việc đầy năng lượng chưa?',
+        completedShift: 'Bạn đã hoàn thành ca làm hôm nay.',
+        weeklyProgress: 'Tiến độ tuần',
+        recentHistory: 'Lịch sử gần đây',
+        attendanceLog: 'Nhật ký Chấm công',
+        noRecentActivity: 'Chưa có hoạt động gần đây.',
+        onTrack: 'Thời gian bạn đã làm việc trong tuần này:',
+        goalAchieved: 'Đã đạt mục tiêu!',
+        in: 'VÀO',
+        out: 'RA',
+        date: 'NGÀY',
+        inOut: 'VÀO/RA',
+        hours: 'SỐ GIỜ',
+        history: 'Lịch sử',
+        standardHours: 'Giờ chuẩn',
+        overtime: 'Tăng ca',
+        weeklyBreakdown: 'Chi tiết theo tuần',
+        monthlyBreakdown: 'Chi tiết theo tháng',
+        visualizingWeekly: 'Theo dõi hiệu suất làm việc trong tuần',
+        visualizingMonthly: 'Biểu đồ hiệu suất làm việc trong tháng [Month]',
+        week: 'Tuần',
+        month: 'Tháng',
+        totalWorkTime: 'Tổng thời gian làm việc',
+    },
+
+    // Admin
+    admin: {
+        overview: 'Tổng quan',
+        employees: 'Nhân viên',
+        attendance: 'Chấm công',
+        reports: 'Báo cáo',
+        totalEmployees: 'Tổng nhân viên',
+        present: 'Có mặt',
+        absent: 'Vắng mặt',
+        late: 'Đi trễ',
+        systemStatus: 'Trạng thái hệ thống',
+        liveSyncActive: 'Đồng bộ trực tiếp',
+        connecting: 'Đang kết nối...',
+        syncOffline: 'Mất kết nối',
+    },
+
+    // Time
+    time: {
+        monday: 'T2',
+        tuesday: 'T3',
+        wednesday: 'T4',
+        thursday: 'T5',
+        friday: 'T6',
+        saturday: 'T7',
+        sunday: 'CN',
+    },
+
+    // Messages
+    messages: {
+        checkInSuccess: 'Chấm công vào thành công!',
+        checkOutSuccess: 'Clock out thành công, hãy về nhà an toàn bạn nhé. Hẹn gặp lại bạn vào ngày làm việc tiếp theo 🫰',
+        alreadyCheckedIn: 'Bạn đã chấm công vào rồi. Vui lòng chấm công ra trước.',
+        noActiveCheckIn: 'Không tìm thấy ca làm đang hoạt động. Vui lòng chấm công vào trước.',
+        locationError: 'Lỗi vị trí',
+        locationDenied: 'Quyền truy cập vị trí bị từ chối. Vui lòng cho phép truy cập vị trí.',
+        positionUnavailable: 'Không thể xác định vị trí. Vui lòng bật GPS.',
+        locationTimeout: 'Hết thời gian xác định vị trí. Vui lòng thử lại.',
+        tooFarFromOffice: 'Bạn đang ở quá xa văn phòng ({distance}m). Khoảng cách tối đa: {max}m.',
+        unauthorized: 'Chưa xác thực',
+        systemError: 'Lỗi hệ thống: Cập nhật thất bại. Vui lòng liên hệ quản trị viên để kiểm tra Chính sách Cơ sở dữ liệu (RLS).',
+    },
+    // Timesheets
+    timesheets: {
+        title: 'Bảng chấm công của tôi',
+        subtitle: 'Xem và quản lý nhật ký làm việc của bạn',
+        totalHoursWorked: 'Tổng giờ làm việc',
+        overtime: 'Tăng ca',
+        daysPresent: 'Số ngày có mặt',
+        totalWorkdays: 'Tổng ngày làm việc',
+        dailyLogs: 'Lịch sử làm việc',
+        paidLeaveYear: 'Nghỉ phép (Năm)',
+        paidLeaveMonth: 'Nghỉ phép (Tháng)',
+        usedLeave: 'Đã nghỉ',
+        remainingLeave: 'Còn lại',
+        annualLeaveLimit: 'Hạn mức',
+        monthlyLeaveLimit: 'Hạn mức',
+        clockIn: 'Clock In',
+        clockOut: 'Clock Out',
+        searchLogs: 'Tìm kiếm nhật ký...',
+        filter: 'Lọc',
+        last3Days: '3 ngày gần nhất',
+        today: 'Hôm nay',
+        last7Days: '7 ngày gần nhất',
+        last30Days: '30 ngày gần nhất',
+        customRange: 'Khoảng thời gian',
+        exportRange: 'Xuất theo khoảng chọn',
+        exportAll: 'Xuất toàn bộ lịch sử',
+        unitHours: 'GIỜ',
+        breakDuration: 'Thời gian nghỉ',
+        totalHours: 'Tổng giờ',
+        approved: 'Đã duyệt',
+        pending: 'Đang chờ',
+        draft: 'Bản nháp',
+        showingEntries: 'Hiển thị {count} mục',
+        prev: 'Trước',
+        next: 'Sau',
+    },
+    schedule: {
+        title: 'Lịch làm việc',
+        subtitle: 'Xem và lên kế hoạch ca làm việc',
+        swapShift: 'Đổi ca',
+        requestLeave: 'Xin nghỉ phép',
+        requestLeaveTitle: 'Đơn xin nghỉ phép', // New
+        selectDate: 'Chọn ngày nghỉ', // New
+        reason: 'Lý do nghỉ phép', // New
+        uploadImage: 'Hình ảnh xác nhận', // New
+        submitRequest: 'Gửi đơn', // New
+        uploading: 'Đang tải lên...', // New
+        shiftDetails: 'Chi tiết ca làm',
+        upcoming7Days: '7 ngày tới',
+        utilization: 'Hiệu suất tuần này',
+        workShift: 'Ca làm việc',
+        approvedLeave: 'Nghỉ phép',
+        holiday: 'Ngày lễ',
+        todaysShift: 'Ca làm hôm nay',
+        morningShift: 'Ca sáng',
+        afternoonShift: 'Ca chiều',
+        fullDay: 'Cả ngày',
+        custom: 'Tùy chỉnh',
+        pendingCustom: 'Chờ duyệt / Tùy chỉnh', // New
+        nightShift: 'Ca đêm',
+        offDuty: 'Nghỉ ca',
+        inProgress: 'Đang diễn ra',
+        active: 'Hoạt động',
+        unscheduled: 'Chưa có lịch',
+        selected: 'Đã chọn',
+        addWorkInfo: 'Thêm thông tin làm việc',
+        shiftName: 'Tên ca làm',
+        startTime: 'Thời gian bắt đầu',
+        endTime: 'Thời gian kết thúc',
+        location: 'Địa điểm',
+        teamMembers: 'Thành viên nhóm',
+        saveInfo: 'Lưu thông tin',
+        cancel: 'Thoát',
+        total: 'Tổng', // New
+        week: 'Tuần', // New
+        day: 'Ngày', // New
+        month: 'Tháng' // New
+    },
+    // Settings
+    settings: {
+        title: 'Cài đặt',
+        tabs: {
+            general: 'Chung',
+            security: 'Bảo mật',
+            notifications: 'Thông báo',
+            preferences: 'Tùy chọn',
+        },
+        profile: {
+            title: 'Cài đặt Hồ sơ',
+            avatarUpdate: 'Cập nhật ảnh đại diện và thông tin cá nhân',
+            changePhoto: 'Thay đổi ảnh',
+            chooseAvatar: 'Chọn ảnh đại diện',
+            chooseAvatarDesc: 'Chọn một trong những ảnh đại diện 3D mặc định của chúng tôi.',
+            uploadCustom: 'Tải ảnh tùy chỉnh',
+            uploading: 'Đang tải lên...',
+            maxSize: 'Tối đa 500KB',
+            fullName: 'Họ và tên',
+            fullNamePlaceholder: 'Nhập họ và tên của bạn',
+            emailAddress: 'Địa chỉ Email',
+            department: 'Phòng ban',
+            engineering: 'Kỹ thuật & Phát triển',
+            userFallback: 'Người dùng',
+        },
+        security: {
+            title: 'Bảo mật',
+            newPassword: 'Mật khẩu mới',
+            confirmPassword: 'Xác nhận mật khẩu',
+            passwordMismatch: 'Mật khẩu xác nhận không khớp',
+            updateSuccess: 'Cập nhật bảo mật thành công',
+        },
+        notifications: {
+            title: 'Tùy chọn thông báo',
+            pushNotifications: 'Thông báo đẩy',
+            checkInReminders: 'Nhắc nhở Chấm công',
+            scheduleChanges: 'Thay đổi lịch làm việc',
+        },
+        preferences: {
+            title: 'Cài đặt hiển thị',
+            themeTitle: 'Chọn chủ đề',
+            themeDesc: 'Chuyển đổi giữa chế độ sáng và tối',
+            light: 'Sáng',
+            dark: 'Tối',
+        },
+        actions: {
+            discard: 'Hủy thay đổi',
+            save: 'Lưu cài đặt',
+            saving: 'Đang lưu...',
+            saveSuccess: 'Lưu cài đặt thành công',
+            saveError: 'Lưu thất bại',
+        }
+    }
+}
+
+export type Translations = typeof vi
