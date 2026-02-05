@@ -33,3 +33,59 @@ export async function getDepartmentMemberCount() {
 
     return count || 0
 }
+
+export async function updateAutoCheckInSetting(enabled: boolean) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const { error } = await supabase
+        .from('profiles')
+        .update({ auto_checkin_enabled: enabled })
+        .eq('id', user.id)
+
+    if (error) throw new Error(error.message)
+    return { success: true }
+}
+
+export async function getAutoCheckInSetting() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return false
+
+    const { data } = await supabase
+        .from('profiles')
+        .select('auto_checkin_enabled')
+        .eq('id', user.id)
+        .single()
+
+    return data?.auto_checkin_enabled || false
+}
+
+export async function updateAutoCheckOutSetting(enabled: boolean) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const { error } = await supabase
+        .from('profiles')
+        .update({ auto_checkout_enabled: enabled })
+        .eq('id', user.id)
+
+    if (error) throw new Error(error.message)
+    return { success: true }
+}
+
+export async function getAutoCheckOutSetting() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return false
+
+    const { data } = await supabase
+        .from('profiles')
+        .select('auto_checkout_enabled')
+        .eq('id', user.id)
+        .single()
+
+    return data?.auto_checkout_enabled || false
+}

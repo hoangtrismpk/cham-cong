@@ -14,6 +14,7 @@ import { AVAILABLE_AVATARS, getDefaultAvatar } from '@/utils/avatar'
 import { toast } from 'sonner'
 import { createClient } from '@/utils/supabase/client'
 import { uploadImageToHost } from '@/app/actions/leave'
+import { getAutoCheckInSetting, updateAutoCheckInSetting, getAutoCheckOutSetting, updateAutoCheckOutSetting } from '@/app/actions/profile'
 import { useSidebar } from '@/contexts/sidebar-context'
 
 interface SettingsClientProps {
@@ -21,11 +22,13 @@ interface SettingsClientProps {
 }
 
 export function SettingsClient({ user }: SettingsClientProps) {
-    const { t, locale } = useI18n()
+    const { t, locale, setLocale } = useI18n()
     const { setIsOpen } = useSidebar()
     const [activeTab, setActiveTab] = useState<'general' | 'security' | 'notifications' | 'preferences'>('general')
     const [activeTabMobile, setActiveTabMobile] = useState<string>('none')
     const [pushEnabled, setPushEnabled] = useState(false)
+    const [autoCheckInEnabled, setAutoCheckInEnabled] = useState(false)
+    const [autoCheckOutEnabled, setAutoCheckOutEnabled] = useState(false)
     const [currentAvatar, setCurrentAvatar] = useState(user?.user_metadata?.avatar_url || getDefaultAvatar(user?.id))
     const [isAvatarOpen, setIsAvatarOpen] = useState(false)
     const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' && window.innerWidth >= 1024)
@@ -36,8 +39,37 @@ export function SettingsClient({ user }: SettingsClientProps) {
         }
         checkDesktop()
         window.addEventListener('resize', checkDesktop)
+
+        // Load Auto Check-in/out Settings
+        getAutoCheckInSetting().then(enabled => setAutoCheckInEnabled(enabled))
+        getAutoCheckOutSetting().then(enabled => setAutoCheckOutEnabled(enabled))
+
         return () => window.removeEventListener('resize', checkDesktop)
     }, [])
+
+    const handleAutoCheckInToggle = async (checked: boolean) => {
+        setAutoCheckInEnabled(checked)
+        try {
+            await updateAutoCheckInSetting(checked)
+            toast.success(checked ? 'Đã bật Tự động Check-in' : 'Đã tắt Tự động Check-in')
+        } catch (error) {
+            console.error(error)
+            setAutoCheckInEnabled(!checked)
+            toast.error('Lỗi cập nhật cài đặt')
+        }
+    }
+
+    const handleAutoCheckOutToggle = async (checked: boolean) => {
+        setAutoCheckOutEnabled(checked)
+        try {
+            await updateAutoCheckOutSetting(checked)
+            toast.success(checked ? 'Đã bật Tự động Check-out' : 'Đã tắt Tự động Check-out')
+        } catch (error) {
+            console.error(error)
+            setAutoCheckOutEnabled(!checked)
+            toast.error('Lỗi cập nhật cài đặt')
+        }
+    }
     const [isUploading, setIsUploading] = useState(false)
     const [fullName, setFullName] = useState(user?.user_metadata?.full_name || '')
     const [password, setPassword] = useState('')
@@ -394,6 +426,28 @@ export function SettingsClient({ user }: SettingsClientProps) {
                     </div>
 
                     <div className="flex items-center gap-4 px-6 min-h-[64px] hover:bg-white/5 transition-colors">
+                        <div className="text-emerald-500 flex items-center justify-center rounded-lg bg-emerald-500/10 shrink-0 size-10">
+                            <span className="material-symbols-outlined">timer_play</span>
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-base font-medium text-slate-200">Auto Check-in</p>
+                            <p className="text-xs text-slate-500">Tự động chấm công khi đến cty</p>
+                        </div>
+                        <Switch checked={autoCheckInEnabled} onCheckedChange={handleAutoCheckInToggle} />
+                    </div>
+
+                    <div className="flex items-center gap-4 px-6 min-h-[64px] hover:bg-white/5 transition-colors">
+                        <div className="text-orange-500 flex items-center justify-center rounded-lg bg-orange-500/10 shrink-0 size-10">
+                            <span className="material-symbols-outlined">timer_off</span>
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-base font-medium text-slate-200">Auto Check-out</p>
+                            <p className="text-xs text-slate-500">Tự động chấm ra khi hết ca</p>
+                        </div>
+                        <Switch checked={autoCheckOutEnabled} onCheckedChange={handleAutoCheckOutToggle} />
+                    </div>
+
+                    <div className="flex items-center gap-4 px-6 min-h-[64px] hover:bg-white/5 transition-colors">
                         <div className="text-primary flex items-center justify-center rounded-lg bg-primary/10 shrink-0 size-10">
                             <span className="material-symbols-outlined">dark_mode</span>
                         </div>
@@ -401,7 +455,10 @@ export function SettingsClient({ user }: SettingsClientProps) {
                         <Switch checked />
                     </div>
 
-                    <div className="flex items-center gap-4 px-6 min-h-[64px] hover:bg-white/5 transition-colors cursor-pointer">
+                    <div
+                        className="flex items-center gap-4 px-6 min-h-[64px] hover:bg-white/5 transition-colors cursor-pointer"
+                        onClick={() => setLocale(locale === 'vi' ? 'en' : 'vi')}
+                    >
                         <div className="text-primary flex items-center justify-center rounded-lg bg-primary/10 shrink-0 size-10">
                             <span className="material-symbols-outlined">translate</span>
                         </div>
@@ -627,9 +684,37 @@ export function SettingsClient({ user }: SettingsClientProps) {
                     {/* Preferences Section */}
                     <section ref={preferencesRef} data-section="preferences" className="bg-card rounded-2xl border border-border shadow-2xl overflow-hidden scroll-mt-24">
                         <div className="p-6 border-b border-border">
-                            <h3 className="text-xl font-bold text-white">Cài đặt hiển thị</h3>
+                            <h3 className="text-xl font-bold text-white">Cài đặt hiển thị & Tiện ích</h3>
                         </div>
-                        <div className="p-8">
+                        <div className="p-8 space-y-8">
+                            {/* Auto Check-in Toggle */}
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="text-emerald-500 size-10 bg-emerald-500/10 rounded-xl flex items-center justify-center">
+                                        <span className="material-symbols-outlined">timer_play</span>
+                                    </div>
+                                    <div>
+                                        <p className="text-white font-bold text-sm">Tự động Chấm công (Beta)</p>
+                                        <p className="text-slate-500 text-xs text-left">Tự động Check-in khi mở app tại văn phòng (trước giờ làm 15p)</p>
+                                    </div>
+                                </div>
+                                <Switch checked={autoCheckInEnabled} onCheckedChange={handleAutoCheckInToggle} />
+                            </div>
+
+                            {/* Auto Check-out Toggle */}
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="text-orange-500 size-10 bg-orange-500/10 rounded-xl flex items-center justify-center">
+                                        <span className="material-symbols-outlined">timer_off</span>
+                                    </div>
+                                    <div>
+                                        <p className="text-white font-bold text-sm">Tự động Check-out (Beta)</p>
+                                        <p className="text-slate-500 text-xs text-left">Tự động Check-out khi hết ca làm việc (sau giờ tan 15p)</p>
+                                    </div>
+                                </div>
+                                <Switch checked={autoCheckOutEnabled} onCheckedChange={handleAutoCheckOutToggle} />
+                            </div>
+
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-4">
                                     <div className="text-primary size-10 bg-primary/10 rounded-xl flex items-center justify-center">

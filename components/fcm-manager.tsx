@@ -52,12 +52,21 @@ export function FCMManager() {
 
             // 1. Check/Request Permission
             let permission = Notification.permission;
+
+            if (permission === 'denied') {
+                console.log('Notification permission denied');
+                toast.error('Quyền thông báo đang bị chặn. Vui lòng nhấn vào biểu tượng ổ khóa trên thanh địa chỉ để bật lại.', {
+                    duration: 10000,
+                });
+                return;
+            }
+
             if (permission === 'default') {
                 permission = await Notification.requestPermission();
             }
 
             if (permission !== 'granted') {
-                console.log('Notification permission denied');
+                console.log('Notification permission not granted after request');
                 return;
             }
 

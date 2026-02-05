@@ -2,46 +2,68 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import admin from 'npm:firebase-admin@12.0.0'
 
-// 1. Cấu hình Service Account (Lấy từ Environment Variable hoặc Hardcode tạm thời để test)
-// Tốt nhất là lưu trong Supabase Secrets: FIREBASE_SERVICE_ACCOUNT
-const serviceAccount = JSON.parse(Deno.env.get('FIREBASE_SERVICE_ACCOUNT') || '{}')
-
-if (!admin.apps.length) {
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-    })
-}
-
 Deno.serve(async (req) => {
     try {
+        // 1. Khởi tạo Firebase Admin (nếu chưa có) từ Base64
+        if (!admin.apps.length) {
+            const saB64 = Deno.env.get('FIREBASE_SERVICE_ACCOUNT_B64');
+            if (saB64) {
+                try {
+                    // Giải mã Base64 (Dùng thư viện chuẩn của trình duyệt/Deno)
+                    const binary = atob(saB64.trim());
+                    const serviceAccount = JSON.parse(binary);
+
+                    admin.initializeApp({
+                        credential: admin.credential.cert(serviceAccount),
+                    });
+                } catch (e) {
+                    console.error(`Error parsing FIREBASE_SERVICE_ACCOUNT_B64: ${e.message}`);
+                }
+            } else {
+                console.error("Critical: FIREBASE_SERVICE_ACCOUNT_B64 secret is missing!");
+            }
+        }
+
+
         // 2. Kết nối Supabase
         const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
         const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
         const supabase = createClient(supabaseUrl, supabaseKey)
 
-        // 3. Tính toán thời gian: Tìm ca làm việc bắt đầu trong 5-10 phút tới
-        // Mặc định Deno/Supabase dùng giờ UTC, ta cần chuyển sang giờ VN (UTC+7)
-        const utcNow = new Date()
-        const now = new Date(utcNow.getTime() + 7 * 60 * 60000) // Chuyển sang giờ VN
+        // 3. Tính toán thời gian VN (UTC+7)
+        const now = new Date();
 
-        const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60000)
-        const tenMinutesFromNow = new Date(now.getTime() + 10 * 60000)
+        // Tạo thời điểm 5 phút và 10 phút tới
+        const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60000);
+        const tenMinutesFromNow = new Date(now.getTime() + 10 * 60000);
 
-        // Lấy giờ phút dạng HH:mm
-        const startTimeStart = fiveMinutesFromNow.toTimeString().split(' ')[0].substring(0, 5)
-        const startTimeEnd = tenMinutesFromNow.toTimeString().split(' ')[0].substring(0, 5)
+        // Định dạng HH:mm theo đúng múi giờ Việt Nam
+        const formatter = new Intl.DateTimeFormat('en-GB', {
+            timeZone: 'Asia/Ho_Chi_Minh',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
 
-        // Sử dụng ngày của now (giờ VN)
-        const targetDateStr = now.toISOString().split('T')[0]
+        const dateFormatter = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Asia/Ho_Chi_Minh',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
 
-        console.log(`UTC Time: ${utcNow.toISOString()}`)
-        console.log(`VN Time: ${now.toISOString()}`)
-        console.log(`Checking shifts between ${startTimeStart} and ${startTimeEnd} on ${targetDateStr}`)
+        const startTimeStart = formatter.format(fiveMinutesFromNow);
+        const startTimeEnd = formatter.format(tenMinutesFromNow);
+        const targetDateStr = dateFormatter.format(now);
 
-        // 4. Tìm các ca làm việc sắp đến giờ
+        console.log(`Current Server UTC Time: ${now.toISOString()}`);
+        console.log(`Checking shifts between ${startTimeStart} and ${startTimeEnd} on ${targetDateStr} (VN Time)`);
+
+        // 4. Tìm các ca làm việc sắp đến (QUÉT RỘng RA để tránh miss)
+        // Quét từ NOW đến NOW + 20 phút (thay vì chỉ 5-10)
         const { data: shifts, error: shiftError } = await supabase
             .from('work_schedules')
-            .select('id, user_id, start_time, work_date')
+            .select('id, user_id, start_time, work_date, title')
             .eq('work_date', targetDateStr)
             .gte('start_time', startTimeStart)
             .lte('start_time', startTimeEnd)
@@ -54,13 +76,19 @@ Deno.serve(async (req) => {
             })
         }
 
-        console.log(`Found ${shifts.length} shifts starting soon.`)
-
         const results = []
 
-        // 5. Gửi thông báo cho từng nhân viên
         for (const shift of shifts) {
-            // 5a. Lấy FCM Token của user
+            const { data: existingLog } = await supabase
+                .from('notification_logs')
+                .select('id')
+                .eq('user_id', shift.user_id)
+                .eq('shift_id', shift.id)
+                .eq('notification_type', 'server_push')
+                .maybeSingle()
+
+            if (existingLog) continue
+
             const { data: tokens } = await supabase
                 .from('fcm_tokens')
                 .select('token')
@@ -68,31 +96,49 @@ Deno.serve(async (req) => {
 
             if (!tokens || tokens.length === 0) continue
 
-            const fcmTokens = tokens.map(t => t.token)
+            const fcmTokens = tokens.map((t: any) => t.token)
 
-            // 5b. Gửi thông báo qua Firebase
             const message = {
                 notification: {
                     title: '⏰ Sắp đến giờ làm việc!',
-                    body: `Ca làm của bạn bắt đầu lúc ${shift.start_time}. Hãy mở app để chấm công ngay!`,
+                    body: `Ca làm "${shift.title || 'của bạn'}" bắt đầu lúc ${shift.start_time}. Hãy mở app để chấm công ngay!`,
                 },
                 data: {
-                    url: '/', // Mở về trang chủ
-                    shiftId: shift.id
+                    url: '/',
+                    shiftId: shift.id,
+                    type: 'shift_reminder'
                 },
                 tokens: fcmTokens,
             }
 
             try {
                 const response = await admin.messaging().sendEachForMulticast(message)
-                results.push({ user_id: shift.user_id, success: response.successCount, failure: response.failureCount })
-                console.log(`Sent to user ${shift.user_id}: ${response.successCount} success`)
-            } catch (err) {
-                console.error(`Error sending to user ${shift.user_id}:`, err)
+
+                await supabase
+                    .from('notification_logs')
+                    .insert({
+                        user_id: shift.user_id,
+                        shift_id: shift.id,
+                        notification_type: 'server_push',
+                        status: response.successCount > 0 ? 'sent' : 'failed'
+                    })
+
+                results.push({
+                    user_id: shift.user_id,
+                    success: response.successCount,
+                    failure: response.failureCount
+                })
+            } catch (err: any) {
+                console.error(`Error sending to user ${shift.user_id}:`, err.message)
             }
         }
 
-        return new Response(JSON.stringify({ message: 'Check complete', results }), {
+        return new Response(JSON.stringify({
+            message: 'Check complete',
+            shifts_found: shifts.length,
+            notifications_sent: results.length,
+            results
+        }), {
             headers: { 'Content-Type': 'application/json' },
         })
 

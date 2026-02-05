@@ -13,16 +13,16 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 // Handle background messages
+// Handle background messages
 messaging.onBackgroundMessage((payload) => {
     console.log('[firebase-messaging-sw.js] Received check-in background message ', payload);
-    const notificationTitle = payload.notification?.title || 'Nhắc nhở Chấm công';
+    // Add Identification Prefix if from Server
+    const notificationTitle = `[FHB] ${payload.notification?.title || 'Nhắc nhở Chấm công'}`;
     const notificationOptions = {
         body: payload.notification?.body || 'Đã đến giờ chấm công rồi!',
-        icon: '/logo.png',
-        badge: '/logo.png',
-        data: {
-            url: '/' // Open the app when clicked
-        }
+        icon: '/iconapp.png', // Use correct icon
+        badge: '/iconapp.png',
+        data: payload.data || { url: '/' }
     };
 
     self.registration.showNotification(notificationTitle, notificationOptions);
@@ -33,18 +33,29 @@ self.addEventListener('notificationclick', (event) => {
     console.log('Notification clicked');
     event.notification.close();
     event.waitUntil(
-        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
-            // Check if there is already a window/tab open with the target URL
-            for (let i = 0; i < windowClients.length; i++) {
-                let client = windowClients[i];
-                if (client.url.includes('/') && 'focus' in client) {
-                    return client.focus();
+        Promise.all([
+            // 1. Open Window logic
+            clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+                for (let i = 0; i < windowClients.length; i++) {
+                    let client = windowClients[i];
+                    if (client.url.includes('/') && 'focus' in client) {
+                        return client.focus();
+                    }
                 }
-            }
-            // If not, open a new window/tab and ensure it's focused
-            if (clients.openWindow) {
-                return clients.openWindow('/');
-            }
-        })
+                if (clients.openWindow) {
+                    return clients.openWindow((event.notification.data && event.notification.data.url) || '/');
+                }
+            }),
+
+            // 2. Track Click
+            fetch('/api/tracking/notification-click', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    shiftId: event.notification.data?.shiftId,
+                    type: 'server_push'
+                })
+            }).catch(e => console.error('Tracking error:', e))
+        ])
     );
 });

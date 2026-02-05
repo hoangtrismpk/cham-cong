@@ -11,6 +11,9 @@ import { PwaHandler } from '@/components/pwa-handler'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { DashboardHeader, LocationBadge } from '@/components/dashboard-header'
 import { HomeMobileHeader } from '@/components/home-mobile-header'
+import { LocalNotificationsSetup } from '@/components/local-notifications-setup'
+import { AutoCheckInSetup } from '@/components/auto-check-in-setup'
+import { AutoCheckOutSetup } from '@/components/auto-check-out-setup'
 
 
 export const dynamic = 'force-dynamic'
@@ -79,6 +82,11 @@ export default async function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Setup local notifications (invisible component) */}
+      <LocalNotificationsSetup />
+      <AutoCheckInSetup />
+      <AutoCheckOutSetup />
     </DashboardLayout>
   )
 }

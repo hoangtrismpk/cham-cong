@@ -4,6 +4,7 @@ import { useI18n } from '@/contexts/i18n-context'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signout } from '@/app/auth/actions'
+import { LanguageSwitcher } from './language-switcher'
 
 interface DashboardSidebarProps {
     user: any
@@ -23,16 +24,21 @@ export function DashboardSidebar({ user, onClose }: DashboardSidebarProps) {
                     </div>
                     <h1 className="text-white text-xl font-bold tracking-tight">FHB</h1>
                 </div>
-                {onClose && (
-                    <button
-                        onClick={() => {
-                            if (window.innerWidth < 768) onClose()
-                        }}
-                        className="md:hidden text-slate-400"
-                    >
-                        <span className="material-symbols-outlined">close</span>
-                    </button>
-                )}
+                <div className="flex items-center gap-2">
+                    <div className="md:hidden">
+                        <LanguageSwitcher />
+                    </div>
+                    {onClose && (
+                        <button
+                            onClick={() => {
+                                if (window.innerWidth < 768) onClose()
+                            }}
+                            className="md:hidden text-slate-400 w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/5"
+                        >
+                            <span className="material-symbols-outlined">close</span>
+                        </button>
+                    )}
+                </div>
             </div>
             <nav className="flex-1 px-4 space-y-1 mt-4">
                 <Link

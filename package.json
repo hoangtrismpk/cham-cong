@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "share": "ngrok http 3000"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -16,6 +17,7 @@
     "@radix-ui/react-switch": "^1.2.6",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.93.3",
+    "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -25,6 +27,7 @@
     "lucide-react": "^0.563.0",
     "next": "16.1.6",
     "next-pwa": "^5.6.0",
+    "pg": "^8.18.0",
     "radix-ui": "^1.4.3",
     "react": "19.2.3",
     "react-day-picker": "^9.13.0",
@@ -40,6 +43,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
