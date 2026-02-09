@@ -2,13 +2,100 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { OFFICE_COORDINATES, MAX_DISTANCE_METERS, calculateDistance, OFFICE_IPS } from '@/utils/geo'
+import { calculateDistance, OFFICE_IPS } from '@/utils/geo'
+import { getWorkSettings } from '@/app/actions/settings'
 import { format } from 'date-fns'
 import { headers } from 'next/headers'
+
+export async function submitAttendanceChange(payload: {
+    log_id?: string
+    work_date: string
+    check_in_time: string
+    check_out_time: string
+    reason: string
+}) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return { error: 'Unauthorized' }
+
+    // Clean up old pending requests for this date to avoid duplicates
+    // Fetch first to properly filter JSONB payload
+    const { data: existingRequests, error: fetchError } = await supabase.from('change_requests')
+        .select('id, payload')
+        .eq('user_id', user.id)
+        .eq('type', 'attendance_edit')
+        .eq('status', 'pending')
+
+    console.log('[submitAttendanceChange] Existing requests:', existingRequests)
+    console.log('[submitAttendanceChange] Target work_date:', payload.work_date)
+
+    if (fetchError) {
+        console.error('[submitAttendanceChange] Fetch error:', fetchError)
+    }
+
+    // Filter for matching work_date in payload
+    const idsToDelete = existingRequests
+        ?.filter(req => {
+            console.log('[submitAttendanceChange] Checking req:', req.id, 'work_date:', req.payload?.work_date)
+            return req.payload?.work_date === payload.work_date
+        })
+        ?.map(req => req.id) || []
+
+    console.log('[submitAttendanceChange] IDs to delete:', idsToDelete)
+
+    // Delete matching old requests
+    if (idsToDelete.length > 0) {
+        const { error: deleteError } = await supabase.from('change_requests')
+            .delete()
+            .in('id', idsToDelete)
+
+        if (deleteError) {
+            console.error('[submitAttendanceChange] DELETE ERROR:', deleteError)
+        } else {
+            console.log('[submitAttendanceChange] Successfully deleted', idsToDelete.length, 'old requests')
+        }
+    }
+
+    const { error } = await supabase.from('change_requests').insert({
+        user_id: user.id,
+        type: 'attendance_edit',
+        reason: payload.reason,
+        status: 'pending',
+        payload: {
+            log_id: payload.log_id,
+            work_date: payload.work_date,
+            check_in_time: payload.check_in_time,
+            check_out_time: payload.check_out_time
+        }
+    })
+
+    if (error) {
+        console.error('Submit Change Error:', error)
+        return { error: error.message }
+    }
+
+    // NOTIFICATION: Notify Admins
+    const { data: adminRole } = await supabase.from('roles').select('id').eq('name', 'admin').single()
+    if (adminRole) {
+        const { data: admins } = await supabase.from('profiles').select('id').eq('role_id', adminRole.id)
+        if (admins && admins.length > 0) {
+            const { createNotification } = await import('@/app/actions/notification')
+            const adminIds = admins.map(a => a.id)
+            await Promise.all(adminIds.map(id =>
+                createNotification(id, 'Yêu cầu sửa công mới', `Nhân viên ${user.user_metadata.full_name || 'ẩn danh'} yêu cầu chỉnh sửa công ngày ${payload.work_date}.`, 'info', '/admin/approvals')
+            ))
+        }
+    }
+
+    revalidatePath('/timesheets')
+    return { success: true }
+}
 
 export async function checkIn(latitude?: number, longitude?: number, notes?: string) {
     const supabase = await createClient()
     const headerList = await headers()
+    const settings = await getWorkSettings()
 
     // Lấy IP người dùng (Xử lý qua Proxy/Ngrok/Load Balancer)
     const forwardedFor = headerList.get('x-forwarded-for')
@@ -23,38 +110,59 @@ export async function checkIn(latitude?: number, longitude?: number, notes?: str
     }
 
     // --- KIỂM TRA VỊ TRÍ (GPS hoặc IP) ---
-    let isLocationValid = false
+    let isIpValid = false
+    let isGpsValid = false
     let verificationMethod = 'none'
 
     // 1. Kiểm tra IP Văn phòng
-    if (userIp !== 'unknown' && OFFICE_IPS.includes(userIp)) {
-        isLocationValid = true
-        verificationMethod = 'office_wifi'
-        console.log(`[checkIn] Verified by Office IP: ${userIp}`)
+    const dynamicIps = settings.company_wifi_ip
+        ? settings.company_wifi_ip.split(',').map((ip: string) => ip.trim())
+        : []
+    const validIps = dynamicIps.length > 0 ? dynamicIps : OFFICE_IPS
+
+    if (userIp !== 'unknown' && validIps.includes(userIp)) {
+        isIpValid = true
     }
 
-    // 2. Nếu IP không khớp, kiểm tra GPS
-    if (!isLocationValid && latitude !== undefined && longitude !== undefined) {
-        const distance = calculateDistance(
+    // 2. Kiểm tra GPS
+    let gpsDistance = 0
+    if (latitude !== undefined && longitude !== undefined) {
+        gpsDistance = calculateDistance(
             latitude,
             longitude,
-            OFFICE_COORDINATES.latitude,
-            OFFICE_COORDINATES.longitude
+            parseFloat(settings.office_latitude),
+            parseFloat(settings.office_longitude)
         )
+        if (gpsDistance <= settings.max_distance_meters) {
+            isGpsValid = true
+        }
+    }
 
-        if (distance <= MAX_DISTANCE_METERS) {
+    // --- XÁC ĐỊNH TỔNG HỢP VỊ TRÍ ---
+    let isLocationValid = false
+    if (settings.require_gps_and_wifi) {
+        // Bắt buộc CẢ HAI
+        if (isIpValid && isGpsValid) {
+            isLocationValid = true
+            verificationMethod = 'gps_and_wifi'
+        } else {
+            let errorMsg = 'Chế độ an toàn cao: Bạn cần thỏa mãn cả GPS và Wifi.'
+            if (!isIpValid) errorMsg += ` (IP ${userIp} không thuộc văn phòng)`
+            if (!isGpsValid) errorMsg += ` (Vị trí GPS nằm ngoài bán kính ${settings.max_distance_meters}m)`
+            return { error: errorMsg }
+        }
+    } else {
+        // Chỉ cần MỘT TRONG HAI (Mặc định)
+        if (isIpValid) {
+            isLocationValid = true
+            verificationMethod = 'office_wifi'
+        } else if (isGpsValid) {
             isLocationValid = true
             verificationMethod = 'gps'
         } else {
             return {
-                error: `Bạn đang ở quá xa văn phòng (${Math.round(distance)}m). IP của bạn: ${userIp}`,
+                error: `Không thể xác minh vị trí. Vui lòng kết nối Wifi công ty HOẶC bật GPS trong bán kính cho phép. (IP: ${userIp}, Khoảng cách: ${Math.round(gpsDistance)}m)`
             }
-        }
-    }
-
-    if (!isLocationValid) {
-        return {
-            error: `Không thể xác minh vị trí. Vui lòng bật GPS hoặc kết nối Wifi công ty. (IP của bạn: ${userIp})`
         }
     }
 
@@ -111,7 +219,7 @@ export async function checkIn(latitude?: number, longitude?: number, notes?: str
         .eq('work_date', today)
         .maybeSingle()
 
-    const startTimeStr = schedule?.start_time || '08:30' // Default start time
+    const startTimeStr = schedule?.start_time || settings.work_start_time
 
     // 2. Get Current Time in VN (HH:mm)
     const nowVN = new Date()
@@ -158,6 +266,7 @@ export async function checkIn(latitude?: number, longitude?: number, notes?: str
 export async function checkOut(latitude?: number, longitude?: number, notes?: string) {
     const supabase = await createClient()
     const headerList = await headers()
+    const settings = await getWorkSettings()
 
     // Lấy IP người dùng
     const forwardedFor = headerList.get('x-forwarded-for')
@@ -167,36 +276,56 @@ export async function checkOut(latitude?: number, longitude?: number, notes?: st
 
     if (!user) return { error: 'Phiên làm việc hết hạn. Vui lòng đăng nhập lại.' }
 
-    // --- KIỂM TRA VỊ TRÍ ---
-    let isLocationValid = false
+    // --- KIỂM TRA VỊ TRÍ (CHECK-OUT) ---
+    let isIpValid = false
+    let isGpsValid = false
     let verificationMethod = 'none'
 
-    if (userIp !== 'unknown' && OFFICE_IPS.includes(userIp)) {
-        isLocationValid = true
-        verificationMethod = 'office_wifi'
+    const dynamicIps = settings.company_wifi_ip
+        ? settings.company_wifi_ip.split(',').map((ip: string) => ip.trim())
+        : []
+    const validIps = dynamicIps.length > 0 ? dynamicIps : OFFICE_IPS
+
+    if (userIp !== 'unknown' && validIps.includes(userIp)) {
+        isIpValid = true
     }
 
-    if (!isLocationValid && latitude !== undefined && longitude !== undefined) {
-        const distance = calculateDistance(
+    let gpsDistance = 0
+    if (latitude !== undefined && longitude !== undefined) {
+        gpsDistance = calculateDistance(
             latitude,
             longitude,
-            OFFICE_COORDINATES.latitude,
-            OFFICE_COORDINATES.longitude
+            parseFloat(settings.office_latitude),
+            parseFloat(settings.office_longitude)
         )
+        if (gpsDistance <= settings.max_distance_meters) {
+            isGpsValid = true
+        }
+    }
 
-        if (distance <= MAX_DISTANCE_METERS) {
+    // --- XÁC ĐỊNH TỔNG HỢP VỊ TRÍ ---
+    let isLocationValid = false
+    if (settings.require_gps_and_wifi) {
+        if (isIpValid && isGpsValid) {
+            isLocationValid = true
+            verificationMethod = 'gps_and_wifi'
+        } else {
+            let errorMsg = 'Cần thỏa mãn cả GPS và Wifi để Chấm ra.'
+            if (!isIpValid) errorMsg += ` (IP ${userIp} không hợp lệ)`
+            if (!isGpsValid) errorMsg += ` (GPS nằm ngoài bán kính)`
+            return { error: errorMsg }
+        }
+    } else {
+        if (isIpValid) {
+            isLocationValid = true
+            verificationMethod = 'office_wifi'
+        } else if (isGpsValid) {
             isLocationValid = true
             verificationMethod = 'gps'
         } else {
             return {
-                error: `Bạn đang ở quá xa văn phòng (${Math.round(distance)}m). IP của bạn: ${userIp}`,
+                error: `Không thể xác minh vị trí qua Wifi hoặc GPS. (IP: ${userIp}, Khoảng cách: ${Math.round(gpsDistance)}m)`
             }
-        }
-    }
-
-    if (!isLocationValid) {
-        return {
-            error: `Không thể xác minh vị trí. IP của bạn: ${userIp}`
         }
     }
 
@@ -295,6 +424,8 @@ export async function getAttendanceStats(view: 'week' | 'month' = 'week') {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { totalHours: 0, totalOT: 0, dailyStats: [] }
 
+    const settings = await getWorkSettings()
+
     const now = new Date()
     let startDate: Date
     let endDate: Date
@@ -342,30 +473,37 @@ export async function getAttendanceStats(view: 'week' | 'month' = 'week') {
 
     logs.forEach(log => {
         if (log.check_in_time && log.check_out_time) {
+            // Use original UTC times
             const inTime = new Date(log.check_in_time)
             const outTime = new Date(log.check_out_time)
-
-            // Shift Calculation (Shift Rules: total max 8h)
-            const getTime = (date: Date, h: number, m: number) => {
-                const d = new Date(date)
-                d.setHours(h, m, 0, 0)
-                return d.getTime()
-            }
 
             const inMs = inTime.getTime()
             const outMs = outTime.getTime()
 
-            const morningStart = getTime(inTime, 8, 30)
-            const morningEnd = getTime(inTime, 12, 0)
-            const afternoonStart = getTime(inTime, 13, 30)
-            const afternoonEnd = getTime(inTime, 18, 0)
+            // Helper to set UTC time relative to the log's date
+            const getUTCTime = (date: Date, h: number, m: number) => {
+                const d = new Date(date)
+                // Settings are in VN Time (UTC+7). Convert to UTC (-7)
+                // Handle day wrap if needed (simple -7 is fine for typical work hours)
+                let utcH = h - 7
+                if (utcH < 0) utcH += 24
 
-            // Standard Morning: overlap with [08:30, 12:00]
+                d.setUTCHours(utcH, m, 0, 0)
+                return d.getTime()
+            }
+
+            // Standards (Using Settings - VN Time converted to UTC)
+            const morningStart = getUTCTime(inTime, ...parseTime(settings.work_start_time))
+            const morningEnd = getUTCTime(inTime, ...parseTime(settings.lunch_start_time))
+            const afternoonStart = getUTCTime(inTime, ...parseTime(settings.lunch_end_time))
+            const afternoonEnd = getUTCTime(inTime, ...parseTime(settings.work_end_time))
+
+            // Standard Morning
             const mWorkStart = Math.max(inMs, morningStart)
             const mWorkEnd = Math.min(outMs, morningEnd)
             const mMinutes = Math.max(0, (mWorkEnd - mWorkStart) / (1000 * 60))
 
-            // Standard Afternoon: overlap with [13:30, 18:00]
+            // Standard Afternoon
             const aWorkStart = Math.max(inMs, afternoonStart)
             const aWorkEnd = Math.min(outMs, afternoonEnd)
             const aMinutes = Math.max(0, (aWorkEnd - aWorkStart) / (1000 * 60))
@@ -374,10 +512,11 @@ export async function getAttendanceStats(view: 'week' | 'month' = 'week') {
 
             // Overtime: Total duration minus standard duration
             const totalDurationMinutes = (outMs - inMs) / (1000 * 60)
-            // But we must also exclude the 1.5h lunch break if the session spans across it
             let actualWorkMinutes = totalDurationMinutes
-            const lunchStart = getTime(inTime, 12, 0)
-            const lunchEnd = getTime(inTime, 13, 30)
+
+            // Break (Using Settings)
+            const lunchStart = getUTCTime(inTime, ...parseTime(settings.lunch_start_time))
+            const lunchEnd = getUTCTime(inTime, ...parseTime(settings.lunch_end_time))
 
             const lunchOverlapStart = Math.max(inMs, lunchStart)
             const lunchOverlapEnd = Math.min(outMs, lunchEnd)
@@ -405,6 +544,8 @@ export async function getAttendanceStats(view: 'week' | 'month' = 'week') {
             date,
             standard: Math.round(stats.standard * 10) / 10,
             ot: Math.round(stats.ot * 10) / 10,
+            hasData: stats.standard > 0 || stats.ot > 0,
+            isOffDay: (settings.work_off_days || [6, 0]).includes(d.getDay()),
             // Height reference is 12h for better visualization of OT
             percentage: Math.min(((stats.standard + stats.ot) / 12) * 100, 100)
         }
@@ -414,7 +555,21 @@ export async function getAttendanceStats(view: 'week' | 'month' = 'week') {
     let finalStats = dailyStats
     if (view === 'week') {
         const order = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
-        finalStats = order.map(o => dailyStats.find(s => s.label === o) || { label: o, date: '', standard: 0, ot: 0, percentage: 0 })
+        const dayToNum: any = { 'SUN': 0, 'MON': 1, 'TUE': 2, 'WED': 3, 'THU': 4, 'FRI': 5, 'SAT': 6 }
+        const offDays = settings.work_off_days || [6, 0]
+
+        finalStats = order.map(o =>
+            dailyStats.find(s => s.label === o) ||
+            {
+                label: o,
+                date: '',
+                standard: 0,
+                ot: 0,
+                percentage: 0,
+                hasData: false,
+                isOffDay: offDays.includes(dayToNum[o])
+            }
+        )
     }
 
     return {
@@ -428,11 +583,17 @@ export async function getAttendanceLogsRange(
     startDateStr: string,
     endDateStr: string,
     page?: number,
-    limit?: number
+    limit?: number,
+    targetUserId?: string // New optional parameter
 ) {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { logs: [], totalCount: 0, stats: { totalHours: 0, overtime: 0, daysPresent: 0, totalWorkdays: 0, totalDaysInRange: 0 } }
+
+    let queryUserId = targetUserId
+    if (!queryUserId) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return { logs: [], totalCount: 0, stats: { totalHours: 0, overtime: 0, daysPresent: 0, totalWorkdays: 0, totalDaysInRange: 0 } }
+        queryUserId = user.id
+    }
 
     const startDate = new Date(startDateStr)
     const endDate = new Date(endDateStr)
@@ -443,18 +604,19 @@ export async function getAttendanceLogsRange(
     const { data: allLogs } = await supabase
         .from('attendance_logs')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', queryUserId)
         .gte('work_date', startIso)
         .lte('work_date', endIso)
 
     // Calculate stats based on ALL logs in range
-    const stats = calculateStats(allLogs || [], startDate, endDate)
+    const settings = await getWorkSettings()
+    const stats = calculateStats(allLogs || [], startDate, endDate, settings)
 
     // 2. Get PAGINATED Logs
-    let query = supabase
+    let paginatedLogsQuery = supabase
         .from('attendance_logs')
         .select('*', { count: 'exact' })
-        .eq('user_id', user.id)
+        .eq('user_id', queryUserId)
         .gte('work_date', startIso)
         .lte('work_date', endIso)
         .order('work_date', { ascending: false })
@@ -462,15 +624,15 @@ export async function getAttendanceLogsRange(
     if (page && limit) {
         const from = (page - 1) * limit
         const to = from + limit - 1
-        query = query.range(from, to)
+        paginatedLogsQuery = paginatedLogsQuery.range(from, to)
     }
 
-    const { data: logs, count, error } = await query
+    const { data: logs, count, error } = await paginatedLogsQuery
 
     if (error || !logs) return { logs: [], totalCount: 0, stats }
 
     // Process only the paginated logs for display
-    const processedLogs = processLogs(logs)
+    const processedLogs = processLogs(logs, settings)
 
     // Reuse existing leave logic (fetching inside calculateStats or keep here if needed)
     // For simplicity, we keep the original stats calculation structure but moved to helper or inline
@@ -479,12 +641,18 @@ export async function getAttendanceLogsRange(
     return {
         logs: processedLogs,
         totalCount: count || 0,
-        stats: await enhanceStatsWithLeave(supabase, user.id, stats)
+        stats: await enhanceStatsWithLeave(supabase, queryUserId, stats, allLogs || [])
     }
 }
 
+// Helper to parsing "HH:mm" -> [H, M]
+function parseTime(timeStr: string): [number, number] {
+    const [h, m] = timeStr.split(':').map(Number)
+    return [h || 0, m || 0]
+}
+
 // Helper to process logs (extracted from original logic)
-function processLogs(logs: any[]) {
+function processLogs(logs: any[], settings: any) {
     let totalStandardMinutes = 0 // Local var just for processing, not used for total stats
     let totalOTMinutes = 0
 
@@ -499,17 +667,20 @@ function processLogs(logs: any[]) {
             const inMs = inTime.getTime()
             const outMs = outTime.getTime()
 
-            const getTime = (date: Date, h: number, m: number) => {
+            // Helper to set UTC time (Shift -7h from VN Settings)
+            const getUTCTime = (date: Date, h: number, m: number) => {
                 const d = new Date(date)
-                d.setHours(h, m, 0, 0)
+                let utcH = h - 7
+                if (utcH < 0) utcH += 24
+                d.setUTCHours(utcH, m, 0, 0)
                 return d.getTime()
             }
 
-            // Standards
-            const morningStart = getTime(inTime, 8, 30)
-            const morningEnd = getTime(inTime, 12, 0)
-            const afternoonStart = getTime(inTime, 13, 30)
-            const afternoonEnd = getTime(inTime, 18, 0)
+            // Standards (Using Settings - VN Time converted to UTC)
+            const morningStart = getUTCTime(inTime, ...parseTime(settings.work_start_time))
+            const morningEnd = getUTCTime(inTime, ...parseTime(settings.lunch_start_time))
+            const afternoonStart = getUTCTime(inTime, ...parseTime(settings.lunch_end_time))
+            const afternoonEnd = getUTCTime(inTime, ...parseTime(settings.work_end_time))
 
             // Standard Calculation
             const mWorkStart = Math.max(inMs, morningStart)
@@ -522,9 +693,9 @@ function processLogs(logs: any[]) {
 
             standard = (mMin + aMin) / 60
 
-            // Break
-            const lunchStart = getTime(inTime, 12, 0)
-            const lunchEnd = getTime(inTime, 13, 30)
+            // Break (Using Settings)
+            const lunchStart = getUTCTime(inTime, ...parseTime(settings.lunch_start_time))
+            const lunchEnd = getUTCTime(inTime, ...parseTime(settings.lunch_end_time))
             const lOverlapStart = Math.max(inMs, lunchStart)
             const lOverlapEnd = Math.min(outMs, lunchEnd)
             breakMin = Math.max(0, (lOverlapEnd - lOverlapStart) / 60000)
@@ -536,29 +707,30 @@ function processLogs(logs: any[]) {
 
         return {
             ...log,
-            totalHours: standard + ot,
-            breakDurationMin: breakMin,
+            totalHours: Math.round((standard + ot) * 10) / 10,
+            breakDurationMin: Math.round(breakMin),
             status: log.status || 'approved'
         }
     })
 }
 
 // Calculate Stats for ALL logs
-function calculateStats(logs: any[], startDate: Date, endDate: Date) {
+function calculateStats(logs: any[], startDate: Date, endDate: Date, settings: any) {
     let totalStandardMinutes = 0
     let totalOTMinutes = 0
     const daysPresent = new Set(logs.map(l => l.work_date)).size
 
-    // Calculate total business days (Mon-Fri) in range
+    // Calculate total business days in range
     let totalWorkdays = 0
     let totalDaysInRange = 0
     const tempDate = new Date(startDate)
     const endComp = new Date(endDate)
     endComp.setHours(23, 59, 59, 999)
 
+    const offDays = settings.work_off_days || [0] // Default to Sunday if not set
     while (tempDate <= endComp) {
         const dayOfWeek = tempDate.getDay()
-        if (dayOfWeek !== 0) { // Exclude only Sundays (0)
+        if (!offDays.includes(dayOfWeek)) {
             totalWorkdays++
         }
         totalDaysInRange++
@@ -573,41 +745,48 @@ function calculateStats(logs: any[], startDate: Date, endDate: Date) {
             const inMs = inTime.getTime()
             const outMs = outTime.getTime()
 
-            const getTime = (date: Date, h: number, m: number) => {
+            // Helper to set UTC time (Shift -7h from VN Settings)
+            const getUTCTime = (date: Date, h: number, m: number) => {
                 const d = new Date(date)
-                d.setHours(h, m, 0, 0)
+                let utcH = h - 7
+                if (utcH < 0) utcH += 24
+                d.setUTCHours(utcH, m, 0, 0)
                 return d.getTime()
             }
 
-            const morningStart = getTime(inTime, 8, 30)
-            const morningEnd = getTime(inTime, 12, 0)
-            const afternoonStart = getTime(inTime, 13, 30)
-            const afternoonEnd = getTime(inTime, 18, 0)
+            const morningStart = getUTCTime(inTime, ...parseTime(settings.work_start_time))
+            const morningEnd = getUTCTime(inTime, ...parseTime(settings.lunch_start_time))
+            const afternoonStart = getUTCTime(inTime, ...parseTime(settings.lunch_end_time))
+            const afternoonEnd = getUTCTime(inTime, ...parseTime(settings.work_end_time))
 
-            // Standard Calculation
+            // Standard Morning: overlap with [08:30, 12:00]
             const mWorkStart = Math.max(inMs, morningStart)
             const mWorkEnd = Math.min(outMs, morningEnd)
-            const mMin = Math.max(0, (mWorkEnd - mWorkStart) / 60000)
+            const mMinutes = Math.max(0, (mWorkEnd - mWorkStart) / (1000 * 60))
 
+            // Standard Afternoon: overlap with [13:30, 18:00]
             const aWorkStart = Math.max(inMs, afternoonStart)
             const aWorkEnd = Math.min(outMs, afternoonEnd)
-            const aMin = Math.max(0, (aWorkEnd - aWorkStart) / 60000)
+            const aMinutes = Math.max(0, (aWorkEnd - aWorkStart) / (1000 * 60))
 
-            const standard = (mMin + aMin) / 60
+            const standardMinutes = mMinutes + aMinutes
 
-            // Break
-            const lunchStart = getTime(inTime, 12, 0)
-            const lunchEnd = getTime(inTime, 13, 30)
-            const lOverlapStart = Math.max(inMs, lunchStart)
-            const lOverlapEnd = Math.min(outMs, lunchEnd)
-            const breakMin = Math.max(0, (lOverlapEnd - lOverlapStart) / 60000)
+            // Overtime: Total duration minus standard duration
+            const totalDurationMinutes = (outMs - inMs) / (1000 * 60)
 
-            // OT
-            const totalWorkMin = ((outMs - inMs) / 60000) - breakMin
-            const ot = Math.max(0, (totalWorkMin / 60) - (standard))
+            const lunchStart = getUTCTime(inTime, ...parseTime(settings.lunch_start_time))
+            const lunchEnd = getUTCTime(inTime, ...parseTime(settings.lunch_end_time))
 
-            totalStandardMinutes += (standard * 60)
-            totalOTMinutes += (ot * 60)
+            const lunchOverlapStart = Math.max(inMs, lunchStart)
+            const lunchOverlapEnd = Math.min(outMs, lunchEnd)
+            const lunchOverlapMinutes = Math.max(0, (lunchOverlapEnd - lunchOverlapStart) / (1000 * 60))
+
+            const actualWorkMinutes = totalDurationMinutes - lunchOverlapMinutes
+
+            const otMinutes = Math.max(0, actualWorkMinutes - standardMinutes)
+
+            totalStandardMinutes += standardMinutes
+            totalOTMinutes += otMinutes
         }
     })
 
@@ -620,7 +799,16 @@ function calculateStats(logs: any[], startDate: Date, endDate: Date) {
     }
 }
 
-async function enhanceStatsWithLeave(supabase: any, userId: string, stats: any) {
+async function enhanceStatsWithLeave(supabase: any, userId: string, stats: any, allLogs: any[]) {
+    // If no logs found in range, check if there's ANY log for this user ever (to distinguish new user vs filtered range)
+    if ((allLogs || []).length === 0) {
+        const { count } = await supabase
+            .from('attendance_logs')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userId) // Use userId here, as queryUserId is not available
+
+        // If user has NO logs ever, return empty special state if needed
+    }
     // Calculate leave stats for the current year
     const now = new Date()
     const currentYear = now.getFullYear()
@@ -683,4 +871,116 @@ export async function getAllAttendanceLogs() {
         logs[logs.length - 1].work_date,
         logs[0].work_date
     )
+}
+
+// Get Quick Stats for Employee Profile Page
+export async function getEmployeeQuickStats(userId: string) {
+    const supabase = await createClient()
+    const now = new Date()
+
+    console.log('🔍 [Quick Stats] Fetching for user:', userId)
+
+    // Get current month date range
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+
+    // Get last 3 months for punctuality calculation
+    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1)
+
+    console.log('📅 Date ranges:', {
+        currentMonth: `${startOfMonth.toISOString().split('T')[0]} to ${endOfMonth.toISOString().split('T')[0]}`,
+        threeMonths: `${threeMonthsAgo.toISOString().split('T')[0]} onwards`
+    })
+
+    // Fetch attendance logs for current month
+    const { data: monthLogs, error: monthError } = await supabase
+        .from('attendance_logs')
+        .select('*')
+        .eq('user_id', userId)
+        .gte('work_date', startOfMonth.toISOString().split('T')[0])
+        .lte('work_date', endOfMonth.toISOString().split('T')[0])
+
+    console.log('📊 Month logs:', { count: monthLogs?.length || 0, error: monthError })
+
+    // Fetch attendance logs for last 3 months (for punctuality)
+    const { data: punctualityLogs, error: punctualityError } = await supabase
+        .from('attendance_logs')
+        .select('status')
+        .eq('user_id', userId)
+        .gte('work_date', threeMonthsAgo.toISOString().split('T')[0])
+
+    console.log('⏰ Punctuality logs:', { count: punctualityLogs?.length || 0, error: punctualityError })
+
+    // Fetch leave requests to calculate PTO balance
+    // Schema: id, user_id, leave_date, status
+    // Assumption: Each record is 1 day
+    const { data: leaveData, error: leaveError } = await supabase
+        .from('leave_requests')
+        .select('status')
+        .eq('user_id', userId)
+        .in('status', ['approved', 'pending'])
+
+    console.log('🏖️ Leave data:', { count: leaveData?.length || 0, error: leaveError })
+
+    // Calculate Punctuality (% on-time in last 3 months)
+    let punctualityRate = 0
+    if (punctualityLogs && punctualityLogs.length > 0) {
+        const onTimeCount = punctualityLogs.filter(log => log.status === 'present' || log.status === 'on-time').length
+        punctualityRate = Math.round((onTimeCount / punctualityLogs.length) * 100)
+    }
+
+    let overtimeHours = 0
+    // --- Reuse getAttendanceLogsRange for CONSISTENT Overtime Calculation ---
+    // This ensures Quick Stats matches the Monthly Chart exactly
+    try {
+        const statsData = await getAttendanceLogsRange(
+            startOfMonth.toISOString().split('T')[0],
+            endOfMonth.toISOString().split('T')[0],
+            1, 1000, // Get all logs for the month
+            userId // PASS THE TARGET USER ID!
+        )
+
+        // Use the calculated overtime from the shared logic
+        if (statsData.stats && typeof statsData.stats.totalOvertimeHours === 'number') {
+            overtimeHours = statsData.stats.totalOvertimeHours
+            console.log('⏱️ Overtime (Synced):', overtimeHours)
+        } else if (monthLogs && monthLogs.length > 0) {
+            // Fallback (old simple logic) if sync fails
+            overtimeHours = monthLogs.reduce((total, log) => {
+                // ... (fallback logic) ...
+                const explicitOT = log.overtime_hours ? parseFloat(log.overtime_hours.toString()) : 0
+                if (explicitOT > 0) return total + explicitOT
+                // Simple diff fallback
+                if (log.check_in_time && log.check_out_time) {
+                    const diff = new Date(log.check_out_time).getTime() - new Date(log.check_in_time).getTime()
+                    const hours = diff / 3600000
+                    if (hours > 9) return total + (hours - 9)
+                }
+                return total
+            }, 0)
+        }
+    } catch (err) {
+        console.error('Error syncing overtime logic:', err)
+    }
+
+    // Calculate PTO Balance (assume 12 days per year, minus used days)
+    const annualPTO = 12 // Standard PTO days per year
+    // Each record in leave_requests is 1 day
+    const usedPTO = leaveData?.length || 0
+    const ptoBalance = Math.max(0, annualPTO - usedPTO)
+
+    console.log('📈 Final stats:', { punctualityRate, overtimeHours, ptoBalance, usedPTO })
+
+    return {
+        punctuality: punctualityRate, // Percentage (0-100)
+        ptoBalance: ptoBalance.toFixed(1), // Days remaining
+        overtime: overtimeHours.toFixed(1), // Hours this month
+        error: monthError || punctualityError || leaveError,
+        // Debug info (cleaned up)
+        _debug: {
+            userId,
+            syncMethod: 'getAttendanceLogsRange',
+            overtime: overtimeHours
+        }
+    }
 }

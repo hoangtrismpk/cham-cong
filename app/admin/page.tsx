@@ -2,6 +2,8 @@ import { createClient } from '@/utils/supabase/server'
 import { WeeklyAttendanceChart } from '@/components/charts/weekly-attendance-chart'
 import { DepartmentChart } from '@/components/charts/department-chart'
 import { format, subDays, differenceInMinutes, parseISO } from 'date-fns'
+import { getPendingStats } from '@/app/actions/approvals'
+import Link from 'next/link'
 
 export const revalidate = 0 // Disable caching for realtime data
 
@@ -112,6 +114,9 @@ export default async function AdminDashboard() {
         .order('check_in_time', { ascending: false })
         .limit(10) // Show last 10 entries
 
+    // 5. Pending Stats
+    const pendingStats = await getPendingStats()
+
     return (
         <div className="p-8 max-w-[1600px] w-full mx-auto space-y-8 bg-[#0b0f1a] min-h-screen">
             <header className="flex items-center justify-between mb-8">
@@ -122,7 +127,31 @@ export default async function AdminDashboard() {
             </header>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-6">
+
+                {/* Pending Approvals */}
+                <Link href="/admin/approvals" className="block">
+                    <div className="bg-[#161b2c] p-5 rounded-2xl border border-[#2d3748] shadow-sm group hover:border-orange-500/50 transition-all h-full relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-orange-500/10 transition-all"></div>
+                        <div className="flex justify-between items-center mb-4 relative z-10">
+                            <div className="p-2 bg-orange-500/10 text-orange-500 rounded-xl group-hover:scale-110 transition-transform">
+                                <span className="material-symbols-outlined">mark_email_unread</span>
+                            </div>
+                            <span className={`text-xs font-bold px-2 py-1 rounded-lg ${pendingStats.total > 0 ? 'text-orange-500 bg-orange-500/10 animate-pulse' : 'text-slate-500 bg-slate-800'}`}>
+                                {pendingStats.total > 0 ? 'Action Needed' : 'All Clear'}
+                            </span>
+                        </div>
+                        <p className="text-slate-500 text-xs font-bold uppercase tracking-wider relative z-10">Pending Requests</p>
+                        <p className="text-3xl font-black text-white mt-1 relative z-10">{pendingStats.total}</p>
+                        <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-bold text-slate-400 relative z-10">
+                            <span>{pendingStats.leaves} Leave</span>
+                            <span className="w-1 h-3 bg-slate-700/50 rounded-full"></span>
+                            <span>{pendingStats.changes} Changes</span>
+                            <span className="w-1 h-3 bg-slate-700/50 rounded-full"></span>
+                            <span>{pendingStats.schedules || 0} Schedules</span>
+                        </div>
+                    </div>
+                </Link>
 
                 {/* Total Employees */}
                 <div className="bg-[#161b2c] p-5 rounded-2xl border border-[#2d3748] shadow-sm group hover:border-blue-500/50 transition-all">

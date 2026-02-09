@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Admin Settings: Feature Toggles</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .filled-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- TopNavBar -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 bg-background-light dark:bg-background-dark px-10 py-3">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4 text-slate-900 dark:text-white">
+<div class="size-6 text-primary">
+<span class="material-symbols-outlined text-3xl">pace</span>
+</div>
+<h2 class="text-lg font-bold leading-tight tracking-[-0.015em]">TimeKeep Admin</h2>
+</div>
+<div class="flex items-center gap-9">
+<a class="text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Dashboard</a>
+<a class="text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Reports</a>
+<a class="text-sm font-medium leading-normal text-primary" href="#">Settings</a>
+<a class="text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Users</a>
+</div>
+</div>
+<div class="flex flex-1 justify-end gap-8">
+<label class="flex flex-col min-w-40 !h-10 max-w-64">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full">
+<div class="text-slate-500 flex border-none bg-slate-200 dark:bg-slate-800 items-center justify-center pl-4 rounded-l-lg">
+<span class="material-symbols-outlined text-xl">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-slate-100 focus:outline-0 focus:ring-0 border-none bg-slate-200 dark:bg-slate-800 focus:border-none h-full placeholder:text-slate-500 px-4 rounded-l-none border-l-0 pl-2 text-base font-normal leading-normal" placeholder="Search settings..." value=""/>
+</div>
+</label>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-primary" data-alt="Admin user profile picture avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuChBIcZmU4cIDFBBsLvDxKSsIBPbPphzm2993r-SqmExcYIg_RJS0BcML5dmDQjKp8PyS7b9pJdpEfFtFQpiIbGI2dE1fcjnuSfoFavlpXUYq5CmlPT3Kq_fm4Ix6DYtA67KgEJV0rr81DoNYup8QwBI6nKDcC0JJS5HT8sNZ6p_uSWI-ErRKdFWLsAShppG6_v7NZqb1gGyi4mMOoWVd6MM_V6pTxawVFpQRevUXITwA6tc5uJT2JMnB0OrtFBRdVojX0Nv8rjk84E");'></div>
+</div>
+</header>
+<div class="flex flex-1 justify-center py-5">
+<div class="layout-content-container flex max-w-[1200px] flex-1 gap-6 px-10">
+<!-- SideNavBar -->
+<aside class="flex w-64 flex-col justify-between bg-background-light dark:bg-background-dark py-4">
+<div class="flex flex-col gap-4">
+<div class="flex flex-col px-3 mb-4">
+<h1 class="text-slate-900 dark:text-white text-base font-bold leading-normal uppercase tracking-wider text-xs">System Settings</h1>
+<p class="text-slate-500 text-sm font-normal leading-normal">Dark Mode Active</p>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">settings</span>
+<p class="text-sm font-medium leading-normal">General</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary text-white">
+<span class="material-symbols-outlined filled-icon">toggle_on</span>
+<p class="text-sm font-medium leading-normal">Feature Toggles</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">shield</span>
+<p class="text-sm font-medium leading-normal">Security</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">notifications</span>
+<p class="text-sm font-medium leading-normal">Notifications</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">extension</span>
+<p class="text-sm font-medium leading-normal">Integrations</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex flex-col flex-1">
+<!-- Breadcrumbs -->
+<nav class="flex flex-wrap gap-2 py-4">
+<a class="text-slate-500 hover:text-primary text-base font-medium leading-normal transition-colors" href="#">Settings</a>
+<span class="text-slate-500 text-base font-medium leading-normal">/</span>
+<span class="text-slate-900 dark:text-white text-base font-medium leading-normal">Feature Toggles</span>
+</nav>
+<!-- PageHeading -->
+<div class="flex flex-wrap justify-between gap-3 py-4">
+<div class="flex min-w-72 flex-col gap-2">
+<p class="text-slate-900 dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">Feature Toggles</p>
+<p class="text-slate-500 text-base font-normal leading-normal">Enable or disable master application modules across the entire organization.</p>
+</div>
+</div>
+<!-- ActionPanels -->
+<div class="flex flex-col gap-4 mt-6">
+<!-- Toggle 1: Leave Management -->
+<div class="flex flex-1 flex-col items-start justify-between gap-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 p-6 @[480px]:flex-row @[480px]:items-center">
+<div class="flex items-start gap-4">
+<div class="p-3 bg-primary/10 rounded-lg text-primary">
+<span class="material-symbols-outlined">event_busy</span>
+</div>
+<div class="flex flex-col gap-1">
+<p class="text-slate-900 dark:text-white text-lg font-bold leading-tight">Leave Management</p>
+<p class="text-slate-500 text-sm font-normal leading-normal">Master switch for the leave request, quota tracking, and approval workflow system.</p>
+</div>
+</div>
+<label class="relative flex h-[31px] w-[51px] cursor-pointer items-center rounded-full border-none bg-slate-300 dark:bg-slate-700 p-0.5 has-[:checked]:justify-end has-[:checked]:bg-primary transition-all">
+<div class="h-full w-[27px] rounded-full bg-white shadow-md"></div>
+<input checked="" class="invisible absolute" type="checkbox"/>
+</label>
+</div>
+<!-- Toggle 2: Overtime Tracking -->
+<div class="flex flex-1 flex-col items-start justify-between gap-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 p-6 @[480px]:flex-row @[480px]:items-center">
+<div class="flex items-start gap-4">
+<div class="p-3 bg-primary/10 rounded-lg text-primary">
+<span class="material-symbols-outlined">more_time</span>
+</div>
+<div class="flex flex-col gap-1">
+<p class="text-slate-900 dark:text-white text-lg font-bold leading-tight">Overtime Tracking</p>
+<p class="text-slate-500 text-sm font-normal leading-normal">Automatically calculate and flag overtime hours based on employee schedules.</p>
+</div>
+</div>
+<label class="relative flex h-[31px] w-[51px] cursor-pointer items-center rounded-full border-none bg-slate-300 dark:bg-slate-700 p-0.5 has-[:checked]:justify-end has-[:checked]:bg-primary transition-all">
+<div class="h-full w-[27px] rounded-full bg-white shadow-md"></div>
+<input checked="" class="invisible absolute" type="checkbox"/>
+</label>
+</div>
+<!-- Toggle 3: Mobile GPS Check-in -->
+<div class="flex flex-1 flex-col items-start justify-between gap-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 p-6 @[480px]:flex-row @[480px]:items-center">
+<div class="flex items-start gap-4">
+<div class="p-3 bg-primary/10 rounded-lg text-primary">
+<span class="material-symbols-outlined">location_on</span>
+</div>
+<div class="flex flex-col gap-1">
+<p class="text-slate-900 dark:text-white text-lg font-bold leading-tight">Mobile GPS Check-in</p>
+<p class="text-slate-500 text-sm font-normal leading-normal">Require GPS coordinates when employees clock in or out via the mobile application.</p>
+</div>
+</div>
+<label class="relative flex h-[31px] w-[51px] cursor-pointer items-center rounded-full border-none bg-slate-300 dark:bg-slate-700 p-0.5 has-[:checked]:justify-end has-[:checked]:bg-primary transition-all">
+<div class="h-full w-[27px] rounded-full bg-white shadow-md"></div>
+<input class="invisible absolute" type="checkbox"/>
+</label>
+</div>
+<!-- Toggle 4: Public User Registration -->
+<div class="flex flex-1 flex-col items-start justify-between gap-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 p-6 @[480px]:flex-row @[480px]:items-center">
+<div class="flex items-start gap-4">
+<div class="p-3 bg-primary/10 rounded-lg text-primary">
+<span class="material-symbols-outlined">person_add</span>
+</div>
+<div class="flex flex-col gap-1">
+<p class="text-slate-900 dark:text-white text-lg font-bold leading-tight">Public User Registration</p>
+<p class="text-slate-500 text-sm font-normal leading-normal">Allow new users to sign up from the login screen without an invitation.</p>
+</div>
+</div>
+<label class="relative flex h-[31px] w-[51px] cursor-pointer items-center rounded-full border-none bg-slate-300 dark:bg-slate-700 p-0.5 has-[:checked]:justify-end has-[:checked]:bg-primary transition-all">
+<div class="h-full w-[27px] rounded-full bg-white shadow-md"></div>
+<input class="invisible absolute" type="checkbox"/>
+</label>
+</div>
+</div>
+<!-- Footer Actions -->
+<div class="mt-10 flex justify-end gap-3 border-t border-slate-200 dark:border-slate-800 pt-6">
+<button class="px-6 py-2.5 rounded-lg font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">Discard Changes</button>
+<button class="px-6 py-2.5 rounded-lg bg-primary text-white font-bold shadow-lg shadow-primary/20 hover:brightness-110 transition-all">Save System Config</button>
+</div>
+</main>
+</div>
+</div>
+</div>
+</div>
+</body></html>

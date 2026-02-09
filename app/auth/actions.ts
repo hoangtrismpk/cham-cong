@@ -18,8 +18,9 @@ export async function login(previousState: any, formData: FormData) {
 
     const email = formData.get('email') as string
     const password = formData.get('password') as string
+    const nextPath = formData.get('next') as string || '/'
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: { user }, error } = await supabase.auth.signInWithPassword({
         email,
         password,
     })
@@ -31,34 +32,27 @@ export async function login(previousState: any, formData: FormData) {
         return { error: error.message }
     }
 
-    revalidatePath('/', 'layout')
-    redirect('/')
-}
+    // Smart Redirect Logic
+    if (user) {
+        // If there's a specific 'next' path (like /admin), use it
+        if (nextPath !== '/') {
+            revalidatePath(nextPath, 'layout')
+            redirect(nextPath)
+        }
 
-export async function signup(previousState: any, formData: FormData) {
-    const supabase = await createClient()
+        // Otherwise, check role to decide destination
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role, roles(name)')
+            .eq('id', user.id)
+            .single()
 
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-    const firstName = formData.get('firstName') as string
-    const lastName = formData.get('lastName') as string
-    const department = formData.get('department') as string
+        const isAdmin = profile?.role === 'admin' || (profile?.roles as any)?.name === 'admin'
 
-    const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-            data: {
-                first_name: firstName,
-                last_name: lastName,
-                full_name: `${firstName} ${lastName}`,
-                department: department,
-            },
-        },
-    })
-
-    if (error) {
-        return { error: error.message }
+        if (isAdmin) {
+            revalidatePath('/admin', 'layout')
+            redirect('/admin')
+        }
     }
 
     revalidatePath('/', 'layout')

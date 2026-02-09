@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { TimesheetsClient } from './timesheets-client'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { getAttendanceLogsRange } from '@/app/actions/attendance'
+import { getWorkSettings } from '@/app/actions/settings'
 import { startOfMonth, endOfMonth, format } from 'date-fns'
 
 export default async function TimesheetsPage() {
@@ -25,10 +26,12 @@ export default async function TimesheetsPage() {
         10 // Limit 10
     )
 
+    const workSettings = await getWorkSettings()
+
     return (
         <DashboardLayout user={user}>
             <div className="flex-1 overflow-hidden h-full md:p-0">
-                <TimesheetsClient user={user} initialData={initialData} />
+                <TimesheetsClient user={user} initialData={initialData} workSettings={workSettings} />
             </div>
         </DashboardLayout>
     )

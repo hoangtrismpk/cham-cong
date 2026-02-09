@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#137fec",
+              "background-light": "#f6f7f8",
+              "background-dark": "#101922",
+            },
+            fontFamily: {
+              "display": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<title>Admin Settings: Security</title>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .filled-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-white">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#233648] px-10 py-3 bg-background-light dark:bg-background-dark">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4 text-white">
+<div class="size-6 text-primary">
+<span class="material-symbols-outlined text-3xl">hourglass_empty</span>
+</div>
+<h2 class="text-white text-lg font-bold leading-tight tracking-[-0.015em]">TimeKeep Admin</h2>
+</div>
+<label class="flex flex-col min-w-40 !h-10 max-w-64">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full">
+<div class="text-[#92adc9] flex border-none bg-[#233648] items-center justify-center pl-4 rounded-l-lg border-r-0">
+<span class="material-symbols-outlined text-xl">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-white focus:outline-0 focus:ring-0 border-none bg-[#233648] focus:border-none h-full placeholder:text-[#92adc9] px-4 rounded-l-none border-l-0 pl-2 text-base font-normal leading-normal" placeholder="Search settings..." value=""/>
+</div>
+</label>
+</div>
+<div class="flex flex-1 justify-end gap-8">
+<div class="flex items-center gap-9">
+<a class="text-[#92adc9] hover:text-white text-sm font-medium leading-normal transition-colors" href="#">Dashboard</a>
+<a class="text-[#92adc9] hover:text-white text-sm font-medium leading-normal transition-colors" href="#">Users</a>
+<a class="text-[#92adc9] hover:text-white text-sm font-medium leading-normal transition-colors" href="#">Reports</a>
+<a class="text-white text-sm font-medium leading-normal underline decoration-primary underline-offset-8" href="#">Settings</a>
+</div>
+<div class="flex gap-2">
+<button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 bg-[#233648] text-white gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5">
+<span class="material-symbols-outlined text-xl">notifications</span>
+</button>
+<button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 bg-[#233648] text-white gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5">
+<span class="material-symbols-outlined text-xl">account_circle</span>
+</button>
+</div>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border border-[#233648]" data-alt="Admin user avatar portrait" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDSE_8yfyK4fjmVcuVpXeCWmd1apFYzfdEUQOa5L2ds89uWW2T_HdKl0PG2BBnm7e79FMQ_IvpZGePl-rgPQspN22SVBElz1Sk35S2PSRDpnZizu7jckPbiIxvU-bBHxX19YICRejY9A6cyfahVHfiUvK63IJ2Yau_UfSIqYPaDTcq9IxkWmWeDRjlbwicYgjJVoxBsosuqneVxnv_agmatMmj3-gHZMTKXRzdl6NNTvpPRE9z01740wvOtxjAJPCoibmQjAnRmoI64");'></div>
+</div>
+</header>
+<main class="flex flex-1 justify-center py-5">
+<div class="layout-content-container flex max-w-[1200px] flex-1 px-10 gap-8">
+<!-- Side Navigation Bar -->
+<aside class="flex flex-col w-64 shrink-0 gap-4">
+<div class="flex flex-col mb-4">
+<h1 class="text-white text-base font-bold leading-normal">System Settings</h1>
+<p class="text-[#92adc9] text-sm font-normal leading-normal">Manage platform security</p>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2 text-[#92adc9] hover:text-white hover:bg-[#233648] rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<p class="text-sm font-medium">General</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#92adc9] hover:text-white hover:bg-[#233648] rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">vpn_key</span>
+<p class="text-sm font-medium">Permissions</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary text-white shadow-lg shadow-primary/20" href="#">
+<span class="material-symbols-outlined filled-icon">shield</span>
+<p class="text-sm font-medium">Security</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#92adc9] hover:text-white hover:bg-[#233648] rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">extension</span>
+<p class="text-sm font-medium">Integrations</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#92adc9] hover:text-white hover:bg-[#233648] rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">history</span>
+<p class="text-sm font-medium">Audit Logs</p>
+</a>
+</nav>
+</aside>
+<!-- Main Content Area -->
+<div class="flex flex-col flex-1 gap-6">
+<!-- Breadcrumbs -->
+<nav class="flex flex-wrap gap-2 items-center">
+<a class="text-[#92adc9] text-sm font-medium hover:text-white" href="#">Settings</a>
+<span class="material-symbols-outlined text-[#92adc9] text-sm">chevron_right</span>
+<span class="text-white text-sm font-medium">Security</span>
+</nav>
+<!-- Page Heading -->
+<div class="flex flex-wrap justify-between items-end gap-3">
+<div class="flex flex-col gap-2">
+<h2 class="text-white text-4xl font-black leading-tight tracking-[-0.033em]">Security Configuration</h2>
+<p class="text-[#92adc9] text-base font-normal">Configure global security protocols and authentication requirements for the platform.</p>
+</div>
+<button class="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-lg font-bold text-sm transition-all shadow-lg shadow-primary/20">Save All Changes</button>
+</div>
+<!-- Security Sections -->
+<div class="flex flex-col gap-8 pb-10">
+<!-- Two-Factor Authentication -->
+<div class="bg-[#1a2632] rounded-xl border border-[#233648] overflow-hidden">
+<div class="p-6 border-b border-[#233648] flex justify-between items-center">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-2xl">verified_user</span>
+<h3 class="text-white text-xl font-bold">Two-Factor Authentication (2FA)</h3>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="p-6">
+<p class="text-[#92adc9] text-sm mb-4">When enabled, all administrators will be required to provide a secondary verification code during login.</p>
+<div class="flex gap-4">
+<div class="flex-1 p-4 rounded-lg bg-[#233648]/50 border border-[#233648]">
+<p class="text-white text-sm font-bold mb-1">Supported Methods</p>
+<p class="text-[#92adc9] text-xs">Authenticator App (TOTP), SMS, Email</p>
+</div>
+<div class="flex-1 p-4 rounded-lg bg-[#233648]/50 border border-[#233648]">
+<p class="text-white text-sm font-bold mb-1">Status</p>
+<p class="text-emerald-400 text-xs font-medium">Currently enforced for 12 admins</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Password Policy -->
+<div class="bg-[#1a2632] rounded-xl border border-[#233648] overflow-hidden">
+<div class="p-6 border-b border-[#233648]">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-2xl">password</span>
+<h3 class="text-white text-xl font-bold">Password Strength Policy</h3>
+</div>
+</div>
+<div class="p-6 grid grid-cols-2 gap-6">
+<div class="flex flex-col gap-2">
+<label class="text-[#92adc9] text-sm font-medium">Minimum Characters</label>
+<select class="bg-[#233648] border-none text-white rounded-lg focus:ring-primary">
+<option>8 characters</option>
+<option selected="">12 characters (Recommended)</option>
+<option>16 characters</option>
+</select>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-[#92adc9] text-sm font-medium">Complexity Requirement</label>
+<select class="bg-[#233648] border-none text-white rounded-lg focus:ring-primary">
+<option>Standard (Alphanumeric)</option>
+<option selected="">Strict (Upper, Lower, Number, Symbol)</option>
+</select>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-[#92adc9] text-sm font-medium">Password Expiry</label>
+<select class="bg-[#233648] border-none text-white rounded-lg focus:ring-primary">
+<option>Never</option>
+<option>30 Days</option>
+<option selected="">90 Days</option>
+</select>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-[#92adc9] text-sm font-medium">Session Timeout</label>
+<select class="bg-[#233648] border-none text-white rounded-lg focus:ring-primary">
+<option>15 Minutes</option>
+<option selected="">30 Minutes</option>
+<option>1 Hour</option>
+<option>4 Hours</option>
+</select>
+</div>
+</div>
+</div>
+<!-- reCAPTCHA v3 Integration -->
+<div class="bg-[#1a2632] rounded-xl border border-[#233648] overflow-hidden">
+<div class="p-6 border-b border-[#233648]">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-2xl">security</span>
+<h3 class="text-white text-xl font-bold">Google reCAPTCHA v3 Integration</h3>
+</div>
+</div>
+<div class="p-6 space-y-6">
+<p class="text-[#92adc9] text-sm">Protect your login and registration forms from bot attacks and spam. Use v3 for a seamless user experience.</p>
+<div class="flex flex-col gap-2">
+<label class="text-[#92adc9] text-sm font-medium">Site Key</label>
+<div class="flex">
+<input class="form-input flex-1 bg-[#233648] border-none text-white rounded-l-lg focus:ring-primary font-mono text-xs" type="text" value="6Lcs7-YUAAAAAOd9o_L-2H2v8m8U1E0xTj0_kX9z"/>
+<button class="bg-[#233648] border-l border-[#1a2632] px-3 text-[#92adc9] hover:text-white rounded-r-lg">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+</button>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-[#92adc9] text-sm font-medium">Secret Key</label>
+<div class="flex">
+<input class="form-input flex-1 bg-[#233648] border-none text-white rounded-l-lg focus:ring-primary font-mono text-xs" type="password" value="••••••••••••••••••••••••••••••••••••"/>
+<button class="bg-[#233648] border-l border-[#1a2632] px-3 text-[#92adc9] hover:text-white rounded-r-lg">
+<span class="material-symbols-outlined text-sm">visibility</span>
+</button>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<input checked="" class="rounded bg-[#233648] border-none text-primary focus:ring-primary" id="recaptcha_enabled" type="checkbox"/>
+<label class="text-white text-sm font-medium" for="recaptcha_enabled">Enable reCAPTCHA protection on login page</label>
+</div>
+</div>
+</div>
+<!-- Advanced Security -->
+<div class="bg-[#1a2632] rounded-xl border border-[#233648] overflow-hidden">
+<div class="p-6 border-b border-[#233648]">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-2xl">gpp_maybe</span>
+<h3 class="text-white text-xl font-bold">Advanced Security</h3>
+</div>
+</div>
+<div class="p-6 space-y-4">
+<div class="flex items-center justify-between p-4 bg-[#233648]/30 rounded-lg">
+<div>
+<p class="text-white text-sm font-bold">IP Whitelisting</p>
+<p class="text-[#92adc9] text-xs">Restrict admin access to specific IP ranges</p>
+</div>
+<button class="text-primary text-sm font-bold hover:underline">Configure</button>
+</div>
+<div class="flex items-center justify-between p-4 bg-[#233648]/30 rounded-lg">
+<div>
+<p class="text-white text-sm font-bold">Account Lockout</p>
+<p class="text-[#92adc9] text-xs">Lock accounts after 5 failed login attempts</p>
+</div>
+<span class="bg-emerald-500/10 text-emerald-400 text-[10px] uppercase font-bold px-2 py-0.5 rounded border border-emerald-500/20">Active</span>
+</div>
+<div class="flex items-center justify-between p-4 bg-[#233648]/30 rounded-lg">
+<div>
+<p class="text-white text-sm font-bold">Force Logout All Users</p>
+<p class="text-[#92adc9] text-xs">Immediately terminate all active sessions</p>
+</div>
+<button class="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors">Emergency Logout</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</div>
+</body></html>

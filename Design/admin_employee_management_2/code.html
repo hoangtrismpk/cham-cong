@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Admin Pending Approvals List</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#00f2ff", // Glowing cyan
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#0f1115", // Dark charcoal
+                        "surface-dark": "#161b22",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                    boxShadow: {
+                        'cyan-glow': '0 0 15px -3px rgba(0, 242, 255, 0.4)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .filled-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-background-dark font-display text-white antialiased">
+<div class="flex h-screen overflow-hidden">
+<aside class="w-64 border-r border-white/5 bg-background-dark flex flex-col">
+<div class="p-6">
+<div class="flex items-center gap-3">
+<div class="bg-primary/20 rounded-lg p-2 flex items-center justify-center border border-primary/30 shadow-cyan-glow">
+<span class="material-symbols-outlined text-primary">verified_user</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-white text-base font-bold leading-none uppercase tracking-wider">Chronos Admin</h1>
+<p class="text-[#92adc9] text-[10px] font-medium mt-1 uppercase tracking-widest">Control Center</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 px-4 space-y-1">
+<div class="flex items-center gap-3 px-3 py-2 text-[#92adc9] hover:text-white hover:bg-white/5 rounded-lg cursor-pointer transition-colors group">
+<span class="material-symbols-outlined group-hover:text-primary">dashboard</span>
+<p class="text-sm font-medium">Dashboard</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 text-[#92adc9] hover:text-white hover:bg-white/5 rounded-lg cursor-pointer transition-colors group">
+<span class="material-symbols-outlined group-hover:text-primary">group</span>
+<p class="text-sm font-medium">Employees</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 bg-primary/10 text-primary border-l-2 border-primary rounded-r-lg cursor-pointer">
+<span class="material-symbols-outlined filled-icon">pending_actions</span>
+<p class="text-sm font-bold">Pending Approvals</p>
+<span class="ml-auto bg-primary text-background-dark text-[10px] font-bold px-1.5 py-0.5 rounded-full">12</span>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 text-[#92adc9] hover:text-white hover:bg-white/5 rounded-lg cursor-pointer transition-colors group">
+<span class="material-symbols-outlined group-hover:text-primary">history_toggle_off</span>
+<p class="text-sm font-medium">Attendance</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 text-[#92adc9] hover:text-white hover:bg-white/5 rounded-lg cursor-pointer transition-colors group">
+<span class="material-symbols-outlined group-hover:text-primary">calendar_today</span>
+<p class="text-sm font-medium">Schedules</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 text-[#92adc9] hover:text-white hover:bg-white/5 rounded-lg cursor-pointer transition-colors group">
+<span class="material-symbols-outlined group-hover:text-primary">account_balance_wallet</span>
+<p class="text-sm font-medium">Payroll</p>
+</div>
+<div class="pt-4 mt-4 border-t border-white/5">
+<div class="flex items-center gap-3 px-3 py-2 text-[#92adc9] hover:text-white hover:bg-white/5 rounded-lg cursor-pointer transition-colors group">
+<span class="material-symbols-outlined group-hover:text-primary">settings</span>
+<p class="text-sm font-medium">Settings</p>
+</div>
+</div>
+</nav>
+<div class="p-4 border-t border-white/5">
+<div class="flex items-center gap-3 p-2 rounded-lg bg-white/5">
+<div class="size-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-xs font-bold text-primary">JD</div>
+<div class="flex flex-col">
+<p class="text-xs font-bold text-white">John Doe</p>
+<p class="text-[10px] text-[#92adc9]">Super Admin</p>
+</div>
+<button class="material-symbols-outlined text-[#92adc9] hover:text-red-400 ml-auto text-sm transition-colors">logout</button>
+</div>
+</div>
+</aside>
+<main class="flex-1 flex flex-col overflow-y-auto custom-scrollbar">
+<header class="flex flex-wrap items-end justify-between gap-4 p-8">
+<div>
+<h2 class="text-white text-3xl font-black tracking-tight">Pending Approvals</h2>
+<p class="text-[#92adc9] text-sm mt-1">Review and manage employee requests for leave and schedule changes.</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 transition-all text-[#92adc9] hover:text-white text-sm font-bold rounded-lg border border-white/10">
+<span class="material-symbols-outlined text-[20px]">archive</span>
+<span>View History</span>
+</button>
+<button class="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-cyan-400 transition-all text-background-dark text-sm font-bold rounded-lg shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-[20px]">done_all</span>
+<span>Approve All</span>
+</button>
+</div>
+</header>
+<section class="px-8 mb-6">
+<div class="flex flex-col gap-6">
+<div class="flex items-center border-b border-white/10 gap-8">
+<button class="pb-3 text-sm font-bold text-primary border-b-2 border-primary transition-all relative">
+                        Leave Requests
+                        <span class="ml-2 bg-primary/20 text-primary text-[10px] px-1.5 py-0.5 rounded-full">8</span>
+</button>
+<button class="pb-3 text-sm font-medium text-[#92adc9] hover:text-white transition-all">
+                        Timesheet Adjustments
+                        <span class="ml-2 bg-white/10 text-[#92adc9] text-[10px] px-1.5 py-0.5 rounded-full">3</span>
+</button>
+<button class="pb-3 text-sm font-medium text-[#92adc9] hover:text-white transition-all">
+                        Other Requests
+                        <span class="ml-2 bg-white/10 text-[#92adc9] text-[10px] px-1.5 py-0.5 rounded-full">1</span>
+</button>
+</div>
+<div class="flex flex-col lg:flex-row gap-4">
+<div class="flex-1 relative">
+<span class="absolute inset-y-0 left-0 flex items-center pl-4 text-[#92adc9]">
+<span class="material-symbols-outlined">search</span>
+</span>
+<input class="w-full bg-surface-dark border-white/5 text-white text-sm rounded-lg py-3 pl-11 pr-4 placeholder:text-[#92adc9] focus:ring-1 focus:ring-primary focus:border-primary transition-all" placeholder="Search requester name or request type..." type="text"/>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex h-11 items-center justify-center gap-x-2 rounded-lg bg-surface-dark px-4 border border-white/5 hover:border-white/20 transition-all">
+<p class="text-white text-sm font-medium">Priority</p>
+<span class="material-symbols-outlined text-[#92adc9] text-xl">expand_more</span>
+</button>
+<button class="flex h-11 items-center justify-center gap-x-2 rounded-lg bg-surface-dark px-4 border border-white/5 hover:border-white/20 transition-all text-[#92adc9]">
+<span class="material-symbols-outlined">calendar_today</span>
+<p class="text-white text-sm font-medium">All Dates</p>
+</button>
+<button class="flex h-11 items-center justify-center rounded-lg bg-white/5 px-3 hover:bg-white/10 transition-all border border-white/10">
+<span class="material-symbols-outlined text-white">tune</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<section class="px-8 flex-1 pb-8">
+<div class="bg-surface-dark/50 border border-white/5 rounded-xl overflow-hidden @container">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-white/[0.02]">
+<th class="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#92adc9]">Requester</th>
+<th class="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#92adc9]">Request Type</th>
+<th class="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#92adc9]">Submitted</th>
+<th class="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#92adc9]">Summary</th>
+<th class="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#92adc9]">Status</th>
+<th class="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-[#92adc9] text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/[0.05]">
+<tr class="hover:bg-white/[0.02] transition-colors group">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full w-9 border border-primary/20 shadow-cyan-glow/20" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBkqYnBryJFEBo0BK3CsUl6v-LB5LBuBFi-szHlO9iqds9uctqnW_JRhD7AlQ3M-hkRjCBVXUD1ztju-mpewo99tZRcPLWQn7vB77X0ugf76b8gC16e_chyo4lLsVA-0aPkRmw56W4ertzmkcIR0DSvV6TCY2TobZXn9l1xoN1g3L2OwP4tQoGwg2Sz5v7DH2ohbezzXH5rZTlKoa2EArD4K-_uxO8yHffqMuFFc0GT6Am5UCpCaeFxgo5HatWrFeDELi7J3DJCnx1o");'></div>
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-white">Alex Rivera</span>
+<span class="text-[11px] text-[#92adc9]">Engineering</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-5">
+<span class="px-2.5 py-1 rounded text-[11px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">Sick Leave</span>
+</td>
+<td class="px-6 py-5">
+<div class="flex flex-col">
+<span class="text-sm text-white">Oct 12, 2023</span>
+<span class="text-[11px] text-[#92adc9]">09:15 AM</span>
+</div>
+</td>
+<td class="px-6 py-5">
+<div class="flex flex-col max-w-[200px]">
+<span class="text-sm text-white font-medium truncate">Medical appointment</span>
+<span class="text-[11px] text-[#92adc9]">2 days (Oct 14 - Oct 15)</span>
+</div>
+</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-amber-400">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                    Awaiting Review
+                                </span>
+</td>
+<td class="px-6 py-5 text-right">
+<button class="px-4 py-1.5 bg-primary/10 hover:bg-primary transition-all text-primary hover:text-background-dark text-xs font-bold rounded-md border border-primary/30 group-hover:shadow-cyan-glow">
+                                    View Details
+                                </button>
+</td>
+</tr>
+<tr class="hover:bg-white/[0.02] transition-colors group">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full w-9 border border-primary/20" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCnYB3MkZxNDgGuQTmSHIcwgwMPnEb1tLgD_fJnbbgUqWmohvLkRHKo_-crDUjf5UCX0t7jrRsYORrwoajU99UdG2P3rRMs5FxHh2Qi3mHvN4iTDn9FdW1ysi-abxt-FAYkF3hCV5MB0EQYBDZlykPijYvU7m17ElT3SKs2LQaD-wXo1A_jFX41PQbbt252C9urtt4EcLJh7Jkm_nHpATj3UBiuboaJ-fZmE_rwZbaxAJqodaghViGIxUBLdP1EJY4Qw9wiskd8ijbY");'></div>
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-white">Sarah Chen</span>
+<span class="text-[11px] text-[#92adc9]">Product Design</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-5">
+<span class="px-2.5 py-1 rounded text-[11px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Paid Time Off</span>
+</td>
+<td class="px-6 py-5">
+<div class="flex flex-col">
+<span class="text-sm text-white">Oct 11, 2023</span>
+<span class="text-[11px] text-[#92adc9]">03:45 PM</span>
+</div>
+</td>
+<td class="px-6 py-5">
+<div class="flex flex-col max-w-[200px]">
+<span class="text-sm text-white font-medium truncate">Family vacation</span>
+<span class="text-[11px] text-[#92adc9]">5 days (Nov 01 - Nov 05)</span>
+</div>
+</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-amber-400">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                                    Urgent Review
+                                </span>
+</td>
+<td class="px-6 py-5 text-right">
+<button class="px-4 py-1.5 bg-primary/10 hover:bg-primary transition-all text-primary hover:text-background-dark text-xs font-bold rounded-md border border-primary/30 group-hover:shadow-cyan-glow">
+                                    View Details
+                                </button>
+</td>
+</tr>
+<tr class="hover:bg-white/[0.02] transition-colors group">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full w-9 border border-primary/20" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBhbefPHIdzOYCHqxbpt7Zm7TiyTkjXtHUViyI4b5yZHrcg_oE2DazmUub7--TBMoOuCfLp6Ep3VAYqmFRxIzQqCd3jm2XQNWUsAYU0Uy9UT_DNHE874qM3V0iyjLia_l5RffkHcmVWDtv2qb6aZXmaQwtHcB14cHfCvj-3Hiv8ncZkOGPj3sHR8ziFh7spW3TruLS6fGX7nxJ4rG_sehFyNkd9pYDP0KbWQM33jgIr5VfiLnxxSIhEnXlae_isnVDFT9tFhhVQ4Er4");'></div>
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-white">James Wilson</span>
+<span class="text-[11px] text-[#92adc9]">Marketing</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-5">
+<span class="px-2.5 py-1 rounded text-[11px] font-bold bg-pink-500/10 text-pink-400 border border-pink-500/20">Bereavement</span>
+</td>
+<td class="px-6 py-5">
+<div class="flex flex-col">
+<span class="text-sm text-white">Oct 11, 2023</span>
+<span class="text-[11px] text-[#92adc9]">11:20 AM</span>
+</div>
+</td>
+<td class="px-6 py-5">
+<div class="flex flex-col max-w-[200px]">
+<span class="text-sm text-white font-medium truncate">Family emergency</span>
+<span class="text-[11px] text-[#92adc9]">3 days (Oct 11 - Oct 13)</span>
+</div>
+</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-red-400">
+<span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                                    Past Due
+                                </span>
+</td>
+<td class="px-6 py-5 text-right">
+<button class="px-4 py-1.5 bg-primary/10 hover:bg-primary transition-all text-primary hover:text-background-dark text-xs font-bold rounded-md border border-primary/30 group-hover:shadow-cyan-glow">
+                                    View Details
+                                </button>
+</td>
+</tr>
+<tr class="hover:bg-white/[0.02] transition-colors group">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full w-9 border border-primary/20" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDGzedhE87Ns1ElZlOWdBClk-x3HPCHLcdmmwp2AUmlte2jn8fXX3EYbSZBWknnF_Luyn3oZmbzyBloVGSuR_FApzJOLNePEGJUn-KMbzHQvosazuj8w32by7eBr7X3-F4ittnzxImmsPUDXEQQppw5ADmZOPV0SfDRH15EDhYAdsVxqXBUxjwqCHX6vShY7NrEb6Jz3TDvBXahw817E4rJUpRhn9zo6_MrObzzsKR73QUPH1jxEuVmnRpwRDggM9poz4dVbajB-dJd");'></div>
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-white">Maya Patel</span>
+<span class="text-[11px] text-[#92adc9]">Engineering</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-5">
+<span class="px-2.5 py-1 rounded text-[11px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">Sick Leave</span>
+</td>
+<td class="px-6 py-5">
+<div class="flex flex-col">
+<span class="text-sm text-white">Oct 10, 2023</span>
+<span class="text-[11px] text-[#92adc9]">08:00 AM</span>
+</div>
+</td>
+<td class="px-6 py-5">
+<div class="flex flex-col max-w-[200px]">
+<span class="text-sm text-white font-medium truncate">General fatigue</span>
+<span class="text-[11px] text-[#92adc9]">1 day (Oct 10)</span>
+</div>
+</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-amber-400">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                    Awaiting Review
+                                </span>
+</td>
+<td class="px-6 py-5 text-right">
+<button class="px-4 py-1.5 bg-primary/10 hover:bg-primary transition-all text-primary hover:text-background-dark text-xs font-bold rounded-md border border-primary/30 group-hover:shadow-cyan-glow">
+                                    View Details
+                                </button>
+</td>
+</tr>
+<tr class="hover:bg-white/[0.02] transition-colors group">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full w-9 border border-primary/20" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA4-BcmZQ7pdGIS2jNqcDiwBGsf2GcXtBbn9FauDGroK5B3HE6AP-GD54XPUvKhWz0l94vmQrXiAGcjygnuT8pGKbxMrCSyYCFyahSx9F66pWgygdk1kNk4VzbN4veZ4X7EIKVvAy_5MaTeTIlK5zLuLYgcaAgH_lQvspyJFJ-NwC__vOhQxhjwxfL8Gaw4CgUlPXYRSYzqOyOcX66phKYayIaKL9ZHNBmPWsocFcXjw5opmLkuoFNVQMP8RRd4hzsrI1pHdviC-CEK");'></div>
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-white">David Miller</span>
+<span class="text-[11px] text-[#92adc9]">Operations</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-5">
+<span class="px-2.5 py-1 rounded text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Training</span>
+</td>
+<td class="px-6 py-5">
+<div class="flex flex-col">
+<span class="text-sm text-white">Oct 10, 2023</span>
+<span class="text-[11px] text-[#92adc9]">01:30 PM</span>
+</div>
+</td>
+<td class="px-6 py-5">
+<div class="flex flex-col max-w-[200px]">
+<span class="text-sm text-white font-medium truncate">AWS Certification Seminar</span>
+<span class="text-[11px] text-[#92adc9]">3 days (Oct 20 - Oct 22)</span>
+</div>
+</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-amber-400">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                    Awaiting Review
+                                </span>
+</td>
+<td class="px-6 py-5 text-right">
+<button class="px-4 py-1.5 bg-primary/10 hover:bg-primary transition-all text-primary hover:text-background-dark text-xs font-bold rounded-md border border-primary/30 group-hover:shadow-cyan-glow">
+                                    View Details
+                                </button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="px-6 py-4 bg-white/[0.03] border-t border-white/5 flex items-center justify-between">
+<p class="text-xs text-[#92adc9]">Showing <span class="text-white font-medium">1-5</span> of <span class="text-white font-medium">8</span> active leave requests</p>
+<div class="flex items-center gap-2">
+<button class="flex items-center justify-center size-8 rounded border border-white/5 text-[#92adc9] hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<button class="flex items-center justify-center size-8 rounded bg-primary text-background-dark text-xs font-bold shadow-cyan-glow">1</button>
+<button class="flex items-center justify-center size-8 rounded border border-white/5 text-[#92adc9] hover:bg-white/10 transition-colors text-xs font-bold">2</button>
+<button class="flex items-center justify-center size-8 rounded border border-white/5 text-[#92adc9] hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<section class="px-8 pb-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="bg-surface-dark/50 p-4 rounded-xl border border-white/5 flex items-center gap-4">
+<div class="size-12 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">pending</span>
+</div>
+<div>
+<p class="text-[10px] text-[#92adc9] uppercase font-bold tracking-widest">Average Response Time</p>
+<h3 class="text-xl font-bold text-white">4.2 hours</h3>
+</div>
+</div>
+<div class="bg-surface-dark/50 p-4 rounded-xl border border-white/5 flex items-center gap-4">
+<div class="size-12 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-emerald-400">check_circle</span>
+</div>
+<div>
+<p class="text-[10px] text-[#92adc9] uppercase font-bold tracking-widest">Approval Rate</p>
+<h3 class="text-xl font-bold text-white">92.5%</h3>
+</div>
+</div>
+<div class="bg-surface-dark/50 p-4 rounded-xl border border-white/5 flex items-center gap-4">
+<div class="size-12 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-amber-400">event_busy</span>
+</div>
+<div>
+<p class="text-[10px] text-[#92adc9] uppercase font-bold tracking-widest">Peak Request Day</p>
+<h3 class="text-xl font-bold text-white">Monday</h3>
+</div>
+</div>
+</section>
+</main>
+</div>
+
+</body></html>

@@ -7,6 +7,7 @@ import { CheckInButton } from '@/components/check-in-button'
 import { getTodayStatus, getAttendanceHistory, getAttendanceStats } from '@/app/actions/attendance'
 import { AttendanceProgressCard, RecentHistoryCard } from '@/components/dashboard-cards'
 import { getTodayShift } from '@/app/actions/schedule'
+import { getWorkSettings } from '@/app/actions/settings'
 import { PwaHandler } from '@/components/pwa-handler'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { DashboardHeader, LocationBadge } from '@/components/dashboard-header'
@@ -38,6 +39,7 @@ export default async function DashboardPage() {
   const history = await getAttendanceHistory()
   const attendanceStats = await getAttendanceStats('week')
   const todayShift = await getTodayShift()
+  const workSettings = await getWorkSettings()
 
   // Multi-session Logic
   const isCheckedIn = !!todayLog?.check_in_time && !todayLog?.check_out_time
@@ -65,6 +67,7 @@ export default async function DashboardPage() {
                 isCheckedIn={isCheckedIn}
                 isCheckedOut={isCheckedOut}
                 userName={user.user_metadata.full_name || 'Bạn'}
+                workSettings={workSettings}
               />
             </div>
           </div>
@@ -85,8 +88,8 @@ export default async function DashboardPage() {
 
       {/* Setup local notifications (invisible component) */}
       <LocalNotificationsSetup />
-      <AutoCheckInSetup />
-      <AutoCheckOutSetup />
+      <AutoCheckInSetup workSettings={workSettings} />
+      <AutoCheckOutSetup workSettings={workSettings} />
     </DashboardLayout>
   )
 }

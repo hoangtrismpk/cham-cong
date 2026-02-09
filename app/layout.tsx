@@ -5,6 +5,7 @@ import { I18nProvider } from '@/contexts/i18n-context'
 import { Toaster } from "@/components/ui/sonner"
 import { RecaptchaProvider } from '@/components/recaptcha-provider'
 import { FCMManager } from '@/components/fcm-manager'
+import { getWorkSettings, getSecuritySettings } from '@/app/actions/settings'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -18,16 +19,23 @@ const jetbrainsMono = JetBrains_Mono({
   variable: '--font-mono',
 })
 
-export const metadata: Metadata = {
-  title: 'Chấm Công FHB Vietnam',
-  description: 'Smart Human Resource Management',
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getWorkSettings()
+  return {
+    title: settings?.company_name || 'Chấm Công FHB Vietnam',
+    description: 'Smart Human Resource Management',
+  }
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const securitySettings = await getSecuritySettings()
+  const enabled = securitySettings.recaptcha_enabled
+  const siteKey = enabled ? securitySettings.recaptcha_site_key : undefined
+
   return (
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} dark`} suppressHydrationWarning>
       <head>
@@ -43,13 +51,13 @@ export default function RootLayout({
         />
       </head>
       <body className="font-display antialiased bg-background text-foreground">
-        <RecaptchaProvider>
-          <FCMManager />
-          <I18nProvider>
+        <I18nProvider>
+          <RecaptchaProvider siteKey={siteKey} enabled={enabled}>
+            <FCMManager />
             {children}
-          </I18nProvider>
-        </RecaptchaProvider>
-        <Toaster />
+          </RecaptchaProvider>
+          <Toaster />
+        </I18nProvider>
         <script
           dangerouslySetInnerHTML={{
             __html: `

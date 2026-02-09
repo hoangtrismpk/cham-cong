@@ -4,11 +4,11 @@ import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { checkOut } from '@/app/actions/attendance'
 import { createClient } from '@/utils/supabase/client'
-import { OFFICE_COORDINATES, MAX_DISTANCE_METERS, calculateDistance } from '@/utils/geo'
+import { calculateDistance } from '@/utils/geo'
 import { toast } from 'sonner'
 import confetti from 'canvas-confetti'
 
-export function useAutoCheckOut() {
+export function useAutoCheckOut(workSettings: any) {
     const processedRef = useRef(false)
     const router = useRouter()
 
@@ -139,13 +139,13 @@ export function useAutoCheckOut() {
                         const distance = calculateDistance(
                             latitude,
                             longitude,
-                            OFFICE_COORDINATES.latitude,
-                            OFFICE_COORDINATES.longitude
+                            parseFloat(workSettings.office_latitude),
+                            parseFloat(workSettings.office_longitude)
                         )
 
-                        console.log(`🤖 Distance: ${distance.toFixed(0)}m (Max: ${MAX_DISTANCE_METERS}m)`)
+                        console.log(`🤖 Distance: ${distance.toFixed(0)}m (Max: ${workSettings.max_distance_meters}m)`)
 
-                        if (distance <= MAX_DISTANCE_METERS) {
+                        if (distance <= workSettings.max_distance_meters) {
                             toast.info('📍 Đang tự động chấm ra (GPS)...')
 
                             const result = await checkOut(latitude, longitude)

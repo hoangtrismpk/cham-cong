@@ -28,7 +28,5 @@ export const MAX_DISTANCE_METERS = 200
 
 // Danh sách IP văn phòng được phép chấm công không cần GPS
 export const OFFICE_IPS = [
-    '127.0.0.1',     // Localhost (test)
-    '14.161.49.81',  // IP hiện tại của bạn (Tiger thấy từ log)
-    // Thêm IP công ty tại đây
+    '14.161.22.181', // IP mặc định từ yêu cầu
 ]

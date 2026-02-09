@@ -241,6 +241,11 @@
     width: 0 !important;
     height: 0 !important;
   }
+
+  /* Hide reCAPTCHA badge logo */
+  .grecaptcha-badge {
+    visibility: hidden !important;
+  }
 }
 
 /* Hide Number Input Spinners - GLOBAL SCOPE */

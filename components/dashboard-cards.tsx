@@ -144,7 +144,7 @@ export function AttendanceProgressCard({ initialData }: AttendanceProgressCardPr
                     const isFuture = stat.date && new Date(stat.date) > new Date()
 
                     return (
-                        <div key={i} className={`flex-1 flex flex-col items-center gap-3 group/bar h-full justify-end ${isFuture ? 'opacity-20' : 'opacity-100'}`}>
+                        <div key={i} className={`flex-1 flex flex-col items-center gap-3 group/bar h-full justify-end ${stat.isOffDay ? 'opacity-20 hover:opacity-100' : 'opacity-100'} transition-opacity`}>
                             <div className="w-full flex flex-col justify-end h-full relative">
                                 {/* Tooltip */}
                                 <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[9px] py-1 px-2 rounded-md border border-white/10 opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none shadow-xl">

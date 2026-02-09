@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { OFFICE_COORDINATES, MAX_DISTANCE_METERS, calculateDistance } from '@/utils/geo'
+import { calculateDistance } from '@/utils/geo'
 import { checkIn, checkOut } from '@/app/actions/attendance'
 import { useRouter } from 'next/navigation'
 import { useI18n } from '@/contexts/i18n-context'
@@ -10,9 +10,14 @@ interface CheckInButtonProps {
     isCheckedIn: boolean
     isCheckedOut: boolean
     userName: string
+    workSettings: {
+        office_latitude: string
+        office_longitude: string
+        max_distance_meters: number
+    }
 }
 
-export function CheckInButton({ isCheckedIn, isCheckedOut, userName }: CheckInButtonProps) {
+export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSettings }: CheckInButtonProps) {
     const { t } = useI18n()
     const [loading, setLoading] = useState(false)
     const [isProcessing, setIsProcessing] = useState(false)
@@ -117,11 +122,11 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName }: CheckInBu
                     const distance = calculateDistance(
                         latitude,
                         longitude,
-                        OFFICE_COORDINATES.latitude,
-                        OFFICE_COORDINATES.longitude
+                        parseFloat(workSettings.office_latitude),
+                        parseFloat(workSettings.office_longitude)
                     )
 
-                    if (distance <= MAX_DISTANCE_METERS) {
+                    if (distance <= workSettings.max_distance_meters) {
                         console.log('Auto clock-in triggered: User in range')
                         autoCheckedRef.current = true
                         handleAction()

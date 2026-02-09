@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Edit Employee Profile - ChronoTrack</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #233648;
+            border-radius: 10px;
+        }
+        input:focus, select:focus, textarea:focus {
+            box-shadow: 0 0 0 2px rgba(19, 127, 236, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-background-dark text-white min-h-screen font-display overflow-hidden">
+<div class="flex flex-col h-screen max-w-md mx-auto relative border-x border-[#233648]">
+<header class="flex items-center justify-between px-5 py-4 bg-[#111a22] border-b border-[#233648] shrink-0">
+<div class="flex items-center gap-3">
+<button class="p-1 -ml-1 text-slate-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold">Edit Profile</h1>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-xs font-bold text-primary uppercase tracking-widest bg-primary/10 px-2 py-1 rounded">Admin</span>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto custom-scrollbar pb-32">
+<div class="flex flex-col items-center py-8 bg-gradient-to-b from-[#111a22] to-transparent">
+<div class="relative group">
+<div class="size-28 rounded-2xl bg-center bg-cover border-4 border-[#233648] shadow-2xl" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDwUcGVw9fUDnSRNAzhA-gZRU8HqkhbJntF0MmfZHUuTcEFLKfJ78RWa5UcWeYIXXyJR170xLREJEoX79xzHEiC3T56BsHyw3Y_O7RWLQNujGDgDeB2Fz1FJ6Vrvfn3TcN_UHASkw4B4_xoqOftpa96sVH5Q6EjS7VH1kSiAZ5eTDXZfbshzIFMAysqouWvfoO-YARN9lEKfQWAlWOul3vr21qpvJaeQuM_tl1nY3ehTNzxrCjWETE89_B0Lot-WLECU6ztnRgeeY0x");'></div>
+<button class="absolute -bottom-2 -right-2 bg-primary text-white p-2 rounded-xl shadow-lg border-2 border-[#101922]">
+<span class="material-symbols-outlined text-sm">photo_camera</span>
+</button>
+</div>
+<p class="mt-4 text-sm font-medium text-slate-400">Employee ID: #4492</p>
+</div>
+<form class="px-5 space-y-8">
+<section class="space-y-5">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary text-xl">person</span>
+<h2 class="text-sm font-bold uppercase tracking-wider text-slate-400">Personal Details</h2>
+</div>
+<div class="space-y-4">
+<div class="space-y-2">
+<label class="text-xs font-bold text-slate-500 ml-1">Full Name</label>
+<input class="w-full bg-[#111a22] border-[#233648] rounded-xl px-4 py-3.5 text-base focus:border-primary focus:ring-0 transition-all placeholder:text-slate-600" placeholder="Enter full name" type="text" value="Alex Rivera"/>
+</div>
+<div class="space-y-2">
+<label class="text-xs font-bold text-slate-500 ml-1">Job Title</label>
+<input class="w-full bg-[#111a22] border-[#233648] rounded-xl px-4 py-3.5 text-base focus:border-primary focus:ring-0 transition-all placeholder:text-slate-600" placeholder="Enter job title" type="text" value="Senior Software Engineer"/>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-2">
+<label class="text-xs font-bold text-slate-500 ml-1">Department</label>
+<select class="w-full bg-[#111a22] border-[#233648] rounded-xl px-4 py-3.5 text-base focus:border-primary focus:ring-0 transition-all">
+<option>Engineering</option>
+<option>Product</option>
+<option>Design</option>
+</select>
+</div>
+<div class="space-y-2">
+<label class="text-xs font-bold text-slate-500 ml-1">Status</label>
+<select class="w-full bg-[#111a22] border-[#233648] rounded-xl px-4 py-3.5 text-base focus:border-primary focus:ring-0 transition-all">
+<option>Full-Time</option>
+<option>Contract</option>
+<option>Part-Time</option>
+</select>
+</div>
+</div>
+</div>
+</section>
+<section class="space-y-5">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary text-xl">alternate_email</span>
+<h2 class="text-sm font-bold uppercase tracking-wider text-slate-400">Contact Details</h2>
+</div>
+<div class="space-y-4">
+<div class="space-y-2">
+<label class="text-xs font-bold text-slate-500 ml-1">Work Email</label>
+<input class="w-full bg-[#111a22] border-[#233648] rounded-xl px-4 py-3.5 text-base focus:border-primary focus:ring-0 transition-all" type="email" value="alex.rivera@chronotrack.io"/>
+</div>
+<div class="space-y-2">
+<label class="text-xs font-bold text-slate-500 ml-1">Mobile Phone</label>
+<input class="w-full bg-[#111a22] border-[#233648] rounded-xl px-4 py-3.5 text-base focus:border-primary focus:ring-0 transition-all" type="tel" value="+1 (555) 234-8891"/>
+</div>
+<div class="space-y-2">
+<label class="text-xs font-bold text-slate-500 ml-1">Residential Address</label>
+<textarea class="w-full bg-[#111a22] border-[#233648] rounded-xl px-4 py-3.5 text-base focus:border-primary focus:ring-0 transition-all resize-none" rows="3">1284 Oakwood Ave, San Francisco, CA 94107, United States</textarea>
+</div>
+</div>
+</section>
+<section class="space-y-5">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary text-xl">emergency</span>
+<h2 class="text-sm font-bold uppercase tracking-wider text-slate-400">Emergency Contact</h2>
+</div>
+<div class="space-y-4 p-5 bg-[#111a22] rounded-2xl border border-[#233648]">
+<div class="space-y-2">
+<label class="text-xs font-bold text-slate-500">Contact Name</label>
+<input class="w-full bg-[#101922] border-[#233648] rounded-lg px-4 py-3 text-sm" type="text" value="Maria Rivera"/>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div class="space-y-2">
+<label class="text-xs font-bold text-slate-500">Relationship</label>
+<input class="w-full bg-[#101922] border-[#233648] rounded-lg px-4 py-3 text-sm" type="text" value="Spouse"/>
+</div>
+<div class="space-y-2">
+<label class="text-xs font-bold text-slate-500">Priority</label>
+<select class="w-full bg-[#101922] border-[#233648] rounded-lg px-4 py-3 text-sm">
+<option>Primary</option>
+<option>Secondary</option>
+</select>
+</div>
+</div>
+<div class="space-y-2">
+<label class="text-xs font-bold text-slate-500">Emergency Phone</label>
+<input class="w-full bg-[#101922] border-[#233648] rounded-lg px-4 py-3 text-sm" type="tel" value="+1 (555) 234-8890"/>
+</div>
+</div>
+</section>
+</form>
+</main>
+<footer class="absolute bottom-0 left-0 right-0 p-5 bg-[#111a22]/80 backdrop-blur-lg border-t border-[#233648] flex gap-3">
+<button class="flex-1 h-14 rounded-xl border border-[#233648] text-slate-300 font-bold hover:bg-slate-800 transition-colors">
+                Cancel
+            </button>
+<button class="flex-[2] h-14 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/20 hover:bg-blue-600 transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-xl">save</span>
+                Save Changes
+            </button>
+</footer>
+</div>
+
+</body></html>

@@ -4,6 +4,7 @@ import { format } from 'date-fns'
 import { useState, useEffect } from 'react'
 import { DashboardSidebar } from './dashboard-sidebar'
 import { LanguageSwitcher } from './language-switcher'
+import { NotificationBell } from './notification-bell'
 import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context'
 
 interface DashboardLayoutProps {
@@ -13,8 +14,12 @@ interface DashboardLayoutProps {
 
 function DashboardLayoutContent({ user, children }: DashboardLayoutProps) {
     const { isOpen, setIsOpen } = useSidebar()
-    const dateStr = format(new Date(), 'EEEE, MMM d, yyyy')
+    const [dateStr, setDateStr] = useState('')
     const [isDesktop, setIsDesktop] = useState(false)
+
+    useEffect(() => {
+        setDateStr(format(new Date(), 'EEEE, MMM d, yyyy'))
+    }, [])
 
     useEffect(() => {
         const checkDesktop = () => {
@@ -59,9 +64,7 @@ function DashboardLayoutContent({ user, children }: DashboardLayoutProps) {
                     </div>
                     <div className="flex items-center gap-2 lg:gap-4">
                         <LanguageSwitcher />
-                        <button className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-800/50 hover:bg-slate-800 text-slate-300 transition-colors">
-                            <span className="material-symbols-outlined text-xl">notifications</span>
-                        </button>
+                        <NotificationBell />
                     </div>
                 </header>
 
@@ -80,3 +83,4 @@ export function DashboardLayout(props: DashboardLayoutProps) {
         </SidebarProvider>
     )
 }
+// Forces rebuild

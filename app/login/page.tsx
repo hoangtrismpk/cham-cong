@@ -1,12 +1,14 @@
 'use client'
 
-import { useActionState, useState, startTransition } from 'react'
+import { useActionState, useState, startTransition, Suspense } from 'react'
 import { login } from '@/app/auth/actions'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import { useSearchParams } from 'next/navigation'
 
 import { useGoogleReCaptcha } from 'react-google-recaptcha-v3'
+import { useSetting } from '@/hooks/use-settings-sync'
 
 function LoginForm() {
     const [state, formAction, isPending] = useActionState(login, null)
@@ -14,6 +16,11 @@ function LoginForm() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const { executeRecaptcha } = useGoogleReCaptcha()
+    const searchParams = useSearchParams()
+    const next = searchParams.get('next')
+
+    // Dynamic Setting
+    const { value: companyName } = useSetting('company_name', 'Chấm Công FHB Vietnam')
 
     const handleFormSubmit = async (formData: FormData) => {
         if (!executeRecaptcha) {
@@ -23,6 +30,12 @@ function LoginForm() {
         }
         const token = await executeRecaptcha('login')
         formData.append('g-recaptcha-response', token)
+
+        // Add next parameter if exists
+        if (next) {
+            formData.append('next', next)
+        }
+
         // Wrapp in startTransition because we are in an async handler
         startTransition(() => {
             formAction(formData)
@@ -35,10 +48,9 @@ function LoginForm() {
             <header className="flex items-center justify-between whitespace-nowrap border-b border-charcoal-border bg-charcoal/80 backdrop-blur-md px-6 md:px-20 py-4 sticky top-0 z-50">
                 <div className="flex items-center gap-3">
                     <div className="size-8 text-primary relative">
-                        {/* <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" className="w-full h-full"> ... </svg> */}
                         <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
                     </div>
-                    <h2 className="text-xl font-bold text-white tracking-tight">Chấm Công FHB Vietnam</h2>
+                    <h2 className="text-xl font-bold text-white tracking-tight">{String(companyName)}</h2>
                 </div>
             </header>
 
@@ -62,6 +74,7 @@ function LoginForm() {
                                 {state.error}
                             </div>
                         )}
+                        <input type="hidden" name="next" value={next || ''} />
                         <div className="flex flex-col gap-2">
                             <Label htmlFor="email" className="text-slate-200 text-sm font-semibold ml-1">Địa chỉ Email</Label>
                             <Input
@@ -123,7 +136,7 @@ function LoginForm() {
             </main>
 
             <footer className="p-8 text-center bg-charcoal border-t border-charcoal-border">
-                <p className="text-xs text-slate-600 mb-2">© {new Date().getFullYear()} - Hệ thống chấm công được xây dựng bởi FHB Vietnam</p>
+                <p className="text-xs text-slate-600 mb-2">© {new Date().getFullYear()} - Hệ thống chấm công được xây dựng bởi {String(companyName)}</p>
                 <div className="flex justify-center gap-6">
                     <a className="text-xs text-slate-500 hover:text-primary transition-colors" href="#">Chính sách bảo mật</a>
                     <a className="text-xs text-slate-500 hover:text-primary transition-colors" href="#">Điều khoản sử dụng</a>
@@ -135,5 +148,9 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
-    return <LoginForm />
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-charcoal flex items-center justify-center text-primary italic">Loading...</div>}>
+            <LoginForm />
+        </Suspense>
+    )
 }

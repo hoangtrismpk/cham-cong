@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mobile Employee Work Schedule - ChronoTrack</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-dark": "#0f171e",
+                        "charcoal": "#1a222c",
+                        "card-dark": "#232d3a",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background-dark text-white min-h-screen font-display">
+<div class="flex flex-col h-screen max-w-[480px] mx-auto bg-charcoal shadow-2xl overflow-hidden">
+<header class="flex items-center justify-between px-6 py-4 bg-charcoal border-b border-slate-800">
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center size-10 rounded-full bg-slate-800/50">
+<span class="material-symbols-outlined text-slate-300">chevron_left</span>
+</button>
+<h1 class="text-lg font-bold">Work Schedule</h1>
+</div>
+<div class="flex items-center gap-2">
+<button class="flex items-center justify-center size-10 rounded-full bg-slate-800/50">
+<span class="material-symbols-outlined text-slate-300">calendar_month</span>
+</button>
+</div>
+</header>
+<div class="px-6 py-4 bg-charcoal">
+<div class="flex items-center justify-between mb-4">
+<p class="text-sm font-bold text-slate-400">October 2023</p>
+<div class="flex gap-1">
+<span class="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded">Current Week</span>
+</div>
+</div>
+<div class="flex justify-between items-center overflow-x-auto hide-scrollbar gap-2">
+<div class="flex flex-col items-center gap-2 min-w-[45px]">
+<span class="text-[10px] font-bold text-slate-500 uppercase">Mon</span>
+<button class="size-10 flex items-center justify-center rounded-xl text-sm font-bold text-slate-300 hover:bg-slate-800 transition-colors">23</button>
+</div>
+<div class="flex flex-col items-center gap-2 min-w-[45px]">
+<span class="text-[10px] font-bold text-slate-500 uppercase">Tue</span>
+<button class="size-10 flex items-center justify-center rounded-xl text-sm font-bold text-slate-300 hover:bg-slate-800 transition-colors">24</button>
+</div>
+<div class="flex flex-col items-center gap-2 min-w-[45px]">
+<span class="text-[10px] font-bold text-slate-500 uppercase">Wed</span>
+<button class="size-10 flex items-center justify-center rounded-xl text-sm font-bold bg-primary text-white shadow-lg shadow-primary/20">25</button>
+</div>
+<div class="flex flex-col items-center gap-2 min-w-[45px]">
+<span class="text-[10px] font-bold text-slate-500 uppercase">Thu</span>
+<button class="size-10 flex items-center justify-center rounded-xl text-sm font-bold text-slate-300 hover:bg-slate-800 transition-colors">26</button>
+</div>
+<div class="flex flex-col items-center gap-2 min-w-[45px]">
+<span class="text-[10px] font-bold text-slate-500 uppercase">Fri</span>
+<button class="size-10 flex items-center justify-center rounded-xl text-sm font-bold text-slate-300 hover:bg-slate-800 transition-colors">27</button>
+</div>
+<div class="flex flex-col items-center gap-2 min-w-[45px]">
+<span class="text-[10px] font-bold text-slate-500 uppercase">Sat</span>
+<button class="size-10 flex items-center justify-center rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-800 transition-colors">28</button>
+</div>
+<div class="flex flex-col items-center gap-2 min-w-[45px]">
+<span class="text-[10px] font-bold text-slate-500 uppercase">Sun</span>
+<button class="size-10 flex items-center justify-center rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-800 transition-colors">29</button>
+</div>
+</div>
+</div>
+<main class="flex-1 overflow-y-auto px-6 py-2 space-y-4 pb-24">
+<h2 class="text-sm font-bold text-slate-500 uppercase tracking-widest py-2">Upcoming Shifts</h2>
+<div class="relative overflow-hidden bg-primary/10 border border-primary/30 rounded-2xl p-5 group">
+<div class="absolute top-0 right-0 p-3">
+<span class="flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+</span>
+</div>
+<div class="flex justify-between items-start mb-4">
+<div>
+<p class="text-primary text-xs font-bold uppercase tracking-wider mb-1">Today's Shift</p>
+<h3 class="text-xl font-bold">09:00 AM - 05:00 PM</h3>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5 px-3 py-1.5 bg-primary/20 rounded-lg">
+<span class="material-symbols-outlined text-sm text-primary">laptop_mac</span>
+<span class="text-xs font-bold text-primary">Remote</span>
+</div>
+<div class="flex items-center gap-1.5 text-slate-400">
+<span class="material-symbols-outlined text-sm">timer</span>
+<span class="text-xs">8h Standard</span>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-primary/20">
+<button class="w-full py-2.5 bg-primary text-white rounded-xl font-bold text-sm shadow-lg shadow-primary/30">
+                        Clock Out Now
+                    </button>
+</div>
+</div>
+<div class="bg-card-dark border border-slate-800 rounded-2xl p-5 hover:border-slate-700 transition-colors">
+<div class="flex justify-between items-start mb-4">
+<div>
+<p class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Tomorrow, Oct 26</p>
+<h3 class="text-xl font-bold text-slate-100">10:00 AM - 06:00 PM</h3>
+</div>
+<span class="text-xs font-bold bg-emerald-500/10 text-emerald-500 px-2.5 py-1 rounded-full border border-emerald-500/20">Confirmed</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 rounded-lg">
+<span class="material-symbols-outlined text-sm text-slate-300">business</span>
+<span class="text-xs font-bold text-slate-300">On-Site</span>
+</div>
+<div class="flex items-center gap-1.5 text-slate-500">
+<span class="material-symbols-outlined text-sm">location_on</span>
+<span class="text-xs">Main HQ • Floor 4</span>
+</div>
+</div>
+</div>
+<div class="bg-card-dark border border-slate-800 rounded-2xl p-5 opacity-80">
+<div class="flex justify-between items-start mb-4">
+<div>
+<p class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Friday, Oct 27</p>
+<h3 class="text-xl font-bold text-slate-100">09:00 AM - 01:00 PM</h3>
+</div>
+<span class="text-xs font-bold bg-amber-500/10 text-amber-500 px-2.5 py-1 rounded-full border border-amber-500/20">Partial</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 rounded-lg">
+<span class="material-symbols-outlined text-sm text-slate-300">laptop_mac</span>
+<span class="text-xs font-bold text-slate-300">Remote</span>
+</div>
+<div class="flex items-center gap-1.5 text-slate-500">
+<span class="material-symbols-outlined text-sm">history</span>
+<span class="text-xs">4h Overtime</span>
+</div>
+</div>
+</div>
+<div class="bg-card-dark border border-slate-800 rounded-2xl p-5">
+<div class="flex justify-between items-start mb-4">
+<div>
+<p class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Monday, Oct 30</p>
+<h3 class="text-xl font-bold text-slate-100">09:00 AM - 05:00 PM</h3>
+</div>
+<span class="text-xs font-bold bg-slate-700 text-slate-300 px-2.5 py-1 rounded-full">Pending</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 rounded-lg">
+<span class="material-symbols-outlined text-sm text-slate-300">business</span>
+<span class="text-xs font-bold text-slate-300">On-Site</span>
+</div>
+</div>
+</div>
+</main>
+<nav class="absolute bottom-0 w-full max-w-[480px] bg-charcoal/90 backdrop-blur-lg border-t border-slate-800 flex items-center justify-around py-3 px-6 z-20">
+<button class="flex flex-col items-center gap-1 text-slate-500">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="text-[10px] font-bold">Dashboard</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined fill-1">calendar_today</span>
+<span class="text-[10px] font-bold">Schedule</span>
+</button>
+<div class="relative -top-6">
+<button class="size-14 bg-primary rounded-full flex items-center justify-center text-white shadow-xl shadow-primary/30 border-4 border-charcoal">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+</div>
+<button class="flex flex-col items-center gap-1 text-slate-500">
+<span class="material-symbols-outlined">timer</span>
+<span class="text-[10px] font-bold">Timesheet</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-slate-500">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-bold">Profile</span>
+</button>
+</nav>
+</div>
+
+</body></html>

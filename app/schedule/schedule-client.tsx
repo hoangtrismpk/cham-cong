@@ -11,16 +11,25 @@ import { useSidebar } from '@/contexts/sidebar-context'
 import { UploadCloud } from 'lucide-react'
 import { DatePicker } from '@/components/ui/date-picker'
 import { toast } from 'sonner'
+import { NotificationBell } from '@/components/notification-bell'
+import { MobileHeader } from '@/components/mobile-header'
 
 
 interface ScheduleClientProps {
     user: any
     departmentCount: number
+    workSettings: {
+        work_start_time: string
+        work_end_time: string
+        lunch_start_time: string
+        lunch_end_time: string
+        company_name: string
+    }
 }
 
 type ViewMode = 'month' | 'week' | 'day'
 
-export function ScheduleClient({ user, departmentCount }: ScheduleClientProps) {
+export function ScheduleClient({ user, departmentCount, workSettings }: ScheduleClientProps) {
     const { t, locale } = useI18n()
     const { setIsOpen } = useSidebar()
     const [viewDate, setViewDate] = useState(new Date())
@@ -34,9 +43,10 @@ export function ScheduleClient({ user, departmentCount }: ScheduleClientProps) {
     // Leave Request Modal State
     const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false)
     const [leaveDate, setLeaveDate] = useState<Date | undefined>(new Date())
-    const [leaveStartTime, setLeaveStartTime] = useState('08:30')
-    const [leaveEndTime, setLeaveEndTime] = useState('17:30')
+    const [leaveStartTime, setLeaveStartTime] = useState(workSettings.work_start_time)
+    const [leaveEndTime, setLeaveEndTime] = useState(workSettings.work_end_time)
     const [leaveHours, setLeaveHours] = useState(0)
+    const [leaveType, setLeaveType] = useState('Nghỉ phép năm')
     const [timeError, setTimeError] = useState('')
     const [leaveReason, setLeaveReason] = useState('')
     const [leaveImage, setLeaveImage] = useState<string | null>(null)
@@ -45,9 +55,9 @@ export function ScheduleClient({ user, departmentCount }: ScheduleClientProps) {
 
     // Form states
     const [shiftType, setShiftType] = useState('full_day')
-    const [startTime, setStartTime] = useState('08:30')
-    const [endTime, setEndTime] = useState('18:00')
-    const [location, setLocation] = useState('Trụ sở FHB Vietnam')
+    const [startTime, setStartTime] = useState(workSettings.work_start_time)
+    const [endTime, setEndTime] = useState(workSettings.work_end_time)
+    const [location, setLocation] = useState(workSettings.company_name)
 
     const dateLocale = locale === 'vi' ? vi : undefined
 
@@ -68,12 +78,15 @@ export function ScheduleClient({ user, departmentCount }: ScheduleClientProps) {
             const endDec = eH + eM / 60
 
             // Validation Constraints
-            const startLimit = 8.5 // 08:30
-            const endLimit = 18.0  // 18:00
+            const [wsH, wsM] = workSettings.work_start_time.split(':').map(Number)
+            const [weH, weM] = workSettings.work_end_time.split(':').map(Number)
+
+            const startLimit = wsH + wsM / 60
+            const endLimit = weH + weM / 60
 
             let error = ''
-            if (startDec < startLimit || startDec > endLimit) error = 'Giờ bắt đầu phải từ 08:30 đến 18:00'
-            else if (endDec < startLimit || endDec > endLimit) error = 'Giờ kết thúc phải từ 08:30 đến 18:00'
+            if (startDec < startLimit || startDec > endLimit) error = `Giờ bắt đầu phải từ ${workSettings.work_start_time} đến ${workSettings.work_end_time}`
+            else if (endDec < startLimit || endDec > endLimit) error = `Giờ kết thúc phải từ ${workSettings.work_start_time} đến ${workSettings.work_end_time}`
             else if (endDec <= startDec) error = 'Giờ kết thúc phải sau giờ bắt đầu'
 
             setTimeError(error)
@@ -85,9 +98,12 @@ export function ScheduleClient({ user, departmentCount }: ScheduleClientProps) {
 
             let duration = endDec - startDec
 
-            // Lunch break 12:00 - 13:30 (1.5h)
-            const lunchStart = 12.0
-            const lunchEnd = 13.5
+            // Lunch break dynamic
+            const [lsH, lsM] = workSettings.lunch_start_time.split(':').map(Number)
+            const [leH, leM] = workSettings.lunch_end_time.split(':').map(Number)
+
+            const lunchStart = lsH + lsM / 60
+            const lunchEnd = leH + leM / 60
 
             const overlapStart = Math.max(startDec, lunchStart)
             const overlapEnd = Math.min(endDec, lunchEnd)
@@ -163,6 +179,7 @@ export function ScheduleClient({ user, departmentCount }: ScheduleClientProps) {
             formData.append('start_time', leaveStartTime)
             formData.append('end_time', leaveEndTime)
             formData.append('reason', leaveReason)
+            formData.append('leave_type', leaveType)
             if (finalImageUrl) formData.append('image_url', finalImageUrl)
 
             const res = await submitLeaveRequest(formData)
@@ -239,8 +256,9 @@ export function ScheduleClient({ user, departmentCount }: ScheduleClientProps) {
         today.setHours(0, 0, 0, 0)
         const checkDate = new Date(modalDate)
         checkDate.setHours(0, 0, 0, 0)
-        const isPast = checkDate < today
-        const status = isPast ? 'pending' : 'active'
+
+        // Always 'pending' for user modifications
+        const status = 'pending'
 
         // ... (display title logic) ...
         let displayTitle = ''
@@ -248,8 +266,6 @@ export function ScheduleClient({ user, departmentCount }: ScheduleClientProps) {
         else if (shiftType === 'morning') displayTitle = t.schedule.morningShift
         else if (shiftType === 'afternoon') displayTitle = t.schedule.afternoonShift
         else displayTitle = t.schedule.custom
-
-        const baseColor = getShiftColor(shiftType)
 
         // Construct payload for Server Action
         const payload = {
@@ -273,13 +289,17 @@ export function ScheduleClient({ user, departmentCount }: ScheduleClientProps) {
                 return
             }
 
-            // Update Local State (Optimistic / Confirmed)
+            // Update Local State from Server Response (Confirmed)
+            const savedShift = result.data
+            const baseColor = getShiftColor(savedShift.shift_type)
+
             const newShift = {
-                ...payload,
-                type: shiftType,
-                time: `${startTime} - ${endTime}`,
+                ...savedShift,
+                type: savedShift.shift_type,
+                time: `${savedShift.start_time} - ${savedShift.end_time}`,
                 colorClass: baseColor,
-                members: departmentCount
+                members: departmentCount,
+                status: 'pending' // Explicitly set pending for UI to pick up color
             }
 
             setShifts(prev => ({
@@ -303,6 +323,7 @@ export function ScheduleClient({ user, departmentCount }: ScheduleClientProps) {
             case 'afternoon': return 'bg-purple-500 border-purple-500 text-purple-500' // Afternoon: Purple
             case 'full_day': return 'bg-teal-500 border-teal-500 text-teal-500' // Full Day: Teal
             case 'custom': return 'bg-amber-500 border-amber-500 text-amber-500' // Custom: Amber
+            case 'leave': return 'bg-rose-500 border-rose-500 text-rose-500' // Leave: Rose/Red
             default: return 'bg-slate-500 border-slate-500 text-slate-500'
         }
     }
@@ -330,14 +351,14 @@ export function ScheduleClient({ user, departmentCount }: ScheduleClientProps) {
     const handleShiftTypeChange = (type: string) => {
         setShiftType(type)
         if (type === 'full_day') {
-            setStartTime('08:30')
-            setEndTime('18:00')
+            setStartTime(workSettings.work_start_time)
+            setEndTime(workSettings.work_end_time)
         } else if (type === 'morning') {
-            setStartTime('08:30')
-            setEndTime('12:00')
+            setStartTime(workSettings.work_start_time)
+            setEndTime(workSettings.lunch_start_time)
         } else if (type === 'afternoon') {
-            setStartTime('13:30')
-            setEndTime('18:00')
+            setStartTime(workSettings.lunch_end_time)
+            setEndTime(workSettings.work_end_time)
         }
     }
 
@@ -352,11 +373,35 @@ export function ScheduleClient({ user, departmentCount }: ScheduleClientProps) {
 
         setModalDate(day)
 
-        // Reset form to defaults or existing data if editing support added later
-        setShiftType('full_day')
-        setStartTime('08:30')
-        setEndTime('18:00')
-        setLocation('Trụ sở FHB Vietnam')
+        const dateKey = format(day, 'yyyy-MM-dd')
+        const existing = shifts[dateKey]
+
+        if (existing) {
+            // Edit Mode: Pre-fill
+            // Type mapping: 'full' -> 'full_day', 'custom' -> 'custom'
+            let type = existing.type === 'full' ? 'full_day' : (existing.type || 'custom')
+            if (['full_day', 'morning', 'afternoon'].includes(type) === false) type = 'custom';
+
+            setShiftType(type)
+
+            // Time parsing 'HH:mm - HH:mm'
+            if (existing.time && existing.time.includes(' - ')) {
+                const [s, e] = existing.time.split(' - ')
+                setStartTime(s || workSettings.work_start_time)
+                setEndTime(e || workSettings.work_end_time)
+            } else {
+                setStartTime(workSettings.work_start_time)
+                setEndTime(workSettings.work_end_time)
+            }
+            setLocation(existing.location || workSettings.company_name)
+        } else {
+            // New Mode: Reset form to defaults
+            setShiftType('full_day')
+            setStartTime(workSettings.work_start_time)
+            setEndTime(workSettings.work_end_time)
+            setLocation(workSettings.company_name)
+        }
+
         setIsModalOpen(true)
     }
 
@@ -405,6 +450,7 @@ export function ScheduleClient({ user, departmentCount }: ScheduleClientProps) {
         setLeaveDate(now)
         setLeaveStartTime(startStr)
         setLeaveEndTime('18:00') // Default end to max time
+        setLeaveType('Nghỉ phép năm')
         setIsLeaveModalOpen(true)
     }
 
@@ -412,28 +458,11 @@ export function ScheduleClient({ user, departmentCount }: ScheduleClientProps) {
     return (
         <div className="flex flex-col h-full relative overflow-hidden">
             {/* --- MOBILE HEADER --- */}
-            <header className="flex md:hidden items-center justify-between px-6 py-4 border-b border-white/10 bg-background-dark/80 backdrop-blur-md sticky top-0 z-20">
-                <div className="flex items-center gap-4">
-                    <button onClick={() => setIsOpen(true)} className="text-slate-400">
-                        <span className="material-symbols-outlined text-[24px]">menu</span>
-                    </button>
-                    <div className="flex flex-col">
-                        <h1 className="text-lg font-bold tracking-tight text-white">{t.schedule?.title || 'Schedule'}</h1>
-                        <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[10px] text-primary">analytics</span>
-                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">
-                                {format(selectedDate, 'MMM yyyy', { locale: vi })}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <div className="flex gap-2">
-                    <button className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
-                        <span className="material-symbols-outlined text-[20px] text-slate-400">notifications</span>
-                    </button>
-                    <div className="size-8 rounded-full bg-center bg-cover border border-white/10" style={{ backgroundImage: `url("${user?.user_metadata?.avatar_url || getDefaultAvatar(user?.id)}")` }}></div>
-                </div>
-            </header>
+            {/* --- MOBILE HEADER --- */}
+            <MobileHeader
+                title={t.schedule?.title || 'Lịch làm việc'}
+                subtitle={format(selectedDate, 'MMM yyyy', { locale: vi })}
+            />
 
             {/* --- DESKTOP HEADER (Hidden on Mobile) --- */}
             <header className="hidden md:flex px-8 py-6 border-b border-border bg-background/50 backdrop-blur-md items-center justify-between gap-4 shrink-0">
@@ -448,10 +477,6 @@ export function ScheduleClient({ user, departmentCount }: ScheduleClientProps) {
                     >
                         <span className="material-symbols-outlined text-lg">event_busy</span>
                         {t.schedule.requestLeave}
-                    </button>
-                    <div className="h-8 w-[1px] bg-border mx-2"></div>
-                    <button className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-800/50 hover:bg-slate-800 text-slate-300 transition-colors">
-                        <span className="material-symbols-outlined text-xl text-slate-400">notifications</span>
                     </button>
                 </div>
             </header>
@@ -473,7 +498,7 @@ export function ScheduleClient({ user, departmentCount }: ScheduleClientProps) {
                                 >
                                     <span className="material-symbols-outlined text-lg">chevron_left</span>
                                 </button>
-                                <h2 className="text-lg font-bold text-white capitalize tabular-nums">
+                                <h2 className="text-lg font-bold text-white capitalize tabular-nums" suppressHydrationWarning>
                                     {format(viewDate, 'MM/yyyy', { locale: dateLocale })}
                                 </h2>
                                 <button
@@ -489,7 +514,7 @@ export function ScheduleClient({ user, departmentCount }: ScheduleClientProps) {
                                 </button>
                             </div>
                         ) : (
-                            <h2 className="text-lg font-bold text-white capitalize">
+                            <h2 className="text-lg font-bold text-white capitalize" suppressHydrationWarning>
                                 {format(selectedDate, 'MMMM yyyy', { locale: dateLocale })}
                             </h2>
                         )}
@@ -619,7 +644,7 @@ export function ScheduleClient({ user, departmentCount }: ScheduleClientProps) {
                                         <div className="flex flex-col items-center justify-center bg-[#0d0e10] rounded-2xl border border-white/5 w-[5.5rem] h-[5.5rem] shrink-0 shadow-inner">
                                             <span className="text-[9px] font-black text-cyan-500/50 uppercase tracking-widest mb-1">BẮT ĐẦU</span>
                                             <span className="text-2xl font-black text-cyan-400 tracking-tighter">
-                                                {selectedShift.start_time || '08:30'}
+                                                {selectedShift.start_time || workSettings.work_start_time}
                                             </span>
                                         </div>
 
@@ -633,11 +658,11 @@ export function ScheduleClient({ user, departmentCount }: ScheduleClientProps) {
                                                             return { text: 'CHỜ DUYỆT', style: 'bg-amber-500/10 border-amber-500/20 text-amber-500' };
 
                                                         const now = new Date();
-                                                        const [sH, sM] = (selectedShift.start_time || '08:30').split(':').map(Number);
+                                                        const [sH, sM] = (selectedShift.start_time || workSettings.work_start_time).split(':').map(Number);
                                                         const startDt = new Date(selectedDate);
                                                         startDt.setHours(sH, sM, 0, 0);
 
-                                                        const [eH, eM] = (selectedShift.end_time || '18:00').split(':').map(Number);
+                                                        const [eH, eM] = (selectedShift.end_time || workSettings.work_end_time).split(':').map(Number);
                                                         const endDt = new Date(selectedDate);
                                                         endDt.setHours(eH, eM, 0, 0);
 
@@ -669,7 +694,7 @@ export function ScheduleClient({ user, departmentCount }: ScheduleClientProps) {
                                     <div className="mt-5 pt-4 border-t border-white/5 flex items-center justify-between">
                                         <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wide">
                                             <span className="material-symbols-outlined text-[16px]">timer_off</span>
-                                            <span className="italic">KẾT THÚC: <span className="text-slate-300">{selectedShift.end_time || '18:00'}</span></span>
+                                            <span className="italic">KẾT THÚC: <span className="text-slate-300">{selectedShift.end_time || workSettings.work_end_time}</span></span>
                                         </div>
                                         <div className="flex items-center gap-2 text-xs font-black text-cyan-400 uppercase tracking-widest">
                                             <span className="size-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.6)]"></span>
@@ -678,13 +703,23 @@ export function ScheduleClient({ user, departmentCount }: ScheduleClientProps) {
                                     </div>
                                 </div>
 
-                                <button
-                                    onClick={handleOpenLeaveModal}
-                                    className="w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-[#16181b] border border-white/5 text-slate-400 font-bold hover:bg-[#1c1f23] hover:text-white transition-all active:scale-[0.98]"
-                                >
-                                    <span className="material-symbols-outlined text-lg">event_busy</span>
-                                    Gửi đơn xin nghỉ phép
-                                </button>
+                                <div className="space-y-3">
+                                    <button
+                                        onClick={(e) => openAddModal(e, selectedDate)}
+                                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-cyan-400/10 border border-cyan-400/20 text-cyan-400 font-bold hover:bg-cyan-400 hover:text-black transition-all active:scale-[0.98]"
+                                    >
+                                        <span className="material-symbols-outlined text-lg">edit_calendar</span>
+                                        Xin đổi ca
+                                    </button>
+
+                                    <button
+                                        onClick={handleOpenLeaveModal}
+                                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#16181b] border border-white/5 text-slate-400 font-bold hover:text-rose-400 hover:border-rose-500/30 hover:bg-rose-500/10 transition-all active:scale-[0.98]"
+                                    >
+                                        <span className="material-symbols-outlined text-lg">event_busy</span>
+                                        Gửi đơn xin nghỉ phép
+                                    </button>
+                                </div>
                             </div>
                         ) : (
                             <div className="bg-[#16181b] border border-white/5 rounded-[1.5rem] p-10 flex flex-col items-center justify-center text-center">
@@ -881,7 +916,7 @@ export function ScheduleClient({ user, departmentCount }: ScheduleClientProps) {
                             <div className={`absolute top-0 right-0 w-32 h-32 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl transition-all duration-700 ${selectedShift ? (selectedShift.type === 'morning' ? 'bg-sky-500/20' : selectedShift.type === 'afternoon' ? 'bg-purple-500/20' : 'bg-teal-500/20') : 'bg-slate-500/10'}`}></div>
 
                             <div className="flex items-center justify-between mb-5 relative z-10">
-                                <span className="text-[11px] font-black text-primary uppercase tracking-widest">
+                                <span className="text-[11px] font-black text-primary uppercase tracking-widest" suppressHydrationWarning>
                                     {format(selectedDate, 'MMM dd, yyyy')}
                                 </span>
                                 {isSameDay(selectedDate, new Date()) && (
@@ -968,7 +1003,7 @@ export function ScheduleClient({ user, departmentCount }: ScheduleClientProps) {
                             <div className="flex items-center justify-between mb-8">
                                 <div className="space-y-1">
                                     <h3 className="text-2xl font-black text-white">{t.schedule.addWorkInfo}</h3>
-                                    <p className="text-primary font-bold uppercase tracking-widest text-xs">
+                                    <p className="text-primary font-bold uppercase tracking-widest text-xs" suppressHydrationWarning>
                                         {modalDate && format(modalDate, 'EEEE, dd MMMM yyyy', { locale: dateLocale })}
                                     </p>
                                 </div>
@@ -1076,6 +1111,24 @@ export function ScheduleClient({ user, departmentCount }: ScheduleClientProps) {
                             </div>
 
                             <div className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Loại nghỉ phép</label>
+                                    <div className="relative">
+                                        <select
+                                            value={leaveType}
+                                            onChange={(e) => setLeaveType(e.target.value)}
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-primary/50 transition-all font-bold appearance-none cursor-pointer"
+                                        >
+                                            <option value="Nghỉ phép năm" className="bg-slate-900">Nghỉ phép năm</option>
+                                            <option value="Nghỉ ốm" className="bg-slate-900">Nghỉ ốm</option>
+                                            <option value="Nghỉ việc riêng" className="bg-slate-900">Nghỉ việc riêng</option>
+                                            <option value="Nghỉ không lương" className="bg-slate-900">Nghỉ không lương</option>
+                                            <option value="Khác" className="bg-slate-900">Khác</option>
+                                        </select>
+                                        <span className="material-symbols-outlined absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">expand_more</span>
+                                    </div>
+                                </div>
+
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.schedule.selectDate}</label>
                                     <DatePicker

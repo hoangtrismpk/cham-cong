@@ -9,10 +9,16 @@ const recaptchaScriptProps = {
     nonce: undefined,
 }
 
-export function RecaptchaProvider({ children }: { children: React.ReactNode }) {
+export function RecaptchaProvider({ children, siteKey, enabled = true }: { children: React.ReactNode, siteKey?: string, enabled?: boolean }) {
+    if (!enabled) {
+        return <>{children}</>
+    }
+
+    const key = siteKey || process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ""
+
     return (
         <GoogleReCaptchaProvider
-            reCaptchaKey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ""}
+            reCaptchaKey={key}
             scriptProps={recaptchaScriptProps}
         >
             {children}

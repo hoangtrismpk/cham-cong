@@ -2,22 +2,30 @@
 
 import { useI18n } from '@/contexts/i18n-context'
 import { useState, useEffect, useRef } from 'react'
-import { format, parseISO, subMonths, addMonths, startOfMonth, endOfMonth, subDays, startOfDay, endOfDay } from 'date-fns'
+import { format, parseISO, subMonths, addMonths, startOfMonth, endOfMonth, subDays, startOfDay, endOfDay, parse } from 'date-fns'
 import { vi } from 'date-fns/locale'
-import { getAttendanceLogsRange, getAllAttendanceLogs } from '@/app/actions/attendance'
+import { getAttendanceLogsRange, getAllAttendanceLogs, submitAttendanceChange } from '@/app/actions/attendance'
 import { exportAttendanceToExcel } from '@/lib/export-utils'
 import { DatePicker } from '@/components/ui/date-picker'
 import { useSidebar } from '@/contexts/sidebar-context'
-import { parse } from 'date-fns'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
+import { MobileHeader } from '@/components/mobile-header'
+import { NotificationBell } from '@/components/notification-bell'
 
 interface TimesheetsClientProps {
     user: any
     initialData: any
+    workSettings: any
 }
 
 type FilterRange = 'today' | 'month' | '3days' | '7days' | '30days' | 'custom'
 
-export function TimesheetsClient({ user, initialData }: TimesheetsClientProps) {
+export function TimesheetsClient({ user, initialData, workSettings }: TimesheetsClientProps) {
     const { t, locale } = useI18n()
     const { setIsOpen } = useSidebar()
     const [viewDate, setViewDate] = useState(new Date())
@@ -32,6 +40,20 @@ export function TimesheetsClient({ user, initialData }: TimesheetsClientProps) {
     const [showDownloadDropdown, setShowDownloadDropdown] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
     const downloadRef = useRef<HTMLDivElement>(null)
+
+    // Report Issue State
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false)
+    const [reportData, setReportData] = useState({
+        log_id: '',
+        work_date: new Date(),
+        check_in_time: '',
+        check_out_time: '',
+        reason: '',
+        type: 'normal' // 'normal' | 'overtime'
+    })
+    const [isSubmittingReport, setIsSubmittingReport] = useState(false)
+
+
 
     // Handle clicks outside dropdown
     useEffect(() => {
@@ -65,6 +87,115 @@ export function TimesheetsClient({ user, initialData }: TimesheetsClientProps) {
         }
     }
 
+    const handleOpenReport = (log: any) => {
+        setReportData({
+            log_id: log.id,
+            work_date: new Date(log.work_date),
+            check_in_time: log.check_in_time ? format(parseISO(log.check_in_time), 'HH:mm') : '',
+            check_out_time: log.check_out_time ? format(parseISO(log.check_out_time), 'HH:mm') : '',
+            reason: '',
+            type: 'normal'
+        })
+        setIsReportModalOpen(true)
+    }
+
+    const handleSubmitReport = async () => {
+        if (!reportData.reason || !reportData.check_in_time) {
+            toast.error('Vui lòng điền đầy đủ thông tin (Giờ vào, Lý do)')
+            return
+        }
+
+        // Validate time format (HH:mm)
+        const timeRegex = /^([0-1][0-9]|2[0-3]):([0-5][0-9])$/
+        if (!timeRegex.test(reportData.check_in_time)) {
+            toast.error('Giờ vào không hợp lệ! Định dạng: HH:mm (VD: 08:30)')
+            return
+        }
+        if (reportData.check_out_time && !timeRegex.test(reportData.check_out_time)) {
+            toast.error('Giờ ra không hợp lệ! Định dạng: HH:mm (VD: 17:30)')
+            return
+        }
+
+        // VALIDATION LOGIC
+        if (workSettings) {
+            const timeToMin = (t: string) => {
+                const [h, m] = t.split(':').map(Number)
+                return h * 60 + m
+            }
+
+            const inTime = timeToMin(reportData.check_in_time)
+            const outTime = reportData.check_out_time ? timeToMin(reportData.check_out_time) : null
+            const workStart = timeToMin(workSettings.work_start_time)
+            const workEnd = timeToMin(workSettings.work_end_time)
+
+            if (reportData.type === 'normal') {
+                if (inTime < workStart || inTime > workEnd) {
+                    toast.error(`Ca thường: Giờ vào phải trong khoảng ${workSettings.work_start_time} - ${workSettings.work_end_time}`)
+                    return
+                }
+                if (outTime && (outTime < workStart || outTime > workEnd)) {
+                    toast.error(`Ca thường: Giờ ra phải trong khoảng ${workSettings.work_start_time} - ${workSettings.work_end_time}`)
+                    return
+                }
+            } else { // Overtime
+                // Logic: Overtime must be OUTSIDE normal working hours.
+                // Usually Overtime is AFTER workEnd or BEFORE workStart.
+                // We check if the INTERVAL overlaps with main work hours.
+                // Simplest check: Start >= WorkEnd OR End <= WorkStart.
+
+                const isAfterHours = inTime >= workEnd
+                const isBeforeHours = (outTime || inTime) <= workStart
+                const isLunchOvertime = false // Add lunch logic if needed, but user said "ngoài h làm việc" generally.
+
+                // If user enters range that overlaps with work hours -> ERROR
+
+                // Let's define "Overtime" strictly as: ENTIRELY outside work hours.
+                // Start >= End is handled by DB restriction usually, but let's assume valid range.
+                // If Start < WorkEnd AND (End > WorkStart), then it overlaps.
+
+                // Correction: User might just enter CheckIn/CheckOut. 
+                // If it's pure overtime shift, it shouldn't touch normal hours? 
+                // "nếu là tăng ca thì chỉ nhập được thời gian ngoài h làm việc"
+                if (outTime) {
+                    // Check for overlap
+                    if (Math.max(inTime, workStart) < Math.min(outTime, workEnd)) {
+                        toast.error(`Tăng ca: Thời gian phải nằm ngoài giờ làm việc chính (${workSettings.work_start_time} - ${workSettings.work_end_time})`)
+                        return
+                    }
+                } else {
+                    // Just check-in? Hard to validate overlap without end.
+                    // But we can check if it's INSIDE.
+                    if (inTime > workStart && inTime < workEnd) {
+                        toast.error(`Tăng ca: Giờ vào không được nằm trong giờ hành chính`)
+                        return
+                    }
+                }
+            }
+        }
+
+        setIsSubmittingReport(true)
+        try {
+            const res = await submitAttendanceChange({
+                log_id: reportData.log_id,
+                work_date: format(reportData.work_date, 'yyyy-MM-dd'),
+                check_in_time: reportData.check_in_time,
+                check_out_time: reportData.check_out_time,
+                reason: `[${reportData.type === 'normal' ? 'CA THƯỜNG' : 'TĂNG CA'}] ${reportData.reason}` // Tag reason for Admin visibility
+            })
+
+            if (res.success) {
+                toast.success('Gửi yêu cầu thành công')
+                setIsReportModalOpen(false)
+            } else {
+                toast.error('Lỗi: ' + res.error)
+            }
+        } catch (error) {
+            toast.error('Có lỗi xảy ra')
+        } finally {
+            setIsSubmittingReport(false)
+        }
+    }
+
     const handlePrevMonth = () => {
         setViewDate(subMonths(viewDate, 1))
         setCurrentPage(1)
@@ -74,6 +205,32 @@ export function TimesheetsClient({ user, initialData }: TimesheetsClientProps) {
         setViewDate(addMonths(viewDate, 1))
         setCurrentPage(1)
         setPageInput('1')
+    }
+
+    const handleTimeInput = (val: string, field: 'check_in_time' | 'check_out_time') => {
+        let value = val.replace(/[^0-9:]/g, '') // Only allow numbers and colon
+
+        // Auto-format: 0800 -> 08:00
+        if (value.length === 4 && !value.includes(':')) {
+            value = value.slice(0, 2) + ':' + value.slice(2, 4)
+        }
+
+        // Limit to HH:mm format
+        if (value.length > 5) value = value.slice(0, 5)
+
+        // Validate if complete (HH:mm)
+        if (value.length === 5 && value.includes(':')) {
+            const [hourStr, minStr] = value.split(':')
+            const hour = parseInt(hourStr, 10)
+            const min = parseInt(minStr, 10)
+
+            if (isNaN(hour) || isNaN(min) || hour < 0 || hour > 23 || min < 0 || min > 59) {
+                toast.error('Giờ không hợp lệ! (Giờ: 0-23, Phút: 0-59)')
+                return // Don't update if invalid
+            }
+        }
+
+        setReportData(prev => ({ ...prev, [field]: value }))
     }
 
     const rangeLabel = filterRange === 'month'
@@ -162,44 +319,49 @@ export function TimesheetsClient({ user, initialData }: TimesheetsClientProps) {
     return (
         <div className="flex flex-col h-full bg-background-dark md:bg-transparent overflow-hidden">
             {/* --- MOBILE HEADER --- */}
-            <header className="flex md:hidden items-center justify-between px-6 py-4 border-b border-white/10 bg-background-dark/80 backdrop-blur-md sticky top-0 z-20">
-                <div className="flex items-center gap-4">
-                    <button onClick={() => setIsOpen(true)} className="text-slate-400">
-                        <span className="material-symbols-outlined text-[24px]">menu</span>
-                    </button>
-                    <div className="flex flex-col">
-                        <h1 className="text-lg font-bold tracking-tight text-white">{t.timesheets.title}</h1>
-                        <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[10px] text-primary">analytics</span>
-                            {filterRange === 'month' ? (
-                                <div className="flex items-center gap-1">
-                                    <button onClick={handlePrevMonth} className="px-1 py-0.5 hover:text-primary transition-colors">
-                                        <span className="material-symbols-outlined text-[12px]">chevron_left</span>
-                                    </button>
-                                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none min-w-[80px] text-center">{rangeLabel}</span>
-                                    <button onClick={handleNextMonth} className="px-1 py-0.5 hover:text-primary transition-colors">
-                                        <span className="material-symbols-outlined text-[12px]">chevron_right</span>
-                                    </button>
-                                </div>
-                            ) : (
-                                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">{rangeLabel}</p>
-                            )}
-                        </div>
-                    </div>
+            {/* --- MOBILE HEADER --- */}
+            {/* --- MOBILE HEADER --- */}
+            <MobileHeader
+                title={t.timesheets.title}
+                subtitle="Quản lý công & lương"
+                rightActions={<NotificationBell />}
+            />
+
+            {/* --- MOBILE TOOLBAR --- */}
+            <div className="flex md:hidden items-center justify-between px-6 py-4 bg-background-dark/50 border-b border-white/5 sticky top-[73px] z-10 backdrop-blur-md">
+                {/* Month Navigation */}
+                <div className="flex items-center gap-2 bg-slate-900/50 p-1 rounded-lg border border-white/5">
+                    {filterRange === 'month' ? (
+                        <>
+                            <button onClick={handlePrevMonth} className="p-1 hover:text-primary transition-colors hover:bg-white/5 rounded-md">
+                                <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+                            </button>
+                            <span className="text-[11px] font-bold text-slate-300 uppercase tracking-widest leading-none min-w-[90px] text-center">
+                                {format(viewDate, 'MMMM yyyy', { locale: vi })}
+                            </span>
+                            <button onClick={handleNextMonth} className="p-1 hover:text-primary transition-colors hover:bg-white/5 rounded-md">
+                                <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+                            </button>
+                        </>
+                    ) : (
+                        <p className="px-3 py-1 text-[11px] font-bold text-slate-300 uppercase tracking-widest leading-none">{rangeLabel}</p>
+                    )}
                 </div>
+
+                {/* Actions */}
                 <div className="flex gap-2">
                     <button
                         onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-                        className={`p-2 rounded-lg bg-white/5 border border-white/10 transition-colors ${filterRange !== 'month' ? 'text-primary ring-1 ring-primary/30' : 'text-slate-400'}`}
+                        className={`p-2 rounded-lg bg-slate-900/50 border border-white/10 transition-colors ${filterRange !== 'month' ? 'text-primary ring-1 ring-primary/30' : 'text-slate-400 hover:text-white'}`}
                     >
-                        <span className="material-symbols-outlined text-[20px]">filter_list</span>
+                        <span className="material-symbols-outlined text-[18px]">filter_list</span>
                     </button>
                     <div className="relative" ref={downloadRef}>
                         <button
                             onClick={() => setShowDownloadDropdown(!showDownloadDropdown)}
-                            className="p-2 rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-colors"
+                            className="p-2 rounded-lg bg-slate-900/50 border border-white/10 text-slate-400 hover:text-white transition-colors"
                         >
-                            <span className="material-symbols-outlined text-[20px]">file_download</span>
+                            <span className="material-symbols-outlined text-[18px]">file_download</span>
                         </button>
                         {showDownloadDropdown && (
                             <div className="absolute right-0 mt-2 w-48 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl z-50 p-2 animate-in fade-in slide-in-from-top-2 duration-200">
@@ -230,7 +392,7 @@ export function TimesheetsClient({ user, initialData }: TimesheetsClientProps) {
                         )}
                     </div>
                 </div>
-            </header>
+            </div>
 
             {/* --- DESKTOP HEADER --- */}
             <header className="hidden md:flex px-8 py-6 border-b border-border bg-background/50 backdrop-blur-md items-center justify-between gap-4 shrink-0">
@@ -443,6 +605,15 @@ export function TimesheetsClient({ user, initialData }: TimesheetsClientProps) {
                                                     </p>
                                                 </div>
                                             )}
+
+                                            <div className="mt-3 flex justify-end">
+                                                <button
+                                                    onClick={() => handleOpenReport(log)}
+                                                    className="text-[10px] font-bold text-amber-500 hover:text-amber-400 uppercase tracking-wider border border-amber-500/20 bg-amber-500/5 px-3 py-1.5 rounded-lg transition-all"
+                                                >
+                                                    Báo cáo sai sót
+                                                </button>
+                                            </div>
                                         </div>
                                     )
                                 })
@@ -473,6 +644,7 @@ export function TimesheetsClient({ user, initialData }: TimesheetsClientProps) {
                                         <th className="text-center py-4 px-8 text-[10px] font-black text-slate-500 uppercase tracking-widest">{t.timesheets.clockOut}</th>
                                         <th className="text-center py-4 px-8 text-[10px] font-black text-slate-500 uppercase tracking-widest">{t.timesheets.breakDuration}</th>
                                         <th className="text-right py-4 px-8 text-[10px] font-black text-slate-500 uppercase tracking-widest text-primary">{t.timesheets.totalHours}</th>
+                                        <th className="text-center py-4 px-8 text-[10px] font-black text-slate-500 uppercase tracking-widest">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
@@ -500,118 +672,228 @@ export function TimesheetsClient({ user, initialData }: TimesheetsClientProps) {
                                                         {Math.floor(log.totalHours)}h {Math.round((log.totalHours % 1) * 60)}m
                                                     </span>
                                                 </td>
+                                                <td className="py-5 px-8 text-center">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            handleOpenReport(log)
+                                                        }}
+                                                        className="p-2 hover:bg-white/10 rounded-lg text-slate-500 hover:text-amber-500 transition-colors"
+                                                        title="Báo cáo sai sót"
+                                                    >
+                                                        <span className="material-symbols-outlined text-lg">edit_square</span>
+                                                    </button>
+                                                </td>
                                             </tr>
                                         )
                                     })}
                                 </tbody>
                             </table>
                         </div>
-                    </div>
+                    </div >
 
                     {/* --- PAGINATION CONTROLS --- */}
-                    {totalRecords > 0 && (
-                        <div className="flex items-center justify-between pb-8 md:pb-0 px-6 md:px-0">
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                disabled={currentPage === 1}
-                                className="flex items-center gap-2 px-4 py-2 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white bg-slate-900 border border-white/5 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all rounded-xl"
-                            >
-                                <span className="material-symbols-outlined text-sm">arrow_back</span>
-                                Trước
-                            </button>
+                    {
+                        totalRecords > 0 && (
+                            <div className="flex items-center justify-between pb-8 md:pb-0 px-6 md:px-0">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                    disabled={currentPage === 1}
+                                    className="flex items-center gap-2 px-4 py-2 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white bg-slate-900 border border-white/5 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all rounded-xl"
+                                >
+                                    <span className="material-symbols-outlined text-sm">arrow_back</span>
+                                    Trước
+                                </button>
 
-                            <div className="flex flex-col items-center">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-xs font-bold text-white">Trang</span>
-                                    <input
-                                        type="number"
-                                        min={1}
-                                        max={totalPages}
-                                        value={pageInput}
-                                        onChange={(e) => setPageInput(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                let page = parseInt(pageInput)
-                                                if (isNaN(page) || page < 1) page = 1
-                                                if (page > totalPages) page = totalPages
-                                                setCurrentPage(page)
-                                                setPageInput(page.toString())
-                                            }
-                                        }}
-                                        onBlur={() => {
-                                            // Reset to current valid page on blur if invalid
-                                            setPageInput(currentPage.toString())
-                                        }}
-                                        className="w-12 h-6 px-1 text-center bg-slate-800 border border-white/10 rounded text-xs font-bold text-white focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
-                                    />
-                                    <span className="text-xs font-bold text-white">/ {totalPages}</span>
+                                <div className="flex flex-col items-center">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-xs font-bold text-white">Trang</span>
+                                        <input
+                                            type="number"
+                                            min={1}
+                                            max={totalPages}
+                                            value={pageInput}
+                                            onChange={(e) => setPageInput(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    let page = parseInt(pageInput)
+                                                    if (isNaN(page) || page < 1) page = 1
+                                                    if (page > totalPages) page = totalPages
+                                                    setCurrentPage(page)
+                                                    setPageInput(page.toString())
+                                                }
+                                            }}
+                                            onBlur={() => {
+                                                // Reset to current valid page on blur if invalid
+                                                setPageInput(currentPage.toString())
+                                            }}
+                                            className="w-12 h-6 px-1 text-center bg-slate-800 border border-white/10 rounded text-xs font-bold text-white focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+                                        />
+                                        <span className="text-xs font-bold text-white">/ {totalPages}</span>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                                        {totalRecords} bản ghi
+                                    </span>
                                 </div>
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                                    {totalRecords} bản ghi
-                                </span>
-                            </div>
 
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                                disabled={currentPage === totalPages}
-                                className="flex items-center gap-2 px-4 py-2 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white bg-slate-900 border border-white/5 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all rounded-xl"
-                            >
-                                Sau
-                                <span className="material-symbols-outlined text-sm">arrow_forward</span>
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </main>
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="flex items-center gap-2 px-4 py-2 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white bg-slate-900 border border-white/5 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all rounded-xl"
+                                >
+                                    Sau
+                                    <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                                </button>
+                            </div>
+                        )
+                    }
+                </div >
+            </main >
 
             {/* --- FILTER MODAL (Overlay) --- */}
-            {showFilterDropdown && (
-                <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/80 backdrop-blur-sm p-0 md:p-6" onClick={() => setShowFilterDropdown(false)}>
-                    <div className="w-full md:max-w-md bg-slate-900 md:rounded-[2.5rem] p-8 md:p-10 border-t md:border border-white/10 animate-in slide-in-from-bottom duration-300 flex flex-col" onClick={e => e.stopPropagation()}>
-                        <div className="size-16 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-8 shrink-0">
-                            <span className="material-symbols-outlined text-[32px] text-primary">filter_list</span>
-                        </div>
-                        <h2 className="text-2xl font-black text-white mb-2">{t.timesheets.filter}</h2>
-                        <p className="text-slate-500 text-sm font-bold mb-8 uppercase tracking-widest">{t.timesheets.customRange}</p>
+            {
+                showFilterDropdown && (
+                    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/80 backdrop-blur-sm p-0 md:p-6" onClick={() => setShowFilterDropdown(false)}>
+                        <div className="w-full md:max-w-md bg-slate-900 md:rounded-[2.5rem] p-8 md:p-10 border-t md:border border-white/10 animate-in slide-in-from-bottom duration-300 flex flex-col" onClick={e => e.stopPropagation()}>
+                            <div className="size-16 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-8 shrink-0">
+                                <span className="material-symbols-outlined text-[32px] text-primary">filter_list</span>
+                            </div>
+                            <h2 className="text-2xl font-black text-white mb-2">{t.timesheets.filter}</h2>
+                            <p className="text-slate-500 text-sm font-bold mb-8 uppercase tracking-widest">{t.timesheets.customRange}</p>
 
-                        <div className="grid grid-cols-1 gap-4 mb-8">
-                            <button onClick={() => handleFilterSelect('today')} className={`w-full py-5 rounded-[1.5rem] border font-black uppercase tracking-widest text-xs flex items-center justify-between px-8 ${filterRange === 'today' ? 'bg-primary text-black border-primary' : 'bg-white/5 text-slate-400 border-white/5'}`}>
-                                {t.timesheets.today}
-                                {filterRange === 'today' && <span className="material-symbols-outlined">check_circle</span>}
-                            </button>
-                            <button onClick={() => handleFilterSelect('7days')} className={`w-full py-5 rounded-[1.5rem] border font-black uppercase tracking-widest text-xs flex items-center justify-between px-8 ${filterRange === '7days' ? 'bg-primary text-black border-primary' : 'bg-white/5 text-slate-400 border-white/5'}`}>
-                                {t.timesheets.last7Days}
-                                {filterRange === '7days' && <span className="material-symbols-outlined">check_circle</span>}
-                            </button>
-                            <button onClick={() => handleFilterSelect('month')} className={`w-full py-5 rounded-[1.5rem] border font-black uppercase tracking-widest text-xs flex items-center justify-between px-8 ${filterRange === 'month' ? 'bg-primary text-black border-primary' : 'bg-white/5 text-slate-400 border-white/5'}`}>
-                                {t.timesheets.last30Days}
-                                {filterRange === 'month' && <span className="material-symbols-outlined">check_circle</span>}
-                            </button>
-                        </div>
+                            <div className="grid grid-cols-1 gap-4 mb-8">
+                                <button onClick={() => handleFilterSelect('today')} className={`w-full py-5 rounded-[1.5rem] border font-black uppercase tracking-widest text-xs flex items-center justify-between px-8 ${filterRange === 'today' ? 'bg-primary text-black border-primary' : 'bg-white/5 text-slate-400 border-white/5'}`}>
+                                    {t.timesheets.today}
+                                    {filterRange === 'today' && <span className="material-symbols-outlined">check_circle</span>}
+                                </button>
+                                <button onClick={() => handleFilterSelect('7days')} className={`w-full py-5 rounded-[1.5rem] border font-black uppercase tracking-widest text-xs flex items-center justify-between px-8 ${filterRange === '7days' ? 'bg-primary text-black border-primary' : 'bg-white/5 text-slate-400 border-white/5'}`}>
+                                    {t.timesheets.last7Days}
+                                    {filterRange === '7days' && <span className="material-symbols-outlined">check_circle</span>}
+                                </button>
+                                <button onClick={() => handleFilterSelect('month')} className={`w-full py-5 rounded-[1.5rem] border font-black uppercase tracking-widest text-xs flex items-center justify-between px-8 ${filterRange === 'month' ? 'bg-primary text-black border-primary' : 'bg-white/5 text-slate-400 border-white/5'}`}>
+                                    {t.timesheets.last30Days}
+                                    {filterRange === 'month' && <span className="material-symbols-outlined">check_circle</span>}
+                                </button>
+                            </div>
 
-                        <div className="space-y-4 pt-4 border-t border-white/5">
-                            <DatePicker
-                                date={customRange.start ? new Date(customRange.start) : undefined}
-                                setDate={(d) => setCustomRange({ ...customRange, start: d ? format(d, 'yyyy-MM-dd') : '' })}
-                                placeholder="Từ ngày"
-                                className="w-full py-5 rounded-[1.5rem] bg-white/5 border-white/5"
-                            />
-                            <DatePicker
-                                date={customRange.end ? new Date(customRange.end) : undefined}
-                                setDate={(d) => setCustomRange({ ...customRange, end: d ? format(d, 'yyyy-MM-dd') : '' })}
-                                placeholder="Đến ngày"
-                                className="w-full py-5 rounded-[1.5rem] bg-white/5 border-white/5"
-                            />
-                            <button
-                                onClick={handleCustomFilter}
-                                className="w-full py-5 bg-primary text-black font-black rounded-[1.5rem] uppercase tracking-widest mt-4 shadow-xl shadow-primary/20 active:scale-95 transition-transform"
-                            >
-                                {t.common.confirm}
-                            </button>
+                            <div className="space-y-4 pt-4 border-t border-white/5">
+                                <DatePicker
+                                    date={customRange.start ? new Date(customRange.start) : undefined}
+                                    setDate={(d) => setCustomRange({ ...customRange, start: d ? format(d, 'yyyy-MM-dd') : '' })}
+                                    placeholder="Từ ngày"
+                                    className="w-full py-5 rounded-[1.5rem] bg-white/5 border-white/5"
+                                />
+                                <DatePicker
+                                    date={customRange.end ? new Date(customRange.end) : undefined}
+                                    setDate={(d) => setCustomRange({ ...customRange, end: d ? format(d, 'yyyy-MM-dd') : '' })}
+                                    placeholder="Đến ngày"
+                                    className="w-full py-5 rounded-[1.5rem] bg-white/5 border-white/5"
+                                />
+                                <button
+                                    onClick={handleCustomFilter}
+                                    className="w-full py-5 bg-primary text-black font-black rounded-[1.5rem] uppercase tracking-widest mt-4 shadow-xl shadow-primary/20 active:scale-95 transition-transform"
+                                >
+                                    {t.common.confirm}
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
+            {/* --- REPORT ISSUE MODAL --- */}
+            <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
+                <DialogContent className="bg-slate-900 border-slate-700 text-slate-200 sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle className="text-white">Báo cáo sai sót chấm công</DialogTitle>
+                        <DialogDescription className="text-slate-400">
+                            Vui lòng điều chỉnh lại giờ đúng và nhập lý do.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="date" className="text-right text-slate-400">
+                                Ngày
+                            </Label>
+                            <div className="col-span-3 text-white font-bold">
+                                {format(reportData.work_date, 'dd/MM/yyyy')}
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="checkin" className="text-right text-slate-400">
+                                Giờ vào
+                            </Label>
+                            <Input
+                                id="checkin"
+                                type="text"
+                                placeholder="HH:mm (Ví dụ: 08:30)"
+                                value={reportData.check_in_time}
+                                onChange={(e) => handleTimeInput(e.target.value, 'check_in_time')}
+                                className="col-span-3 bg-slate-950 border-slate-700 text-white"
+                            />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="checkout" className="text-right text-slate-400">
+                                Giờ ra
+                            </Label>
+                            <Input
+                                id="checkout"
+                                type="text"
+                                placeholder="HH:mm (Ví dụ: 17:30)"
+                                value={reportData.check_out_time}
+                                onChange={(e) => handleTimeInput(e.target.value, 'check_out_time')}
+                                className="col-span-3 bg-slate-950 border-slate-700 text-white"
+                            />
+                        </div>
+
+                        {/* TYPE SELECTION */}
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label className="text-right text-slate-400">Loại</Label>
+                            <div className="col-span-3 flex gap-4">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="reportType"
+                                        checked={reportData.type === 'normal'}
+                                        onChange={() => setReportData({ ...reportData, type: 'normal' })}
+                                        className="accent-primary"
+                                    />
+                                    <span className={`text-sm font-bold ${reportData.type === 'normal' ? 'text-white' : 'text-slate-500'}`}>Ca thường</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="reportType"
+                                        checked={reportData.type === 'overtime'}
+                                        onChange={() => setReportData({ ...reportData, type: 'overtime' })}
+                                        className="accent-primary"
+                                    />
+                                    <span className={`text-sm font-bold ${reportData.type === 'overtime' ? 'text-white' : 'text-slate-500'}`}>Tăng ca</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-4 gap-4">
+                            <Label htmlFor="reason" className="text-right text-slate-400 mt-3">
+                                Lý do
+                            </Label>
+                            <Textarea
+                                id="reason"
+                                value={reportData.reason}
+                                onChange={(e) => setReportData({ ...reportData, reason: e.target.value })}
+                                className="col-span-3 bg-slate-950 border-slate-700 text-white"
+                                placeholder="Nhập lý do điều chỉnh..."
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setIsReportModalOpen(false)}>Hủy</Button>
+                        <Button onClick={handleSubmitReport} disabled={isSubmittingReport} className="bg-primary text-black hover:bg-primary/90">
+                            {isSubmittingReport ? 'Đang gửi...' : 'Gửi yêu cầu'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
         </div>
     )
 }

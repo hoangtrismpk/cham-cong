@@ -1,0 +1,470 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { getEmployeeById, updateEmployee, getDepartments, getRoles, getManagers, Employee } from '@/app/actions/employees'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+import { ArrowLeft, Save, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
+import Link from 'next/link'
+
+export default function EditEmployeePage() {
+    const params = useParams()
+    const router = useRouter()
+    const employeeId = params.id as string
+
+    const [loading, setLoading] = useState(true)
+    const [saving, setSaving] = useState(false)
+    const [departments, setDepartments] = useState<string[]>([])
+    const [roles, setRoles] = useState<any[]>([])
+    const [managers, setManagers] = useState<any[]>([])
+
+    // Form state
+    const [formData, setFormData] = useState<Partial<Employee>>({
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        address: '',
+        city: '',
+        employee_code: '',
+        job_title: '',
+        department: '',
+        role_id: '',
+        start_date: '',
+        dob: '',
+        gender: null,
+        status: 'active',
+        skills: [],
+        emergency_contact: null
+    })
+
+    // Load employee data
+    useEffect(() => {
+        async function loadData() {
+            setLoading(true)
+
+            // Load employee
+            const result = await getEmployeeById(employeeId)
+            if (result.error || !result.employee) {
+                toast.error('Không tìm thấy nhân viên')
+                router.push('/admin/employees')
+                return
+            }
+
+            // Load departments, roles, and managers
+            const [depts, rolesData, managersData] = await Promise.all([
+                getDepartments(),
+                getRoles(),
+                getManagers()
+            ])
+
+            setDepartments(depts)
+            setRoles(rolesData)
+            setManagers(managersData)
+            setFormData(result.employee)
+            setLoading(false)
+        }
+        loadData()
+    }, [employeeId, router])
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setSaving(true)
+
+        try {
+            const result = await updateEmployee(employeeId, formData)
+
+            if (result.error) {
+                toast.error(result.error)
+            } else {
+                toast.success('Cập nhật thông tin thành công!')
+                router.push(`/admin/employees/${employeeId}`)
+            }
+        } catch (error) {
+            toast.error('Có lỗi xảy ra khi cập nhật')
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-[#0d1117]">
+                <div className="text-center">
+                    <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+                    <p className="text-slate-400">Đang tải thông tin...</p>
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className="min-h-screen bg-[#0d1117] text-white">
+            {/* Header */}
+            <div className="bg-[#161b22] border-b border-slate-800">
+                <div className="max-w-5xl mx-auto px-8 py-6">
+                    {/* Breadcrumb */}
+                    <div className="flex items-center gap-2 text-sm text-slate-400 mb-4">
+                        <Link href="/admin" className="hover:text-white transition-colors">
+                            Main Console
+                        </Link>
+                        <span>/</span>
+                        <Link href="/admin/employees" className="hover:text-white transition-colors">
+                            Employee Directory
+                        </Link>
+                        <span>/</span>
+                        <Link href={`/admin/employees/${employeeId}`} className="hover:text-white transition-colors">
+                            {formData.full_name}
+                        </Link>
+                        <span>/</span>
+                        <span className="text-primary">Edit</span>
+                    </div>
+
+                    {/* Title */}
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-3xl font-bold mb-2">Edit Employee</h1>
+                            <p className="text-slate-400">
+                                Cập nhật thông tin cho {formData.full_name}
+                            </p>
+                        </div>
+                        <Link href={`/admin/employees/${employeeId}`}>
+                            <Button variant="outline" className="bg-slate-800 border-slate-700">
+                                <ArrowLeft className="h-4 w-4 mr-2" />
+                                Quay lại
+                            </Button>
+                        </Link>
+                    </div>
+                </div>
+            </div>
+
+            {/* Form */}
+            <div className="max-w-5xl mx-auto px-8 py-8">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Personal Information */}
+                    <Card className="bg-[#161b22] border-slate-800">
+                        <CardHeader>
+                            <CardTitle>Thông tin cá nhân</CardTitle>
+                            <CardDescription className="text-slate-400">
+                                Thông tin cơ bản của nhân viên
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="first_name">Họ <span className="text-red-500">*</span></Label>
+                                    <Input
+                                        id="first_name"
+                                        value={formData.first_name}
+                                        onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                                        className="bg-[#0d1117] border-slate-700"
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="last_name">Tên <span className="text-red-500">*</span></Label>
+                                    <Input
+                                        id="last_name"
+                                        value={formData.last_name}
+                                        onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                                        className="bg-[#0d1117] border-slate-700"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="email">Email</Label>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        value={formData.email}
+                                        className="bg-[#0d1117] border-slate-700 text-slate-500"
+                                        disabled
+                                    />
+                                    <p className="text-xs text-slate-500">Email không thể thay đổi</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="phone">Số điện thoại</Label>
+                                    <Input
+                                        id="phone"
+                                        value={formData.phone || ''}
+                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                        className="bg-[#0d1117] border-slate-700"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="dob">Ngày sinh</Label>
+                                    <Input
+                                        id="dob"
+                                        type="date"
+                                        value={formData.dob || ''}
+                                        onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
+                                        className="bg-[#0d1117] border-slate-700"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="gender">Giới tính</Label>
+                                    <Select
+                                        value={formData.gender || undefined}
+                                        onValueChange={(value: any) => setFormData({ ...formData, gender: value })}
+                                    >
+                                        <SelectTrigger className="bg-[#0d1117] border-slate-700">
+                                            <SelectValue placeholder="Chọn giới tính" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Male">Nam</SelectItem>
+                                            <SelectItem value="Female">Nữ</SelectItem>
+                                            <SelectItem value="Other">Khác</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="address">Địa chỉ</Label>
+                                    <Input
+                                        id="address"
+                                        value={formData.address || ''}
+                                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                        className="bg-[#0d1117] border-slate-700"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="city">Thành phố</Label>
+                                    <Input
+                                        id="city"
+                                        value={formData.city || ''}
+                                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                        className="bg-[#0d1117] border-slate-700"
+                                    />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Work Information */}
+                    <Card className="bg-[#161b22] border-slate-800">
+                        <CardHeader>
+                            <CardTitle>Thông tin công việc</CardTitle>
+                            <CardDescription className="text-slate-400">
+                                Thông tin về vị trí và phòng ban
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="employee_code">Mã nhân viên</Label>
+                                    <Input
+                                        id="employee_code"
+                                        value={formData.employee_code || ''}
+                                        onChange={(e) => setFormData({ ...formData, employee_code: e.target.value })}
+                                        className="bg-[#0d1117] border-slate-700"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="job_title">Chức danh</Label>
+                                    <Input
+                                        id="job_title"
+                                        value={formData.job_title || ''}
+                                        onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
+                                        className="bg-[#0d1117] border-slate-700"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="department">Phòng ban</Label>
+                                    <Select
+                                        value={formData.department || undefined}
+                                        onValueChange={(value) => setFormData({ ...formData, department: value })}
+                                    >
+                                        <SelectTrigger className="bg-[#0d1117] border-slate-700">
+                                            <SelectValue placeholder="Chọn phòng ban" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {departments.map((dept) => (
+                                                <SelectItem key={dept} value={dept}>
+                                                    {dept}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="role_id">Vai trò</Label>
+                                    <Select
+                                        value={formData.role_id || undefined}
+                                        onValueChange={(value) => setFormData({ ...formData, role_id: value })}
+                                    >
+                                        <SelectTrigger className="bg-[#0d1117] border-slate-700">
+                                            <SelectValue placeholder="Chọn vai trò" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {roles.map((role) => (
+                                                <SelectItem key={role.id} value={role.id}>
+                                                    {role.display_name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="manager_id">Người quản lý trực tiếp</Label>
+                                    <Select
+                                        value={formData.manager_id || 'none'}
+                                        onValueChange={(value) => setFormData({ ...formData, manager_id: value === 'none' ? null : value })}
+                                    >
+                                        <SelectTrigger className="bg-[#0d1117] border-slate-700">
+                                            <SelectValue placeholder="Chọn người quản lý" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none" className="text-slate-500 italic">Không có</SelectItem>
+                                            {managers.map((mgr) => (
+                                                <SelectItem key={mgr.id} value={mgr.id}>
+                                                    {mgr.full_name} ({mgr.employee_code || 'N/A'})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="start_date">Ngày bắt đầu</Label>
+                                    <Input
+                                        id="start_date"
+                                        type="date"
+                                        value={formData.start_date || ''}
+                                        onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                                        className="bg-[#0d1117] border-slate-700"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="status">Trạng thái</Label>
+                                    <Select
+                                        value={formData.status}
+                                        onValueChange={(value: any) => setFormData({ ...formData, status: value })}
+                                    >
+                                        <SelectTrigger className="bg-[#0d1117] border-slate-700">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="active">Active</SelectItem>
+                                            <SelectItem value="inactive">Inactive</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Emergency Contact */}
+                    <Card className="bg-[#161b22] border-slate-800">
+                        <CardHeader>
+                            <CardTitle>Liên hệ khẩn cấp</CardTitle>
+                            <CardDescription className="text-slate-400">
+                                Thông tin liên hệ trong trường hợp khẩn cấp
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="ec_name">Tên người liên hệ</Label>
+                                    <Input
+                                        id="ec_name"
+                                        value={(formData.emergency_contact as any)?.name || ''}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            emergency_contact: {
+                                                ...(formData.emergency_contact as any || {}),
+                                                name: e.target.value
+                                            }
+                                        })}
+                                        className="bg-[#0d1117] border-slate-700"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="ec_phone">Số điện thoại</Label>
+                                    <Input
+                                        id="ec_phone"
+                                        value={(formData.emergency_contact as any)?.phone || ''}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            emergency_contact: {
+                                                ...(formData.emergency_contact as any || {}),
+                                                phone: e.target.value
+                                            }
+                                        })}
+                                        className="bg-[#0d1117] border-slate-700"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="ec_relationship">Mối quan hệ</Label>
+                                    <Input
+                                        id="ec_relationship"
+                                        value={(formData.emergency_contact as any)?.relationship || ''}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            emergency_contact: {
+                                                ...(formData.emergency_contact as any || {}),
+                                                relationship: e.target.value
+                                            }
+                                        })}
+                                        className="bg-[#0d1117] border-slate-700"
+                                    />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Actions */}
+                    <div className="flex justify-end gap-3">
+                        <Link href={`/admin/employees/${employeeId}`}>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="bg-slate-800 border-slate-700"
+                            >
+                                Hủy
+                            </Button>
+                        </Link>
+                        <Button
+                            type="submit"
+                            className="bg-primary hover:bg-primary/90 text-black"
+                            disabled={saving}
+                        >
+                            {saving ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Đang lưu...
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="h-4 w-4 mr-2" />
+                                    Lưu thay đổi
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    )
+}

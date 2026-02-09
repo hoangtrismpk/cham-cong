@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        :root {
+            --checkbox-tick-svg: url('data:image/svg+xml,%3csvg viewBox=%270 0 16 16%27 fill=%27rgb(248,250,252)%27 xmlns=%27http://www.w3.org/2000/svg%27%3e%3cpath d=%27M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z%27/%3e%3c/svg%3e');
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-[#0d141b] dark:text-slate-200 font-display">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- TopNavBar -->
+<header class="flex items-center justify-between border-b border-solid border-[#e7edf3] dark:border-slate-800 px-10 py-3 bg-white dark:bg-background-dark">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4 text-primary">
+<div class="size-6">
+<span class="material-symbols-outlined text-3xl">schedule</span>
+</div>
+<h2 class="text-[#0d141b] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">TimeKeep Admin</h2>
+</div>
+<label class="flex flex-col min-w-40 !h-10 max-w-64">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full">
+<div class="text-[#4c739a] flex border-none bg-[#e7edf3] dark:bg-slate-800 items-center justify-center pl-4 rounded-l-lg" data-icon="search">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-[#0d141b] dark:text-white focus:outline-0 focus:ring-0 border-none bg-[#e7edf3] dark:bg-slate-800 placeholder:text-[#4c739a] px-4 rounded-l-none border-l-0 pl-2 text-base font-normal" placeholder="Search" value=""/>
+</div>
+</label>
+</div>
+<div class="flex flex-1 justify-end gap-8 items-center">
+<nav class="flex items-center gap-9">
+<a class="text-[#0d141b] dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors" href="#">Dashboard</a>
+<a class="text-[#0d141b] dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors" href="#">Users</a>
+<a class="text-[#0d141b] dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors" href="#">Reports</a>
+<a class="text-primary text-sm font-bold border-b-2 border-primary" href="#">Settings</a>
+</nav>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-primary" data-alt="Admin profile avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDz528UG6FkVNPcKgNPjFQlNkFJmiJe0DaJQpndowFgZzV1PeDau8IwZdy2zrruPhD-AyIWz52VkieSWXNVqV_sBmZNpD26Y3FtMZyVHIpZWNPgFWdf0kuxxqZVMT2ndk-wVQU7bfmmrXLny5PT9S9IFIzy5noGfk4J8DPpln1l-VDtC11MREn2c31B3Y7XgbSIlKgL8GRKsg0Qogq6ZOOQqAoHjFr98A6MyGea-nCYVEt1IDG-KsuztRtx_YOIUrhsDfJYnGzm3oQO");'></div>
+</div>
+</header>
+<div class="flex flex-1 justify-center py-5">
+<div class="layout-content-container flex max-w-[1200px] flex-1 gap-6 px-4">
+<!-- SideNavBar -->
+<aside class="flex w-64 flex-col justify-between bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm h-fit">
+<div class="flex flex-col gap-4">
+<div class="flex flex-col px-3 py-2">
+<h1 class="text-[#0d141b] dark:text-white text-base font-bold">System Settings</h1>
+<p class="text-[#4c739a] text-xs font-normal">Global Configuration</p>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#e7edf3] dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-500">settings</span>
+<p class="text-[#0d141b] dark:text-slate-300 text-sm font-medium">General</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#e7edf3] dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-500">security</span>
+<p class="text-[#0d141b] dark:text-slate-300 text-sm font-medium">Security</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">notifications</span>
+<p class="text-sm font-bold">Notifications</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#e7edf3] dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-500">api</span>
+<p class="text-[#0d141b] dark:text-slate-300 text-sm font-medium">Integrations</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#e7edf3] dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-500">help</span>
+<p class="text-[#0d141b] dark:text-slate-300 text-sm font-medium">Support</p>
+</a>
+</nav>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex flex-col flex-1 gap-6">
+<!-- PageHeading -->
+<div class="flex flex-col gap-2 p-6 bg-white dark:bg-slate-900 rounded-xl shadow-sm">
+<p class="text-[#0d141b] dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">Notifications</p>
+<p class="text-[#4c739a] dark:text-slate-400 text-base font-normal leading-normal">Manage global notification rules and email server configuration.</p>
+</div>
+<!-- Notification Rules Section -->
+<section class="bg-white dark:bg-slate-900 rounded-xl shadow-sm overflow-hidden">
+<h2 class="text-[#0d141b] dark:text-white text-[22px] font-bold leading-tight tracking-[-0.015em] px-6 pt-6 pb-2">Notification Rules</h2>
+<!-- Checklists -->
+<div class="px-6 pb-6">
+<label class="flex items-center gap-x-4 py-4 border-b border-slate-100 dark:border-slate-800 group cursor-pointer">
+<input checked="" class="h-6 w-6 rounded border-[#cfdbe7] dark:border-slate-700 border-2 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 transition-all cursor-pointer" style="background-image: var(--checkbox-tick-svg);" type="checkbox"/>
+<div class="flex flex-col">
+<p class="text-[#0d141b] dark:text-slate-200 text-base font-semibold group-hover:text-primary transition-colors">Email Alerts for New Registrations</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Send an email to admins when a new user signs up.</p>
+</div>
+</label>
+<label class="flex items-center gap-x-4 py-4 border-b border-slate-100 dark:border-slate-800 group cursor-pointer">
+<input class="h-6 w-6 rounded border-[#cfdbe7] dark:border-slate-700 border-2 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 transition-all cursor-pointer" style="background-image: var(--checkbox-tick-svg);" type="checkbox"/>
+<div class="flex flex-col">
+<p class="text-[#0d141b] dark:text-slate-200 text-base font-semibold group-hover:text-primary transition-colors">Push Notifications for Pending Leave Requests</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Notify managers via mobile when a staff member submits leave.</p>
+</div>
+</label>
+<label class="flex items-center gap-x-4 py-4 group cursor-pointer">
+<input checked="" class="h-6 w-6 rounded border-[#cfdbe7] dark:border-slate-700 border-2 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 transition-all cursor-pointer" style="background-image: var(--checkbox-tick-svg);" type="checkbox"/>
+<div class="flex flex-col">
+<p class="text-[#0d141b] dark:text-slate-200 text-base font-semibold group-hover:text-primary transition-colors">Weekly Summary Reports</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Generate and send automated attendance reports every Monday.</p>
+</div>
+</label>
+</div>
+</section>
+<!-- SMTP Configuration Section -->
+<section class="bg-white dark:bg-slate-900 rounded-xl shadow-sm overflow-hidden p-6">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary">mail</span>
+<h2 class="text-[#0d141b] dark:text-white text-[22px] font-bold leading-tight tracking-[-0.015em]">SMTP Server Configuration</h2>
+</div>
+<div class="grid grid-cols-2 gap-6">
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">SMTP Host</label>
+<input class="form-input rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary" placeholder="e.g., smtp.gmail.com" type="text" value="smtp.timekeep.app"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Port</label>
+<input class="form-input rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary" placeholder="e.g., 587" type="number" value="587"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Username</label>
+<input class="form-input rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary" type="text" value="noreply@timekeep.app"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Password</label>
+<input class="form-input rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary" type="password" value="••••••••••••"/>
+</div>
+<div class="flex flex-col gap-2 col-span-2">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Encryption Method</label>
+<select class="form-select rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary">
+<option>None</option>
+<option selected="">STARTTLS</option>
+<option>SSL/TLS</option>
+</select>
+</div>
+</div>
+<div class="mt-8 flex justify-end gap-3">
+<button class="px-5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                    Test Connection
+                                </button>
+<button class="px-5 py-2.5 rounded-lg bg-primary text-white font-semibold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors">
+                                    Save Changes
+                                </button>
+</div>
+</section>
+</main>
+</div>
+</div>
+</div>
+</div>
+</body></html>
