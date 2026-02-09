@@ -30,7 +30,7 @@ export interface WorkReport {
     user_id: string
     content: string
     report_date: string
-    report_type: 'daily' | 'weekly' | 'monthly'
+    report_type: 'daily' | 'weekly' | 'monthly' | 'makeup'
     is_makeup?: boolean
     is_resubmitted?: boolean // User has submitted again after changes requested
     admin_viewed?: boolean  // Admin has viewed the latest update

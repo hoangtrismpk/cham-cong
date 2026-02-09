@@ -10,9 +10,14 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Supabase Management API credentials
-const PROJECT_REF = 'uffyhbinfvivqnjrhvvq';
-const ACCESS_TOKEN = 'sbp_5662c67b2d541d60ae51c9b40b90aacf2dd625aa';
+// Supabase Management API credentials - Moved to environment variables for security
+const PROJECT_REF = process.env.SUPABASE_PROJECT_REF;
+const ACCESS_TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
+
+if (!PROJECT_REF || !ACCESS_TOKEN) {
+    console.error('❌ Missing SUPABASE_PROJECT_REF or SUPABASE_ACCESS_TOKEN in environment variables.');
+    process.exit(1);
+}
 
 async function applyMigration(migrationFileName) {
     try {
