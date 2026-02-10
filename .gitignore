@@ -41,3 +41,25 @@ yarn-error.log*
 next-env.d.ts
 
 firebase-service-account.json
+
+# Logs and temporary files
+*.log
+*.txt
+!requirements.txt
+lint_output*
+tsc_output*
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Personal/Project specific
+.vscode/
+.idea/
+.agent/
+*.plan
+*.task
+*.md
+!README.md
+!CONTRIBUTING.md
+!LICENSE.md
