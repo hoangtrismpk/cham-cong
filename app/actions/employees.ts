@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { revalidatePath } from 'next/cache'
+import { getOrganizationSettings } from './organization'
 
 // Types
 export interface EmergencyContact {
@@ -29,6 +30,7 @@ export interface Employee {
     employee_code: string | null
     job_title: string | null
     department: string | null
+    contract_type: string | null // NEW: Contract Type
     role_id: string | null
     role_name?: string
     manager_id?: string | null // NEW: Direct Supervisor
@@ -123,6 +125,7 @@ export async function getEmployees(filters: EmployeeFilters = {}) {
             employee_code,
             job_title,
             department,
+            contract_type,
             avatar_url,
             role_id,
             manager_id,
@@ -223,6 +226,7 @@ export async function getEmployeeById(id: string | number) {
             employee_code,
             job_title,
             department,
+            contract_type,
             avatar_url,
             role_id,
             manager_id,
@@ -268,6 +272,13 @@ export async function getEmployeeById(id: string | number) {
 }
 
 export async function getDepartments() {
+    // 1. Try to get from Organization Settings first
+    const settings = await getOrganizationSettings()
+    if (settings && settings.departments && settings.departments.length > 0) {
+        return settings.departments
+    }
+
+    // 2. Fallback to distinct query
     const supabase = await createClient()
     const { data, error } = await supabase
         .from('profiles')
@@ -276,6 +287,24 @@ export async function getDepartments() {
 
     if (error) return []
     return [...new Set((data || []).map(d => d.department).filter(Boolean))] as string[]
+}
+
+export async function getJobTitles() {
+    // 1. Try to get from Organization Settings first
+    const settings = await getOrganizationSettings()
+    if (settings && settings.job_titles && settings.job_titles.length > 0) {
+        return settings.job_titles
+    }
+
+    // 2. Fallback to distinct query
+    const supabase = await createClient()
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('job_title')
+        .not('job_title', 'is', null)
+
+    if (error) return []
+    return [...new Set((data || []).map(d => d.job_title).filter(Boolean))] as string[]
 }
 
 export async function getRoles() {
@@ -348,6 +377,7 @@ export async function createEmployee(formData: Partial<Employee> & { password?: 
             employee_code: formData.employee_code || null,
             job_title: formData.job_title || 'Member',
             department: formData.department || null,
+            contract_type: formData.contract_type || null, // NEW
             role_id: formData.role_id || null,
             manager_id: formData.manager_id || null, // SAVE MANAGER
             start_date: formData.start_date || new Date().toISOString(),
@@ -412,6 +442,7 @@ export async function updateEmployee(employeeId: string | number, formData: Part
             employee_code: formData.employee_code,
             job_title: formData.job_title,
             department: formData.department,
+            contract_type: formData.contract_type, // NEW
             role_id: formData.role_id,
             manager_id: formData.manager_id || null, // SAVE MANAGER
             start_date: formData.start_date,

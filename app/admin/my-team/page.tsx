@@ -2,8 +2,11 @@ import { getMyTeamData } from '@/app/actions/my-team'
 import { createClient } from '@/utils/supabase/server'
 import MyTeamClient from './client-page'
 import { redirect } from 'next/navigation'
+import { requirePermission } from '@/utils/auth-guard'
 
 export default async function MyTeamPage() {
+    await requirePermission('users.view', '/admin')
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 

@@ -36,7 +36,13 @@ export function useAutoCheckOut(workSettings: any) {
                     return
                 }
 
-                const today = new Date().toISOString().split('T')[0]
+                // Get Today in VN Time (YYYY-MM-DD)
+                const today = new Intl.DateTimeFormat('en-CA', {
+                    timeZone: 'Asia/Ho_Chi_Minh',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                }).format(new Date())
 
                 // 2. Check for ANY active session (Checked in but not checked out)
                 const { data: activeLogs } = await supabase
@@ -81,10 +87,10 @@ export function useAutoCheckOut(workSettings: any) {
 
                     console.log(`🤖 Shift ${schedule.start_time}-${schedule.end_time}: diff from end = ${diffMins.toFixed(1)} mins`)
 
-                    // Allow auto-checkout from 15 mins before end time to 60 mins after
+                    // Allow auto-checkout from 30 mins before end time to 8 hours after
                     // diffMins > 0 means we're PAST the end time (good for checkout)
                     // diffMins < 0 means we're BEFORE the end time
-                    if (diffMins >= -15 && diffMins <= 60) {
+                    if (diffMins >= -30 && diffMins <= 480) {
                         shouldCheckOut = true
                         console.log('🤖 Match found: Time to auto-checkout!', schedule.title, 'ended at', schedule.end_time)
                         break

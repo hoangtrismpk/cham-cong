@@ -2,8 +2,9 @@
 
 import { WorkReport } from '@/app/actions/work-reports'
 import { format } from 'date-fns'
-import { vi } from 'date-fns/locale'
+import { vi, enUS } from 'date-fns/locale'
 import { useState, useEffect, useMemo } from 'react'
+import { useI18n } from '@/contexts/i18n-context'
 import {
     FileText, TrendingUp, CheckCircle, AlertCircle,
     Eye, Download, ChevronDown, Filter, Search,
@@ -52,6 +53,8 @@ const PAGE_SIZE = 10
 
 export default function AdminReportsDashboard({ reports: initialReports, total, stats, currentPage, filters }: Props) {
     const router = useRouter()
+    const { t, locale } = useI18n()
+    const dateLocale = locale === 'vi' ? vi : enUS
     const [reports, setReports] = useState<WorkReport[]>(initialReports)
     const [selectedReport, setSelectedReport] = useState<WorkReport | null>(null)
     const [searchQuery, setSearchQuery] = useState('')
@@ -163,24 +166,24 @@ export default function AdminReportsDashboard({ reports: initialReports, total, 
     }
 
     const getStatusLabel = (status: string | undefined) => {
-        if (!status) return 'Trạng thái'
+        if (!status) return t.admin.reportDashboard.status.all
         switch (status) {
-            case 'unread': return 'Chưa xem'
-            case 'updated': return 'Có cập nhật'
-            case 'viewed': return 'Đã xem'
-            case 'approved': return 'Đã duyệt'
-            case 'changes_requested': return 'Yêu cầu sửa'
+            case 'unread': return t.admin.reportDashboard.status.unread
+            case 'updated': return t.admin.reportDashboard.status.updated
+            case 'viewed': return t.admin.reportDashboard.status.viewed
+            case 'approved': return t.admin.reportDashboard.status.approved
+            case 'changes_requested': return t.admin.reportDashboard.status.changesRequested
             default: return status
         }
     }
 
     const getTypeLabel = (type: string | undefined) => {
-        if (!type) return 'Loại báo cáo'
+        if (!type) return t.admin.reportDashboard.filterType
         switch (type) {
-            case 'daily': return 'Báo cáo Ngày'
-            case 'weekly': return 'Báo cáo Tuần'
-            case 'monthly': return 'Báo cáo Tháng'
-            case 'makeup': return 'Báo cáo Bù'
+            case 'daily': return t.admin.reportDashboard.types.daily
+            case 'weekly': return t.admin.reportDashboard.types.weekly
+            case 'monthly': return t.admin.reportDashboard.types.monthly
+            case 'makeup': return t.admin.reportDashboard.types.makeup
             default: return type
         }
     }
@@ -222,8 +225,8 @@ export default function AdminReportsDashboard({ reports: initialReports, total, 
             {/* Page Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase mb-2">Quản lý Báo cáo</h1>
-                    <p className="text-slate-400 font-medium tracking-wide">Phân tích hiệu suất và phê duyệt báo cáo công việc nhân viên.</p>
+                    <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase mb-2">{t.admin.reportDashboard.title}</h1>
+                    <p className="text-slate-400 font-medium tracking-wide">{t.admin.reportDashboard.subtitle}</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <Button
@@ -232,7 +235,7 @@ export default function AdminReportsDashboard({ reports: initialReports, total, 
                         className="h-12 bg-[#1a1f2e] border-slate-700 text-slate-300 hover:bg-slate-800 rounded-2xl px-6 font-bold shadow-xl transition-all"
                     >
                         <Download className="w-4 h-4 mr-2 text-primary" />
-                        Xuất báo cáo
+                        {t.admin.reportDashboard.export}
                     </Button>
                     <div className="relative group">
                         <select
@@ -243,8 +246,8 @@ export default function AdminReportsDashboard({ reports: initialReports, total, 
                             }}
                             className="h-12 px-6 bg-[#1a1f2e] border border-slate-700 text-white rounded-2xl focus:outline-none focus:border-primary font-black shadow-xl appearance-none cursor-pointer pr-12 transition-all hover:bg-slate-800"
                         >
-                            <option value={`${new Date().getMonth() + 1}-${new Date().getFullYear()}`}>Tháng này</option>
-                            <option value={`${new Date().getMonth()}-${new Date().getFullYear()}`}>Tháng trước</option>
+                            <option value={`${new Date().getMonth() + 1}-${new Date().getFullYear()}`}>{t.admin.reportDashboard.thisMonth}</option>
+                            <option value={`${new Date().getMonth()}-${new Date().getFullYear()}`}>{t.admin.reportDashboard.lastMonth}</option>
                         </select>
                         <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none group-hover:text-white transition-colors" />
                     </div>
@@ -254,10 +257,10 @@ export default function AdminReportsDashboard({ reports: initialReports, total, 
             {/* Stats Dashboard */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
-                    { label: 'Tổng báo cáo', value: stats.totalReports, icon: FileText, color: 'text-blue-500', bg: 'bg-blue-500/10', trend: 'Monthly Total' },
-                    { label: 'Hoàn thành', value: `${stats.completionRate}%`, icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-500/10', trend: '+2.4% vs last mo' },
-                    { label: 'Đúng hạn', value: `${stats.onTimeRate}%`, icon: CheckCircle, color: 'text-primary', bg: 'bg-primary/20', trend: 'Consistency Level' },
-                    { label: 'Gửi muộn', value: `${stats.lateRate}%`, icon: AlertCircle, color: 'text-amber-500', bg: 'bg-amber-500/10', trend: 'Review needed' },
+                    { label: t.admin.reportDashboard.stats.totalReports, value: stats.totalReports, icon: FileText, color: 'text-blue-500', bg: 'bg-blue-500/10', trend: t.admin.reportDashboard.stats.monthlyTotal },
+                    { label: t.admin.reportDashboard.stats.completed, value: `${stats.completionRate}%`, icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-500/10', trend: '+2.4% vs last mo' },
+                    { label: t.admin.reportDashboard.stats.onTime, value: `${stats.onTimeRate}%`, icon: CheckCircle, color: 'text-primary', bg: 'bg-primary/20', trend: t.admin.reportDashboard.stats.consistencyLevel },
+                    { label: t.admin.reportDashboard.stats.late, value: `${stats.lateRate}%`, icon: AlertCircle, color: 'text-amber-500', bg: 'bg-amber-500/10', trend: t.admin.reportDashboard.stats.reviewNeeded },
                 ].map((stat, i) => (
                     <Card key={i} className="bg-[#1a1f2e] border-slate-800/80 p-6 rounded-[32px] overflow-hidden relative group hover:border-primary/40 transition-all shadow-2xl">
                         <div className={`absolute -top-4 -right-4 w-20 h-20 ${stat.bg} rounded-full blur-2xl opacity-0 group-hover:opacity-60 transition-opacity`} />
@@ -280,8 +283,8 @@ export default function AdminReportsDashboard({ reports: initialReports, total, 
                 <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-primary/5 to-transparent pointer-events-none" />
                 <div className="flex items-center justify-between mb-10">
                     <div>
-                        <h3 className="text-2xl font-black text-white italic tracking-tight uppercase">Thống kê gửi báo cáo</h3>
-                        <p className="text-slate-400 text-sm font-medium mt-1">Xu hướng hoàn thành công việc theo từng ngày</p>
+                        <h3 className="text-2xl font-black text-white italic tracking-tight uppercase">{t.admin.reportDashboard.chart.title}</h3>
+                        <p className="text-slate-400 text-sm font-medium mt-1">{t.admin.reportDashboard.chart.subtitle}</p>
                     </div>
                 </div>
                 <div className="h-[280px] w-full">
@@ -309,7 +312,7 @@ export default function AdminReportsDashboard({ reports: initialReports, total, 
                         <div className="flex-1 relative w-full group">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 group-focus-within:text-primary transition-colors" />
                             <Input
-                                placeholder="Tìm kiếm theo tên hoặc nội dung báo cáo..."
+                                placeholder={t.admin.reportDashboard.searchPlaceholder}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="h-12 pl-12 bg-[#0d1117] border-slate-700/80 text-white rounded-2xl focus:ring-primary/20 focus:border-primary/50 transition-all font-medium py-6"
@@ -328,13 +331,13 @@ export default function AdminReportsDashboard({ reports: initialReports, total, 
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-56 p-2 bg-[#1a1f2e] border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden" align="end" sideOffset={10}>
-                                    <p className="text-[10px] font-bold text-slate-500 px-4 py-3 border-b border-slate-800/50 mb-1 uppercase tracking-widest">Loại báo cáo</p>
+                                    <p className="text-[10px] font-bold text-slate-500 px-4 py-3 border-b border-slate-800/50 mb-1 uppercase tracking-widest">{t.admin.reportDashboard.filterType}</p>
                                     <div className="space-y-1">
-                                        <button onClick={() => setTypeFilter(null)} className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition-colors font-medium cursor-pointer">Tất cả</button>
-                                        <button onClick={() => setTypeFilter('daily')} className="w-full text-left px-4 py-2.5 text-sm text-blue-400 hover:bg-blue-500/10 rounded-xl transition-colors font-semibold cursor-pointer">Báo cáo Ngày</button>
-                                        <button onClick={() => setTypeFilter('weekly')} className="w-full text-left px-4 py-2.5 text-sm text-purple-400 hover:bg-purple-500/10 rounded-xl transition-colors font-semibold cursor-pointer">Báo cáo Tuần</button>
-                                        <button onClick={() => setTypeFilter('monthly')} className="w-full text-left px-4 py-2.5 text-sm text-orange-400 hover:bg-orange-500/10 rounded-xl transition-colors font-semibold cursor-pointer">Báo cáo Tháng</button>
-                                        <button onClick={() => setTypeFilter('makeup')} className="w-full text-left px-4 py-2.5 text-sm text-slate-400 hover:bg-slate-800 rounded-xl transition-colors font-semibold cursor-pointer">Báo cáo Bù</button>
+                                        <button onClick={() => setTypeFilter(null)} className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition-colors font-medium cursor-pointer">{t.admin.reportDashboard.types.all}</button>
+                                        <button onClick={() => setTypeFilter('daily')} className="w-full text-left px-4 py-2.5 text-sm text-blue-400 hover:bg-blue-500/10 rounded-xl transition-colors font-semibold cursor-pointer">{t.admin.reportDashboard.types.daily}</button>
+                                        <button onClick={() => setTypeFilter('weekly')} className="w-full text-left px-4 py-2.5 text-sm text-purple-400 hover:bg-purple-500/10 rounded-xl transition-colors font-semibold cursor-pointer">{t.admin.reportDashboard.types.weekly}</button>
+                                        <button onClick={() => setTypeFilter('monthly')} className="w-full text-left px-4 py-2.5 text-sm text-orange-400 hover:bg-orange-500/10 rounded-xl transition-colors font-semibold cursor-pointer">{t.admin.reportDashboard.types.monthly}</button>
+                                        <button onClick={() => setTypeFilter('makeup')} className="w-full text-left px-4 py-2.5 text-sm text-slate-400 hover:bg-slate-800 rounded-xl transition-colors font-semibold cursor-pointer">{t.admin.reportDashboard.types.makeup}</button>
                                     </div>
                                 </PopoverContent>
                             </Popover>
@@ -352,15 +355,15 @@ export default function AdminReportsDashboard({ reports: initialReports, total, 
                                 </PopoverTrigger>
                                 <PopoverContent className="w-64 p-2 bg-[#1a1f2e] border-slate-800 rounded-3xl shadow-2xl z-50 overflow-hidden" align="end" sideOffset={10}>
                                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/50 to-blue-500/50" />
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-4 py-3 border-b border-slate-800/50 mb-1">Trạng thái xử lý</p>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-4 py-3 border-b border-slate-800/50 mb-1">{t.admin.reportDashboard.filterStatus}</p>
                                     <div className="space-y-1">
-                                        <button onClick={() => setStatusFilter(null)} className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition-colors font-medium cursor-pointer">Tất cả báo cáo</button>
-                                        <button onClick={() => setStatusFilter('unread')} className="w-full text-left px-4 py-2.5 text-sm text-blue-400 hover:bg-blue-500/10 rounded-xl transition-colors flex items-center justify-between font-semibold cursor-pointer">Chưa xem <span className="h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)] animate-pulse" /></button>
-                                        <button onClick={() => setStatusFilter('updated')} className="w-full text-left px-4 py-2.5 text-sm text-amber-400 hover:bg-amber-500/10 rounded-xl transition-colors flex items-center justify-between font-semibold cursor-pointer">Có cập nhật <span className="h-2 w-2 rounded-full bg-amber-500" /></button>
-                                        <button onClick={() => setStatusFilter('viewed')} className="w-full text-left px-4 py-2.5 text-sm text-slate-400 hover:bg-slate-800 rounded-xl transition-colors font-medium cursor-pointer italic">Đã xem ổn định</button>
+                                        <button onClick={() => setStatusFilter(null)} className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition-colors font-medium cursor-pointer">{t.admin.reportDashboard.status.all}</button>
+                                        <button onClick={() => setStatusFilter('unread')} className="w-full text-left px-4 py-2.5 text-sm text-blue-400 hover:bg-blue-500/10 rounded-xl transition-colors flex items-center justify-between font-semibold cursor-pointer">{t.admin.reportDashboard.status.unread} <span className="h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)] animate-pulse" /></button>
+                                        <button onClick={() => setStatusFilter('updated')} className="w-full text-left px-4 py-2.5 text-sm text-amber-400 hover:bg-amber-500/10 rounded-xl transition-colors flex items-center justify-between font-semibold cursor-pointer">{t.admin.reportDashboard.status.updated} <span className="h-2 w-2 rounded-full bg-amber-500" /></button>
+                                        <button onClick={() => setStatusFilter('viewed')} className="w-full text-left px-4 py-2.5 text-sm text-slate-400 hover:bg-slate-800 rounded-xl transition-colors font-medium cursor-pointer italic">{t.admin.reportDashboard.status.viewed}</button>
                                         <div className="h-px bg-slate-800/50 my-1 mx-2" />
-                                        <button onClick={() => setStatusFilter('approved')} className="w-full text-left px-4 py-2.5 text-sm text-green-400 hover:bg-green-500/10 rounded-xl transition-colors font-semibold cursor-pointer">Đã phê duyệt</button>
-                                        <button onClick={() => setStatusFilter('changes_requested')} className="w-full text-left px-4 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 rounded-xl transition-colors font-semibold cursor-pointer">Cần chỉnh sửa</button>
+                                        <button onClick={() => setStatusFilter('approved')} className="w-full text-left px-4 py-2.5 text-sm text-green-400 hover:bg-green-500/10 rounded-xl transition-colors font-semibold cursor-pointer">{t.admin.reportDashboard.status.approved}</button>
+                                        <button onClick={() => setStatusFilter('changes_requested')} className="w-full text-left px-4 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 rounded-xl transition-colors font-semibold cursor-pointer">{t.admin.reportDashboard.status.changesRequested}</button>
                                     </div>
                                 </PopoverContent>
                             </Popover>
@@ -374,19 +377,19 @@ export default function AdminReportsDashboard({ reports: initialReports, total, 
                         <table className="w-full border-collapse">
                             <thead>
                                 <tr className="border-b border-slate-800/50 bg-[#161b26]">
-                                    <th className="px-8 py-5 text-left text-[11px] font-bold text-slate-500 tracking-wider w-[80px]">User</th>
-                                    <th className="px-8 py-5 text-left text-[11px] font-bold text-slate-500 tracking-wider">Họ tên & Phòng ban</th>
-                                    <th className="px-8 py-5 text-center text-[11px] font-bold text-slate-500 tracking-wider">Ngày & Loại</th>
-                                    <th className="px-8 py-5 text-center text-[11px] font-bold text-slate-500 tracking-wider">Tình trạng</th>
-                                    <th className="px-8 py-5 text-center text-[11px] font-bold text-slate-500 tracking-wider">Giờ nộp</th>
-                                    <th className="px-8 py-5 text-right text-[11px] font-bold text-slate-500 tracking-wider w-[100px]">Thao tác</th>
+                                    <th className="px-8 py-5 text-left text-[11px] font-bold text-slate-500 tracking-wider w-[80px]">{t.admin.reportDashboard.table.user}</th>
+                                    <th className="px-8 py-5 text-left text-[11px] font-bold text-slate-500 tracking-wider">{t.admin.reportDashboard.table.nameDept}</th>
+                                    <th className="px-8 py-5 text-center text-[11px] font-bold text-slate-500 tracking-wider">{t.admin.reportDashboard.table.dateType}</th>
+                                    <th className="px-8 py-5 text-center text-[11px] font-bold text-slate-500 tracking-wider">{t.admin.reportDashboard.table.status}</th>
+                                    <th className="px-8 py-5 text-center text-[11px] font-bold text-slate-500 tracking-wider">{t.admin.reportDashboard.table.submissionTime}</th>
+                                    <th className="px-8 py-5 text-right text-[11px] font-bold text-slate-500 tracking-wider w-[100px]">{t.admin.reportDashboard.table.actions}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-800/40">
                                 {processedReports.length === 0 ? (
                                     <tr>
                                         <td colSpan={6} className="px-8 py-32 text-center text-slate-500 font-black italic uppercase tracking-widest opacity-50">
-                                            Không có báo cáo nào khả dụng
+                                            {t.admin.reportDashboard.table.noData}
                                         </td>
                                     </tr>
                                 ) : (
@@ -414,10 +417,10 @@ export default function AdminReportsDashboard({ reports: initialReports, total, 
                                                         onClick={(e) => { e.stopPropagation(); router.push(`/admin/reports/employee/${report.user_id}`); }}
                                                         className="text-sm font-black text-white group-hover:text-primary transition-colors tracking-tight cursor-pointer hover:underline decoration-primary/30 underline-offset-4"
                                                     >
-                                                        {report.user?.full_name || 'Hệ thống'}
+                                                        {report.user?.full_name || t.admin.reportDashboard.table.system}
                                                     </span>
                                                     <span className="text-[10px] text-slate-500 font-bold italic tracking-wide">
-                                                        {(report.user as any)?.department || 'Phòng ban trống'}
+                                                        {(report.user as any)?.department || t.admin.reportDashboard.table.noDept}
                                                     </span>
                                                 </div>
                                             </td>
@@ -425,13 +428,13 @@ export default function AdminReportsDashboard({ reports: initialReports, total, 
                                                 <div className="flex flex-col items-center gap-1.5">
                                                     <div className="flex items-center gap-1 text-slate-300 font-bold text-xs uppercase tracking-tighter">
                                                         <Calendar className="w-3.5 h-3.5 opacity-40" />
-                                                        {format(new Date(report.report_date), 'dd/MM/yyyy')}
+                                                        {format(new Date(report.report_date), 'dd/MM/yyyy', { locale: dateLocale })}
                                                     </div>
                                                     <span className={`text-[9px] font-bold px-2.5 py-1 rounded-md border ${report.report_type === 'daily' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
                                                         report.report_type === 'weekly' ? 'bg-purple-400/10 text-purple-400 border-purple-400/20' :
                                                             'bg-orange-500/10 text-orange-400 border-orange-500/20'
                                                         }`}>
-                                                        {report.report_type === 'daily' ? 'Báo cáo ngày' : report.report_type === 'weekly' ? 'Báo cáo tuần' : 'Báo cáo bù'}
+                                                        {getTypeLabel(report.report_type)}
                                                     </span>
                                                 </div>
                                             </td>
@@ -442,14 +445,14 @@ export default function AdminReportsDashboard({ reports: initialReports, total, 
                                                         : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
                                                         }`}>
                                                         <div className={`w-1.5 h-1.5 rounded-full mr-2 ${new Date(report.created_at).toDateString() === new Date(report.report_date).toDateString() ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`}></div>
-                                                        {new Date(report.created_at).toDateString() === new Date(report.report_date).toDateString() ? 'Đúng hạn' : 'Nộp bù'}
+                                                        {new Date(report.created_at).toDateString() === new Date(report.report_date).toDateString() ? t.admin.reportDashboard.table.onTime : t.admin.reportDashboard.table.makeup}
                                                     </div>
                                                     <div className="flex gap-1.5">
                                                         {report.is_resubmitted && (
-                                                            <span className="text-[8px] font-black text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded uppercase border border-blue-500/20 shadow-sm animate-pulse-slow">Update</span>
+                                                            <span className="text-[8px] font-black text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded uppercase border border-blue-500/20 shadow-sm animate-pulse-slow">{t.admin.reportDashboard.table.update}</span>
                                                         )}
                                                         {!report.admin_viewed && (
-                                                            <span className="text-[8px] font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 font-sans tracking-tight">Mới</span>
+                                                            <span className="text-[8px] font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 font-sans tracking-tight">{t.admin.reportDashboard.table.new}</span>
                                                         )}
                                                     </div>
                                                 </div>
@@ -457,7 +460,7 @@ export default function AdminReportsDashboard({ reports: initialReports, total, 
                                             <td className="px-8 py-6 whitespace-nowrap text-center">
                                                 <div className="flex items-center justify-center gap-1.5 text-sm font-black text-slate-400 italic">
                                                     <Clock className="w-3.5 h-3.5 opacity-40" />
-                                                    {format(new Date(report.created_at), 'HH:mm')}
+                                                    {format(new Date(report.created_at), 'HH:mm', { locale: dateLocale })}
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6 whitespace-nowrap text-right">
@@ -468,21 +471,21 @@ export default function AdminReportsDashboard({ reports: initialReports, total, 
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end" className="bg-[#1a1f2e] border-slate-800 text-slate-300 w-56 p-2 rounded-2xl shadow-2xl">
-                                                        <DropdownMenuLabel className="text-[10px] text-slate-500 font-bold px-3 py-2 uppercase tracking-widest">Quản trị báo cáo</DropdownMenuLabel>
+                                                        <DropdownMenuLabel className="text-[10px] text-slate-500 font-bold px-3 py-2 uppercase tracking-widest">{t.admin.reportDashboard.actions.manage}</DropdownMenuLabel>
                                                         <DropdownMenuSeparator className="bg-slate-800/60" />
                                                         <DropdownMenuItem
                                                             onClick={(e) => { e.stopPropagation(); router.push(`/admin/reports/employee/${report.user_id}`); }}
                                                             className="flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-slate-800 rounded-xl transition-all cursor-pointer font-semibold text-primary"
                                                         >
                                                             <TrendingUp className="w-4 h-4" />
-                                                            Phân tích báo cáo
+                                                            {t.admin.reportDashboard.actions.analyze}
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem
                                                             onClick={(e) => { e.stopPropagation(); setSelectedReport(report); }}
                                                             className="flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-slate-800 rounded-xl transition-all cursor-pointer font-medium"
                                                         >
                                                             <FileText className="w-4 h-4" />
-                                                            Xem chi tiết
+                                                            {t.admin.reportDashboard.actions.viewDetail}
                                                         </DropdownMenuItem>
                                                         <DropdownMenuSeparator className="bg-slate-800/60" />
                                                         <DropdownMenuItem
@@ -490,7 +493,7 @@ export default function AdminReportsDashboard({ reports: initialReports, total, 
                                                             className="text-rose-400 hover:bg-rose-500/10 focus:bg-rose-500/10 cursor-pointer py-3 px-3 rounded-xl m-1 transition-colors flex items-center gap-3 font-bold text-sm"
                                                         >
                                                             <AlertCircle className="w-4 h-4" />
-                                                            Từ chối báo cáo
+                                                            {t.admin.reportDashboard.actions.reject}
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
@@ -505,8 +508,8 @@ export default function AdminReportsDashboard({ reports: initialReports, total, 
                     {/* Footer Pagination */}
                     <div className="px-8 py-6 border-t border-slate-800/40 flex items-center justify-between bg-[#1a1f2e]">
                         <div className="text-[11px] font-black text-slate-500 uppercase tracking-widest hidden md:block">
-                            Hiển thị <span className="text-white">{processedReports.length > 0 ? ((currentPage - 1) * PAGE_SIZE) + 1 : 0}</span>-
-                            <span className="text-white">{Math.min(currentPage * PAGE_SIZE, total)}</span> / <span className="text-primary">{total}</span> báo cáo
+                            {t.admin.reportDashboard.pagination.showing} <span className="text-white">{processedReports.length > 0 ? ((currentPage - 1) * PAGE_SIZE) + 1 : 0}</span>-
+                            <span className="text-white">{Math.min(currentPage * PAGE_SIZE, total)}</span> / <span className="text-primary">{total}</span> {t.admin.reportDashboard.pagination.reports}
                         </div>
                         <div className="flex items-center space-x-2 w-full md:w-auto justify-center md:justify-end">
                             <Button

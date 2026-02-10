@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Users, Clock, AlertCircle, Calendar, Shield, Layout, List } from 'lucide-react'
 import { format } from 'date-fns'
 import Link from 'next/link'
+import { useI18n } from '@/contexts/i18n-context'
 
 interface MyTeamClientProps {
     team: TeamMember[]
@@ -18,6 +19,7 @@ interface MyTeamClientProps {
 }
 
 export default function MyTeamClient({ team, stats, currentUserId }: MyTeamClientProps) {
+    const { t } = useI18n()
     const [activeTab, setActiveTab] = useState('overview')
 
     const getStatusVariant = (status?: string) => {
@@ -31,57 +33,57 @@ export default function MyTeamClient({ team, stats, currentUserId }: MyTeamClien
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 p-6">
             <header className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
                         <Users className="h-8 w-8 text-primary" />
-                        Đội ngũ của tôi
+                        {t.admin.myTeam.title}
                     </h1>
-                    <p className="text-slate-400 mt-1">Quản lý trực quan hiệu suất và cấu trúc nhân sự.</p>
+                    <p className="text-slate-400 mt-1">{t.admin.myTeam.subtitle}</p>
                 </div>
             </header>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Card className="bg-[#161b22] border-slate-800">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-400 uppercase tracking-widest">Tổng nhân sự</CardTitle>
+                        <CardTitle className="text-sm font-medium text-slate-400 uppercase tracking-widest">{t.admin.myTeam.stats.total}</CardTitle>
                         <Users className="h-4 w-4 text-primary" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-black text-white">{stats.total}</div>
-                        <p className="text-xs text-slate-500 mt-1">Thành viên trực thuộc</p>
+                        <p className="text-xs text-slate-500 mt-1">{t.admin.myTeam.stats.totalDesc}</p>
                     </CardContent>
                 </Card>
                 <Card className="bg-[#161b22] border-slate-800">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-400 uppercase tracking-widest">Có mặt</CardTitle>
+                        <CardTitle className="text-sm font-medium text-slate-400 uppercase tracking-widest">{t.admin.myTeam.stats.present}</CardTitle>
                         <Clock className="h-4 w-4 text-emerald-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-black text-emerald-500">{stats.present}</div>
-                        <p className="text-xs text-slate-500 mt-1">Check-in hôm nay</p>
+                        <p className="text-xs text-slate-500 mt-1">{t.admin.myTeam.stats.presentDesc}</p>
                     </CardContent>
                 </Card>
                 <Card className="bg-[#161b22] border-slate-800">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-400 uppercase tracking-widest">Đi muộn</CardTitle>
+                        <CardTitle className="text-sm font-medium text-slate-400 uppercase tracking-widest">{t.admin.myTeam.stats.late}</CardTitle>
                         <AlertCircle className="h-4 w-4 text-amber-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-black text-amber-500">{stats.late}</div>
-                        <p className="text-xs text-slate-500 mt-1">Cần nhắc nhở</p>
+                        <p className="text-xs text-slate-500 mt-1">{t.admin.myTeam.stats.lateDesc}</p>
                     </CardContent>
                 </Card>
                 <Card className="bg-[#161b22] border-slate-800">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-400 uppercase tracking-widest">Nghỉ phép/Vắng</CardTitle>
+                        <CardTitle className="text-sm font-medium text-slate-400 uppercase tracking-widest">{t.admin.myTeam.stats.absent}</CardTitle>
                         <Calendar className="h-4 w-4 text-rose-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-black text-rose-500">{stats.absent + stats.leave}</div>
-                        <p className="text-xs text-slate-500 mt-1">Nhân sự vắng mặt</p>
+                        <p className="text-xs text-slate-500 mt-1">{t.admin.myTeam.stats.absentDesc}</p>
                     </CardContent>
                 </Card>
             </div>
@@ -92,11 +94,11 @@ export default function MyTeamClient({ team, stats, currentUserId }: MyTeamClien
                     <TabsList className="bg-slate-800/50 border border-slate-700">
                         <TabsTrigger value="overview" className="data-[state=active]:bg-primary data-[state=active]:text-black font-bold">
                             <List className="h-4 w-4 mr-2" />
-                            Danh sách
+                            {t.admin.myTeam.tabs.list}
                         </TabsTrigger>
                         <TabsTrigger value="org-chart" className="data-[state=active]:bg-primary data-[state=active]:text-black font-bold">
                             <Layout className="h-4 w-4 mr-2" />
-                            Sơ đồ tổ chức (Org Chart)
+                            {t.admin.myTeam.tabs.orgChart}
                         </TabsTrigger>
                     </TabsList>
                 </div>
@@ -104,24 +106,24 @@ export default function MyTeamClient({ team, stats, currentUserId }: MyTeamClien
                 <TabsContent value="overview" className="mt-0">
                     <Card className="bg-[#161b22] border-slate-800">
                         <CardHeader>
-                            <CardTitle>Danh sách nhân viên</CardTitle>
+                            <CardTitle>{t.admin.myTeam.table.title}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <Table>
                                 <TableHeader>
                                     <TableRow className="border-slate-700 hover:bg-slate-800/50">
-                                        <TableHead className="text-slate-400">Nhân viên</TableHead>
-                                        <TableHead className="text-slate-400">Vị trí</TableHead>
-                                        <TableHead className="text-slate-400">Phòng ban</TableHead>
-                                        <TableHead className="text-slate-400">Trạng thái chấm công</TableHead>
-                                        <TableHead className="text-slate-400">Check-in</TableHead>
+                                        <TableHead className="text-slate-400">{t.admin.myTeam.table.employee}</TableHead>
+                                        <TableHead className="text-slate-400">{t.admin.myTeam.table.position}</TableHead>
+                                        <TableHead className="text-slate-400">{t.admin.myTeam.table.department}</TableHead>
+                                        <TableHead className="text-slate-400">{t.admin.myTeam.table.status}</TableHead>
+                                        <TableHead className="text-slate-400">{t.admin.myTeam.table.checkin}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {team.length === 0 ? (
                                         <TableRow>
                                             <TableCell colSpan={5} className="text-center py-10 text-slate-500">
-                                                Chưa có nhân viên nào trong đội ngũ của bạn
+                                                {t.admin.myTeam.table.empty}
                                             </TableCell>
                                         </TableRow>
                                     ) : (
@@ -143,8 +145,8 @@ export default function MyTeamClient({ team, stats, currentUserId }: MyTeamClien
                                                                 {member.full_name}
                                                             </Link>
                                                             {member.manager_id === currentUserId && (
-                                                                <p className="text-[10px] text-emerald-500 flex items-center gap-1">
-                                                                    <Shield className="h-3 w-3" /> Direct Report
+                                                                <p className="text-[10px] text-emerald-500 flex items-center gap-1 mt-1.5">
+                                                                    <Shield className="h-3 w-3" /> {t.admin.myTeam.table.directReport}
                                                                 </p>
                                                             )}
                                                         </div>
@@ -175,9 +177,9 @@ export default function MyTeamClient({ team, stats, currentUserId }: MyTeamClien
                     <Card className="bg-[#161b22] border-slate-800 h-full flex flex-col">
                         <CardHeader className="pb-2">
                             <div className="flex items-center justify-between">
-                                <CardTitle>Cấu trúc đội nhóm</CardTitle>
+                                <CardTitle>{t.admin.myTeam.orgChart.title}</CardTitle>
                                 <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                                    Interactive
+                                    {t.admin.myTeam.orgChart.badge}
                                 </Badge>
                             </div>
                         </CardHeader>

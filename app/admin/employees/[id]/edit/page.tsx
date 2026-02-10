@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { useI18n } from '@/contexts/i18n-context'
 import { getEmployeeById, updateEmployee, getDepartments, getRoles, getManagers, Employee } from '@/app/actions/employees'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,6 +17,7 @@ import Link from 'next/link'
 export default function EditEmployeePage() {
     const params = useParams()
     const router = useRouter()
+    const { t } = useI18n()
     const employeeId = params.id as string
 
     const [loading, setLoading] = useState(true)
@@ -35,6 +37,7 @@ export default function EditEmployeePage() {
         employee_code: '',
         job_title: '',
         department: '',
+        contract_type: '',
         role_id: '',
         start_date: '',
         dob: '',
@@ -265,7 +268,7 @@ export default function EditEmployeePage() {
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="employee_code">Mã nhân viên</Label>
+                                    <Label htmlFor="employee_code">{t.admin.employeeManagement.create.employeeCode}</Label>
                                     <Input
                                         id="employee_code"
                                         value={formData.employee_code || ''}
@@ -274,7 +277,7 @@ export default function EditEmployeePage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="job_title">Chức danh</Label>
+                                    <Label htmlFor="job_title">{t.admin.employeeManagement.create.jobTitle}</Label>
                                     <Input
                                         id="job_title"
                                         value={formData.job_title || ''}
@@ -300,6 +303,24 @@ export default function EditEmployeePage() {
                                                     {dept}
                                                 </SelectItem>
                                             ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="contract_type">{t.admin.employeeManagement.create.contractType}</Label>
+                                    <Select
+                                        value={formData.contract_type || undefined}
+                                        onValueChange={(value) => setFormData({ ...formData, contract_type: value })}
+                                    >
+                                        <SelectTrigger className="bg-[#0d1117] border-slate-700">
+                                            <SelectValue placeholder={t.admin.employeeManagement.create.selectContractType} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="full-time">{t.admin.employeeManagement.create.contractTypes.fullTime}</SelectItem>
+                                            <SelectItem value="part-time">{t.admin.employeeManagement.create.contractTypes.partTime}</SelectItem>
+                                            <SelectItem value="intern">{t.admin.employeeManagement.create.contractTypes.intern}</SelectItem>
+                                            <SelectItem value="probation">{t.admin.employeeManagement.create.contractTypes.probation}</SelectItem>
+                                            <SelectItem value="freelance">{t.admin.employeeManagement.create.contractTypes.freelance}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>

@@ -36,7 +36,13 @@ export function useAutoCheckIn(workSettings: any) {
                     return
                 }
 
-                const today = new Date().toISOString().split('T')[0]
+                // Get Today in VN Time (YYYY-MM-DD)
+                const today = new Intl.DateTimeFormat('en-CA', {
+                    timeZone: 'Asia/Ho_Chi_Minh',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                }).format(new Date())
 
                 // 2. Check for ANY active session (Checked in but not checked out)
                 const { data: activeLogs } = await supabase
@@ -78,10 +84,8 @@ export function useAutoCheckIn(workSettings: any) {
                     // Log for debugging
                     console.log(`🤖 Shift ${schedule.start_time}: diff = ${diffMins.toFixed(1)} mins`)
 
-                    // Window: [Start - 15m] to [Start + 30m]
-                    // diffMins > 0 means Future. diffMins < 0 means Past.
-                    // Validation: diffMins <= 15 (Not too early) AND diffMins > -60 (Not too late - extended to 60m for ease)
-                    if (diffMins <= 15 && diffMins > -60) {
+                    // Validation: diffMins <= 30 (Not too early) AND diffMins > -600 (Up to 10 hours late)
+                    if (diffMins <= 30 && diffMins > -600) {
                         targetSchedule = schedule
                         console.log('🤖 Match found:', schedule.title, 'at', schedule.start_time)
                         break // Found the relevant shift, stop looking

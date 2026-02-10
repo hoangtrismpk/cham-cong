@@ -21,10 +21,37 @@ export async function GET() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Get all employees
+        // Get all employees with full details
         const { data: employees, error } = await supabase
             .from('profiles')
-            .select('id, full_name, email, employment_type, role_id')
+            .select(`
+                id, 
+                first_name,
+                last_name,
+                full_name, 
+                email, 
+                phone,
+                dob,
+                gender,
+                address,
+                city,
+                employee_code, 
+                job_title,
+                department, 
+                status, 
+                start_date,
+                contract_type,
+                avatar_url,
+                emergency_contact,
+                roles (
+                    name,
+                    display_name
+                ),
+                manager:profiles!manager_id (
+                    full_name,
+                    employee_code
+                )
+            `)
             .order('full_name', { ascending: true });
 
         if (error) {

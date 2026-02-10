@@ -1,6 +1,7 @@
 import { getAllReports, getReportStats } from '@/app/actions/work-reports'
 import { Metadata } from 'next'
 import AdminReportsDashboard from '@/components/reports/admin-reports-dashboard'
+import { requirePermission } from '@/utils/auth-guard'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,6 +14,8 @@ export default async function AdminReportsPage({
 }: {
     searchParams: Promise<{ page?: string; month?: string; year?: string; status?: string; type?: string }>
 }) {
+    await requirePermission('reports.view', '/admin')
+
     const params = await searchParams
     const page = parseInt(params.page || '1')
     const currentDate = new Date()

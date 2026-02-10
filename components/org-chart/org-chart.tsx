@@ -3,7 +3,6 @@
 import React, { useCallback, useEffect, useMemo } from 'react'
 import {
     ReactFlow,
-    Controls,
     Background,
     useNodesState,
     useEdgesState,
@@ -126,10 +125,9 @@ export default function OrgChart({ members, currentUserId }: OrgChartProps) {
                 className="bg-[#0d1117]"
                 minZoom={0.2}
                 maxZoom={1.5}
-                attributionPosition="bottom-right"
+                proOptions={{ hideAttribution: true }}
             >
                 <Background color="#334155" gap={20} size={1} />
-                <Controls className="bg-slate-800 border-slate-700 fill-white [&>button]:fill-slate-300 [&>button:hover]:bg-slate-700" />
                 <Panel position="top-right" className="bg-slate-800/80 p-2 rounded-lg border border-slate-700 text-xs text-slate-300 backdrop-blur-sm">
                     {members.length} Members Loaded
                 </Panel>

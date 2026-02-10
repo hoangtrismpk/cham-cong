@@ -43,7 +43,6 @@ export function SettingsClient({ user }: SettingsClientProps) {
     const [activeTabMobile, setActiveTabMobile] = useState<string>('none')
     const [pushEnabled, setPushEnabled] = useState(false)
     const [autoCheckInEnabled, setAutoCheckInEnabled] = useState(false)
-    const [autoCheckOutEnabled, setAutoCheckOutEnabled] = useState(false)
     const [autoCheckOutSetting, setAutoCheckOutSetting] = useState(false)
     const [currentAvatar, setCurrentAvatar] = useState(user?.user_metadata?.avatar_url || getDefaultAvatar(user?.id))
     const [isAvatarOpen, setIsAvatarOpen] = useState(false)
@@ -302,167 +301,253 @@ export function SettingsClient({ user }: SettingsClientProps) {
                     subtitle="Tùy chỉnh hệ thống"
                 />
 
-                <div className="flex p-6 border-b border-white/5 bg-white/[0.02]">
-                    <div className="flex w-full items-center gap-4">
-                        <div
-                            className="size-20 rounded-full bg-center bg-cover border-2 border-primary relative"
-                            style={{ backgroundImage: `url("${currentAvatar}")` }}
-                        >
-                        </div>
-                        <div className="flex flex-col">
-                            <p className="text-xl font-bold text-white">{profile?.full_name || user?.email?.split('@')[0]}</p>
-                            <p className="text-slate-500 text-sm">{user?.email}</p>
+                {/* Level 1: Main Menu */}
+                <div className="flex flex-col flex-1 overflow-y-auto">
+                    {/* User Profile Summary */}
+                    <div className="flex p-6 border-b border-white/5 bg-white/[0.02]">
+                        <div className="flex w-full items-center gap-4">
+                            <div
+                                className="size-16 rounded-full bg-center bg-cover border-2 border-primary relative"
+                                style={{ backgroundImage: `url("${currentAvatar}")` }}
+                            >
+                            </div>
+                            <div className="flex flex-col">
+                                <p className="text-lg font-bold text-white">{profile?.full_name || user?.email?.split('@')[0]}</p>
+                                <p className="text-slate-500 text-xs">{user?.email}</p>
+                                <div className="mt-1">
+                                    <Badge variant="outline" className={`border-${profile?.status === 'active' ? 'emerald' : 'rose'}-500/20 text-${profile?.status === 'active' ? 'emerald' : 'rose'}-500 bg-${profile?.status === 'active' ? 'emerald' : 'rose'}-500/10 uppercase text-[10px] tracking-wider`}>
+                                        {profile?.status === 'active' ? 'Đang hoạt động' : 'Tạm khóa'}
+                                    </Badge>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div className="flex flex-col">
+                    {/* Group 1: Account Settings */}
                     <div className="px-6 pb-2 pt-6">
-                        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">{t.settings?.tabs?.general || 'Hồ sơ tài khoản'}</h2>
+                        <h2 className="text-xs font-black uppercase tracking-widest text-slate-500">Tài khoản</h2>
+                    </div>
+                    <div className="mx-4 bg-slate-800/20 rounded-2xl overflow-hidden border border-white/5">
+                        <div onClick={() => setActiveTabMobile('general-mobile')} className="flex items-center gap-4 px-4 py-4 active:bg-white/5 cursor-pointer hover:bg-white/5 transition-colors border-b border-white/5 last:border-0">
+                            <div className="text-primary flex items-center justify-center rounded-lg bg-primary/10 shrink-0 size-9"><span className="material-symbols-outlined text-lg">person</span></div>
+                            <p className="text-sm font-bold text-slate-200 flex-1">Hồ sơ cá nhân</p>
+                            <span className="material-symbols-outlined text-slate-500 text-lg">chevron_right</span>
+                        </div>
+                        <div onClick={() => setActiveTabMobile('security-mobile')} className="flex items-center gap-4 px-4 py-4 active:bg-white/5 cursor-pointer hover:bg-white/5 transition-colors border-b border-white/5 last:border-0">
+                            <div className="text-purple-500 flex items-center justify-center rounded-lg bg-purple-500/10 shrink-0 size-9"><span className="material-symbols-outlined text-lg">shield</span></div>
+                            <p className="text-sm font-bold text-slate-200 flex-1">Bảo mật & Đăng nhập</p>
+                            <span className="material-symbols-outlined text-slate-500 text-lg">chevron_right</span>
+                        </div>
                     </div>
 
-                    <div onClick={() => setActiveTabMobile('general-mobile')} className="flex items-center gap-4 px-6 min-h-[64px] active:bg-white/5 cursor-pointer hover:bg-white/5 transition-colors">
-                        <div className="text-primary flex items-center justify-center rounded-lg bg-primary/10 shrink-0 size-10"><span className="material-symbols-outlined">person</span></div>
-                        <p className="text-base font-medium text-slate-200 flex-1">Hồ sơ cá nhân</p>
-                        <span className="material-symbols-outlined text-slate-400">chevron_right</span>
-                    </div>
-
-                    <div onClick={() => setActiveTabMobile('security-mobile')} className="flex items-center gap-4 px-6 min-h-[64px] active:bg-white/5 cursor-pointer hover:bg-white/5 transition-colors">
-                        <div className="text-primary flex items-center justify-center rounded-lg bg-primary/10 shrink-0 size-10"><span className="material-symbols-outlined">shield</span></div>
-                        <p className="text-base font-medium text-slate-200 flex-1">Bảo mật</p>
-                        <span className="material-symbols-outlined text-slate-400">chevron_right</span>
-                    </div>
-
+                    {/* Group 2: App Settings */}
                     <div className="px-6 pb-2 pt-6">
-                        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">{t.settings?.tabs?.notifications || 'Thông báo'}</h2>
+                        <h2 className="text-xs font-black uppercase tracking-widest text-slate-500">Ứng dụng</h2>
                     </div>
-                    <div className="flex items-center gap-4 px-6 min-h-[64px] hover:bg-white/5 transition-colors">
-                        <div className="text-blue-500 flex items-center justify-center rounded-lg bg-blue-500/10 shrink-0 size-10"><span className="material-symbols-outlined">notifications</span></div>
-                        <div className="flex-1">
-                            <p className="text-base font-medium text-slate-200">Push Notification</p>
-                            <p className="text-xs text-slate-500">Thông báo trên thiết bị</p>
+                    <div className="mx-4 bg-slate-800/20 rounded-2xl overflow-hidden border border-white/5">
+                        <div onClick={() => setActiveTabMobile('notifications-mobile')} className="flex items-center gap-4 px-4 py-4 active:bg-white/5 cursor-pointer hover:bg-white/5 transition-colors border-b border-white/5 last:border-0">
+                            <div className="text-blue-500 flex items-center justify-center rounded-lg bg-blue-500/10 shrink-0 size-9"><span className="material-symbols-outlined text-lg">notifications</span></div>
+                            <p className="text-sm font-bold text-slate-200 flex-1">Thông báo</p>
+                            <span className="material-symbols-outlined text-slate-500 text-lg">chevron_right</span>
                         </div>
-                        <Switch checked={pushEnabled} onCheckedChange={handlePushToggle} />
-                    </div>
-
-                    <div className="px-6 pb-2 pt-6">
-                        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">{t.settings?.tabs?.preferences || 'Cài đặt chung'}</h2>
-                    </div>
-
-                    <div className="flex items-center gap-4 px-6 min-h-[64px] hover:bg-white/5 transition-colors">
-                        <div className="text-emerald-500 flex items-center justify-center rounded-lg bg-emerald-500/10 shrink-0 size-10"><span className="material-symbols-outlined">timer_play</span></div>
-                        <div className="flex-1">
-                            <p className="text-base font-medium text-slate-200">Auto Check-in</p>
-                            <p className="text-xs text-slate-500">Tự động khi đến cty</p>
+                        <div onClick={() => setActiveTabMobile('preferences-mobile')} className="flex items-center gap-4 px-4 py-4 active:bg-white/5 cursor-pointer hover:bg-white/5 transition-colors border-b border-white/5 last:border-0">
+                            <div className="text-orange-500 flex items-center justify-center rounded-lg bg-orange-500/10 shrink-0 size-9"><span className="material-symbols-outlined text-lg">tune</span></div>
+                            <p className="text-sm font-bold text-slate-200 flex-1">Cài đặt chung</p>
+                            <span className="material-symbols-outlined text-slate-500 text-lg">chevron_right</span>
                         </div>
-                        <Switch checked={autoCheckInEnabled} onCheckedChange={handleAutoCheckInToggle} />
                     </div>
 
-                    <div className="flex items-center gap-4 px-6 min-h-[64px] hover:bg-white/5 transition-colors">
-                        <div className="text-orange-500 flex items-center justify-center rounded-lg bg-orange-500/10 shrink-0 size-10"><span className="material-symbols-outlined">timer_off</span></div>
-                        <div className="flex-1">
-                            <p className="text-base font-medium text-slate-200">Auto Check-out</p>
-                            <p className="text-xs text-slate-500">Tự động khi về</p>
-                        </div>
-                        <Switch checked={autoCheckOutSetting} onCheckedChange={handleAutoCheckOutToggle} />
-                    </div>
-
-                    <div className="flex items-center gap-4 px-6 min-h-[64px] hover:bg-white/5 transition-colors">
-                        <div className="text-primary flex items-center justify-center rounded-lg bg-primary/10 shrink-0 size-10"><span className="material-symbols-outlined">dark_mode</span></div>
-                        <div className="flex-1">
-                            <p className="text-base font-medium text-slate-200">Giao diện (Dark Mode)</p>
-                        </div>
-                        <Switch checked />
-                    </div>
-
-                    <div className="px-6 mt-12 pb-10">
-                        <button onClick={() => createClient().auth.signOut().then(() => window.location.href = '/login')} className="w-full flex items-center justify-center gap-2 py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold rounded-xl transition-colors cursor-pointer">
-                            <span className="material-symbols-outlined">logout</span> Log Out
+                    {/* Group 3: Danger Zone */}
+                    <div className="px-6 mt-8 pb-10">
+                        <button onClick={() => createClient().auth.signOut().then(() => window.location.href = '/login')} className="w-full flex items-center justify-center gap-2 py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold rounded-xl transition-colors cursor-pointer border border-red-500/20">
+                            <span className="material-symbols-outlined">logout</span> Đăng xuất
                         </button>
+                        <p className="text-center text-[10px] text-slate-600 mt-4 font-mono">v1.0.2-beta • Build 20240209</p>
                     </div>
                 </div>
 
-                {(activeTabMobile === 'general-mobile' || activeTabMobile === 'security-mobile') && (
-                    <div className="fixed inset-0 z-[60] bg-background-dark flex flex-col pt-safe animate-in slide-in-from-right duration-300">
-                        <header className="flex items-center gap-4 border-b border-white/5 px-6 py-4 bg-background-dark">
+                {/* Level 2: Slide-in Detail Views */}
+                {(activeTabMobile !== 'none') && (
+                    <div className="fixed inset-0 z-[60] bg-background-dark flex flex-col animate-in slide-in-from-right duration-300">
+                        {/* Detail Header */}
+                        <header className="flex items-center gap-4 border-b border-white/5 px-4 py-3 bg-background-dark/95 backdrop-blur-xl sticky top-0 z-10 pt-safe">
                             <button onClick={() => setActiveTabMobile('none')} className="p-2 -ml-2 rounded-full hover:bg-white/5 active:scale-90 transition-all">
                                 <span className="material-symbols-outlined text-white">arrow_back</span>
                             </button>
-                            <h2 className="text-lg font-bold text-white">
-                                {activeTabMobile === 'security-mobile' ? 'Bảo mật' : 'Hồ sơ cá nhân'}
+                            <h2 className="text-lg font-bold text-white flex-1 truncate">
+                                {activeTabMobile === 'general-mobile' && 'Hồ sơ cá nhân'}
+                                {activeTabMobile === 'security-mobile' && 'Bảo mật'}
+                                {activeTabMobile === 'notifications-mobile' && 'Cài đặt thông báo'}
+                                {activeTabMobile === 'preferences-mobile' && 'Cài đặt chung'}
                             </h2>
+                            {(activeTabMobile === 'general-mobile' || activeTabMobile === 'security-mobile') && (
+                                <button onClick={() => { handleSave(); setActiveTabMobile('none'); }} className="text-primary font-bold text-sm px-3 py-1.5 bg-primary/10 rounded-lg active:scale-95 transition-transform">
+                                    Lưu
+                                </button>
+                            )}
                         </header>
-                        <div className="flex-1 overflow-y-auto p-6 pb-20">
-                            {activeTabMobile === 'security-mobile' ? (
-                                <div className="space-y-6">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase tracking-widest text-slate-500">Mật khẩu mới</label>
-                                        <input className="w-full bg-slate-900 border border-slate-700 rounded-2xl px-5 py-4 text-white font-bold text-sm" placeholder="••••••••" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase tracking-widest text-slate-500">Xác nhận</label>
-                                        <input className="w-full bg-slate-900 border border-slate-700 rounded-2xl px-5 py-4 text-white font-bold text-sm" placeholder="••••••••" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-                                    </div>
-                                    <button onClick={handleSave} className="w-full py-4 bg-primary text-slate-950 font-black rounded-2xl mt-4">Cập nhật</button>
-                                </div>
-                            ) : (
+
+                        {/* Detail Content */}
+                        <div className="flex-1 overflow-y-auto p-4 pb-32">
+                            {activeTabMobile === 'general-mobile' && (
                                 <div className="space-y-6">
                                     <div className="flex justify-center mb-6">
-                                        <div className="relative" onClick={() => setIsAvatarOpen(true)}>
-                                            <div className="size-24 rounded-full bg-center bg-cover border-2 border-primary cursor-pointer active:scale-95 transition-transform" style={{ backgroundImage: `url("${currentAvatar}")` }}></div>
-                                            <div className="absolute -bottom-1 -right-1 bg-primary text-slate-950 size-8 rounded-full flex items-center justify-center shadow-lg"><span className="material-symbols-outlined text-lg font-bold">edit</span></div>
+                                        <div className="relative group" onClick={() => setIsAvatarOpen(true)}>
+                                            <div className="size-28 rounded-full bg-center bg-cover border-4 border-slate-800 shadow-2xl cursor-pointer active:scale-95 transition-transform" style={{ backgroundImage: `url("${currentAvatar}")` }}></div>
+                                            <div className="absolute bottom-0 right-0 bg-primary text-slate-950 size-8 rounded-full flex items-center justify-center shadow-lg border-2 border-background-dark"><span className="material-symbols-outlined text-sm font-bold">edit</span></div>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Họ đệm</label>
-                                            <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold" value={profile?.first_name || ''} onChange={(e) => updateProfile('first_name', e.target.value)} />
+
+                                    <div className="space-y-4">
+                                        <div className="bg-slate-800/30 rounded-2xl p-4 border border-white/5 space-y-4">
+                                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Thông tin cơ bản</h3>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[10px] font-bold uppercase text-slate-400">Họ đệm</label>
+                                                    <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-bold text-sm" value={profile?.first_name || ''} onChange={(e) => updateProfile('first_name', e.target.value)} />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[10px] font-bold uppercase text-slate-400">Tên</label>
+                                                    <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-bold text-sm" value={profile?.last_name || ''} onChange={(e) => updateProfile('last_name', e.target.value)} />
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[10px] font-bold uppercase text-slate-400">Ngày sinh</label>
+                                                    <input type="date" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-bold text-sm" value={profile?.dob || ''} onChange={(e) => updateProfile('dob', e.target.value)} />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[10px] font-bold uppercase text-slate-400">Giới tính</label>
+                                                    <Select value={profile?.gender || 'male'} onValueChange={(val) => updateProfile('gender', val)}>
+                                                        <SelectTrigger className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-bold text-sm h-auto border-input"><SelectValue placeholder="Chọn" /></SelectTrigger>
+                                                        <SelectContent className="bg-slate-900 border-slate-700 text-white z-[70]">
+                                                            <SelectItem value="male">Nam</SelectItem>
+                                                            <SelectItem value="female">Nữ</SelectItem>
+                                                            <SelectItem value="other">Khác</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Tên</label>
-                                            <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold" value={profile?.last_name || ''} onChange={(e) => updateProfile('last_name', e.target.value)} />
+
+                                        <div className="bg-slate-800/30 rounded-2xl p-4 border border-white/5 space-y-4">
+                                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Liên hệ & Công việc</h3>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-bold uppercase text-slate-400">Email</label>
+                                                <input className="w-full bg-slate-900/50 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-500 font-bold text-sm" value={profile?.email || ''} readOnly />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-bold uppercase text-slate-400">SĐT</label>
+                                                <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-bold text-sm" value={profile?.phone || ''} onChange={(e) => updateProfile('phone', e.target.value)} placeholder="09xxx" />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-bold uppercase text-slate-400">Địa chỉ</label>
+                                                <textarea className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-bold text-sm min-h-[60px]" value={profile?.address || ''} onChange={(e) => updateProfile('address', e.target.value)} />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-bold uppercase text-slate-400">Kỹ năng chuyên môn</label>
+                                                <textarea className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-bold text-sm min-h-[60px]" value={skillsInput} onChange={(e) => setSkillsInput(e.target.value)} />
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-rose-500/5 rounded-2xl p-4 border border-rose-500/20 space-y-4">
+                                            <h3 className="text-xs font-black uppercase tracking-widest text-rose-400 mb-2 flex items-center gap-1"><span className="material-symbols-outlined text-sm">sos</span> Liên hệ khẩn cấp</h3>
+                                            <div className="grid grid-cols-1 gap-3">
+                                                <input className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white" placeholder="Tên người thân" value={profile?.emergency_contact?.name || ''} onChange={(e) => updateEmergency('name', e.target.value)} />
+                                                <input className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white" placeholder="SĐT liên hệ" value={profile?.emergency_contact?.phone || ''} onChange={(e) => updateEmergency('phone', e.target.value)} type="tel" />
+                                                <input className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white" placeholder="Mối quan hệ (Vd: Bố, Mẹ...)" value={profile?.emergency_contact?.relationship || ''} onChange={(e) => updateEmergency('relationship', e.target.value)} />
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Ngày sinh</label>
-                                            <input type="date" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold" value={profile?.dob || ''} onChange={(e) => updateProfile('dob', e.target.value)} />
+                                </div>
+                            )}
+
+                            {activeTabMobile === 'security-mobile' && (
+                                <div className="space-y-6">
+                                    <div className="bg-slate-800/30 rounded-2xl p-4 border border-white/5 space-y-4">
+                                        <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Đổi mật khẩu</h3>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-bold uppercase text-slate-400">Mật khẩu mới</label>
+                                            <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold text-sm" placeholder="••••••••" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Giới tính</label>
-                                            <Select value={profile?.gender || 'male'} onValueChange={(val) => updateProfile('gender', val)}>
-                                                <SelectTrigger className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold h-auto border-input"><SelectValue placeholder="Chọn" /></SelectTrigger>
-                                                <SelectContent className="bg-slate-900 border-slate-700 text-white">
-                                                    <SelectItem value="male">Nam</SelectItem>
-                                                    <SelectItem value="female">Nữ</SelectItem>
-                                                    <SelectItem value="other">Khác</SelectItem>
-                                                </SelectContent>
-                                            </Select>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-bold uppercase text-slate-400">Xác nhận mật khẩu</label>
+                                            <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold text-sm" placeholder="••••••••" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
                                         </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Email (Readonly)</label>
-                                        <input className="w-full bg-slate-900/50 border border-slate-800 rounded-xl px-4 py-3 text-slate-500 font-bold" value={profile?.email || ''} readOnly />
+
+                                    <div className="bg-slate-800/30 rounded-2xl p-4 border border-white/5 space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="text-purple-500 size-8 bg-purple-500/10 rounded-lg flex items-center justify-center"><span className="material-symbols-outlined text-lg">security_update_good</span></div>
+                                                <div>
+                                                    <p className="text-white font-bold text-sm">Xác thực 2 bước (2FA)</p>
+                                                    <p className="text-slate-500 text-[10px]">Tăng cường bảo mật</p>
+                                                </div>
+                                            </div>
+                                            <Switch />
+                                        </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">SĐT</label>
-                                        <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold" value={profile?.phone || ''} onChange={(e) => updateProfile('phone', e.target.value)} placeholder="09xxx" />
+                                </div>
+                            )}
+
+                            {activeTabMobile === 'notifications-mobile' && (
+                                <div className="space-y-6">
+                                    <div className="bg-slate-800/30 rounded-2xl p-4 border border-white/5 space-y-4">
+                                        <div className="flex items-center justify-between py-2">
+                                            <div className="flex items-center gap-3">
+                                                <div className="text-blue-500 size-8 bg-blue-500/10 rounded-lg flex items-center justify-center"><span className="material-symbols-outlined text-lg">notifications_active</span></div>
+                                                <div className="flex-1">
+                                                    <p className="text-sm font-bold text-slate-200">Push Notification</p>
+                                                    <p className="text-[10px] text-slate-500">Thông báo trên thiết bị</p>
+                                                </div>
+                                            </div>
+                                            <Switch checked={pushEnabled} onCheckedChange={handlePushToggle} />
+                                        </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Địa chỉ</label>
-                                        <textarea className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold min-h-[80px]" value={profile?.address || ''} onChange={(e) => updateProfile('address', e.target.value)} />
+                                </div>
+                            )}
+
+                            {activeTabMobile === 'preferences-mobile' && (
+                                <div className="space-y-6">
+                                    <div className="bg-slate-800/30 rounded-2xl p-4 border border-white/5 space-y-4">
+                                        <div className="flex items-center justify-between py-2">
+                                            <div className="flex items-center gap-3">
+                                                <div className="text-emerald-500 size-8 bg-emerald-500/10 rounded-lg flex items-center justify-center"><span className="material-symbols-outlined text-lg">timer_play</span></div>
+                                                <div className="flex-1">
+                                                    <p className="text-sm font-bold text-slate-200">Auto Check-in</p>
+                                                    <p className="text-[10px] text-slate-500">Tự động khi đến công ty</p>
+                                                </div>
+                                            </div>
+                                            <Switch checked={autoCheckInEnabled} onCheckedChange={handleAutoCheckInToggle} />
+                                        </div>
+
+                                        <div className="border-t border-white/5"></div>
+
+                                        <div className="flex items-center justify-between py-2">
+                                            <div className="flex items-center gap-3">
+                                                <div className="text-orange-500 size-8 bg-orange-500/10 rounded-lg flex items-center justify-center"><span className="material-symbols-outlined text-lg">timer_off</span></div>
+                                                <div className="flex-1">
+                                                    <p className="text-sm font-bold text-slate-200">Auto Check-out</p>
+                                                    <p className="text-[10px] text-slate-500">Tự động khi rời công ty</p>
+                                                </div>
+                                            </div>
+                                            <Switch checked={autoCheckOutSetting} onCheckedChange={handleAutoCheckOutToggle} />
+                                        </div>
+
+                                        <div className="border-t border-white/5"></div>
+
+                                        <div className="flex items-center justify-between py-2">
+                                            <div className="flex items-center gap-3">
+                                                <div className="text-slate-400 size-8 bg-slate-500/10 rounded-lg flex items-center justify-center"><span className="material-symbols-outlined text-lg">dark_mode</span></div>
+                                                <div className="flex-1">
+                                                    <p className="text-sm font-bold text-slate-200">Giao diện tối</p>
+                                                    <p className="text-[10px] text-slate-500">Luôn bật</p>
+                                                </div>
+                                            </div>
+                                            <Switch checked disabled />
+                                        </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Kỹ năng</label>
-                                        <textarea className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold min-h-[60px]" value={skillsInput} onChange={(e) => setSkillsInput(e.target.value)} />
-                                    </div>
-                                    <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700 space-y-3">
-                                        <p className="text-xs uppercase font-bold text-rose-400">Liên hệ khẩn cấp</p>
-                                        <input className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" placeholder="Tên liên hệ" value={profile?.emergency_contact?.name || ''} onChange={(e) => updateEmergency('name', e.target.value)} />
-                                        <input className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" placeholder="SĐT liên hệ" value={profile?.emergency_contact?.phone || ''} onChange={(e) => updateEmergency('phone', e.target.value)} />
-                                        <input className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" placeholder="Mối quan hệ (Vd: Bố, Mẹ...)" value={profile?.emergency_contact?.relationship || ''} onChange={(e) => updateEmergency('relationship', e.target.value)} />
-                                    </div>
-                                    <button onClick={handleSave} className="w-full py-4 bg-primary text-slate-950 font-black rounded-2xl mt-4">{isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}</button>
                                 </div>
                             )}
                         </div>

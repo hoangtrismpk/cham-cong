@@ -167,8 +167,12 @@ export async function checkIn(latitude?: number, longitude?: number, notes?: str
     }
 
     // Helper to get date in Vietnam time (UTC+7)
-    const getVNNow = () => new Date(new Date().getTime() + 7 * 60 * 60 * 1000)
-    const today = getVNNow().toISOString().split('T')[0]
+    const today = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Ho_Chi_Minh',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).format(new Date())
 
     // Get the LATEST attendance log for today
     const { data: latestLog } = await supabase
@@ -329,8 +333,12 @@ export async function checkOut(latitude?: number, longitude?: number, notes?: st
         }
     }
 
-    const getVNNow = () => new Date(new Date().getTime() + 7 * 60 * 60 * 1000)
-    const today = getVNNow().toISOString().split('T')[0]
+    const today = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Ho_Chi_Minh',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).format(new Date())
 
     // --- TÌM PHIÊN CHẤM CÔNG CHƯA ĐÓNG ---
     // Tìm phiên mới nhất chưa đóng trong vòng 24h qua
@@ -379,8 +387,12 @@ export async function getTodayStatus() {
     if (!user) return null
 
     // Get the LATEST attendance status to determine button state
-    const getVNNow = () => new Date(new Date().getTime() + 7 * 60 * 60 * 1000)
-    const today = getVNNow().toISOString().split('T')[0]
+    const today = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Ho_Chi_Minh',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).format(new Date())
 
     // Debug
     console.log('[getTodayStatus] Fetching for user:', user.id, 'Date:', today)

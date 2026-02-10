@@ -1,8 +1,8 @@
 import { AdminSidebar } from '@/components/admin-sidebar'
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
-import { NotificationBell } from '@/components/notification-bell'
-import { LanguageSwitcher } from '@/components/language-switcher'
+import { AdminBottomNav } from '@/components/admin-bottom-nav'
+import { AdminHeader } from '@/components/admin-header'
 
 export default async function AdminLayout({
     children,
@@ -20,9 +20,12 @@ export default async function AdminLayout({
     const { data: profile } = await supabase
         .from('profiles')
         .select(`
+            full_name,
+            avatar_url,
             role, 
             roles (
                 name,
+                display_name,
                 permissions
             )
         `)
@@ -44,21 +47,21 @@ export default async function AdminLayout({
     }
 
     return (
-        <div className="flex min-h-screen bg-[#0a0f14] font-display text-slate-200">
-            <AdminSidebar />
-            <div className="flex-1 flex flex-col h-screen overflow-hidden">
-                <header className="h-16 border-b border-[#1e293b] bg-[#0d131a]/50 backdrop-blur-md flex items-center justify-between px-8 shrink-0">
-                    <div className="flex items-center gap-4">
-                        <span className="text-slate-500 text-sm font-medium">Hệ thống quản trị Chấm Công</span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <LanguageSwitcher />
-                        <NotificationBell />
-                    </div>
-                </header>
-                <main className="flex-1 overflow-y-auto bg-[#0a0f14] custom-scrollbar">
+        <div className="flex fixed inset-0 z-0 overflow-hidden bg-[#0a0f14] font-display text-slate-200">
+            <AdminSidebar
+                className="hidden lg:flex"
+                preloadedPermissions={permissions}
+                preloadedProfile={profile}
+            />
+            <div className="flex-1 flex flex-col h-full overflow-hidden">
+                <AdminHeader
+                    permissions={permissions}
+                    profile={profile}
+                />
+                <main className="flex-1 overflow-y-auto bg-[#0a0f14] custom-scrollbar pb-24 lg:pb-0">
                     {children}
                 </main>
+                <AdminBottomNav />
             </div>
         </div>
     )

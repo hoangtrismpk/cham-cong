@@ -15,6 +15,8 @@ export const en: Translations = {
         view: 'View',
         search: 'Search',
         back: 'Back',
+        next: 'Next',
+        results: 'results',
     },
 
     // Navigation
@@ -64,6 +66,16 @@ export const en: Translations = {
 
     // Admin
     admin: {
+        adminPanel: 'Admin Panel',
+        userDashboard: 'User Dashboard',
+        headerTitle: 'Attendance Management System',
+        searchPlaceholder: 'Quick search...',
+        // Menu Items
+
+        approvals: 'Approvals',
+        auditLogs: 'Audit Logs',
+        settings: 'Settings',
+
         overview: 'Overview',
         employees: 'Employees',
         attendance: 'Attendance',
@@ -76,6 +88,314 @@ export const en: Translations = {
         liveSyncActive: 'Live Sync Active',
         connecting: 'Connecting...',
         syncOffline: 'Sync Offline',
+        // New Dashboard Keys
+        pendingRequests: 'Pending Requests',
+        actionNeeded: 'Action Needed',
+        allClear: 'All Clear',
+        leave: 'Leave',
+        changes: 'Changes',
+        currentlyIn: 'Currently In',
+        live: 'Live',
+        lateArrivals: 'Late Arrivals',
+        offAbsent: 'Off / Absent',
+        today: 'Today',
+        attendanceTrend: 'Attendance Trend',
+        visualizingWorkforce: 'Visualizing average workforce participation',
+        departmentDistribution: 'Department Distribution',
+        headcountByDivision: 'Total headcount by division',
+        activePersonnel: 'Active Personnel',
+        realTimeStatus: 'Real-time status management',
+        export: 'Export',
+        filter: 'Filter',
+        employee: 'Employee',
+        department: 'Department',
+        status: 'Status',
+        clockIn: 'Clock In',
+        dailyTotal: 'Daily Total',
+        actions: 'Actions',
+        showingResults: 'Showing {count} Results',
+        noActiveCheckins: 'No active check-ins found for today.',
+        clockedIn: 'Clocked In',
+        checkedOut: 'Checked Out',
+        completed: 'Completed',
+        days7: '7 Days',
+        days30: '30 Days',
+        realTimeData: 'Real-time data from',
+        reportDashboard: {
+            title: 'Report Management',
+            subtitle: 'Analyze performance and approve employee work reports.',
+            export: 'Export Report',
+            thisMonth: 'This Month',
+            lastMonth: 'Last Month',
+            stats: {
+                totalReports: 'Total Reports',
+                completed: 'Completed',
+                onTime: 'On Time',
+                late: 'Late Submission',
+                monthlyTotal: 'Monthly Total',
+                consistencyLevel: 'Consistency Level',
+                reviewNeeded: 'Review Needed'
+            },
+            chart: {
+                title: 'Submission Statistics',
+                subtitle: 'Daily work completion trend'
+            },
+            searchPlaceholder: 'Search by name or report content...',
+            filterType: 'Report Type',
+            filterStatus: 'Processing Status',
+            types: {
+                all: 'All',
+                daily: 'Daily Report',
+                weekly: 'Weekly Report',
+                monthly: 'Monthly Report',
+                makeup: 'Makeup Report'
+            },
+            status: {
+                all: 'All Reports',
+                unread: 'Unread',
+                updated: 'Updated',
+                viewed: 'Viewed',
+                approved: 'Approved',
+                changesRequested: 'Changes Requested'
+            },
+            table: {
+                user: 'User',
+                nameDept: 'Name & Department',
+                dateType: 'Date & Type',
+                status: 'Status',
+                submissionTime: 'Submission Time',
+                actions: 'Actions',
+                noData: 'No reports available',
+                system: 'System',
+                noDept: 'No Department',
+                onTime: 'On Time',
+                makeup: 'Makeup',
+                new: 'New',
+                update: 'Update'
+            },
+            actions: {
+                manage: 'Manage Report',
+                analyze: 'Analyze Report',
+                viewDetail: 'View Detail',
+                reject: 'Reject Report'
+            },
+            pagination: {
+                showing: 'Showing',
+                reports: 'reports'
+            }
+        },
+        employeeManagement: {
+            title: 'Employee Management',
+            subtitle: 'Manage and track your organization\'s human resources.',
+            export: 'Export',
+            addNew: 'Add New Employee',
+            searchPlaceholder: 'Search by name, ID or email',
+            filters: {
+                department: 'Department',
+                status: 'Status',
+                role: 'Role'
+            },
+            table: {
+                user: 'User',
+                fullName: 'Full Name',
+                employeeId: 'Employee ID',
+                department: 'Department',
+                status: 'Status',
+                actions: 'Actions',
+                noData: 'No employees found',
+                tryAdjust: 'Try adjusting your search or filters',
+                loading: 'Loading employees...',
+                active: 'Active'
+            },
+            actions: {
+                title: 'User Actions',
+                editProfile: 'Edit Profile',
+                manageEmployment: 'Manage Employment',
+                deactivate: 'Deactivate User'
+            },
+            create: {
+                title: 'Add New Employee',
+                desc: 'Create a new account for an employee. An email confirmation will be sent.',
+                firstName: 'First Name',
+                lastName: 'Last Name',
+                email: 'Email',
+                password: 'Password',
+                department: 'Department',
+                role: 'Role',
+                jobTitle: 'Job Title',
+                selectDept: 'Select Department',
+                selectRole: 'Select Role',
+                cancel: 'Cancel',
+                submit: 'Create Account',
+                success: 'Account created successfully',
+                error: 'An error occurred',
+                loading: 'Processing...',
+                employeeCode: 'Employee Code',
+                contractType: 'Contract Type',
+                selectJobTitle: 'Select Job Title',
+                selectContractType: 'Select Contract Type',
+                contractTypes: {
+                    fullTime: 'Full-time',
+                    partTime: 'Part-time',
+                    intern: 'Internship',
+                    probation: 'Probation',
+                    freelance: 'Freelance'
+                }
+            },
+
+            pagination: {
+                showing: 'Showing',
+                to: 'to',
+                of: 'of',
+                employees: 'employees',
+                page: 'Page'
+            }
+        },
+        myTeam: {
+            title: 'My Team',
+            subtitle: 'Visually manage performance and personnel structure.',
+            stats: {
+                total: 'TOTAL MEMBERS',
+                totalDesc: 'Direct team members',
+                present: 'PRESENT',
+                presentDesc: 'Check-in today',
+                late: 'LATE',
+                lateDesc: 'Needs reminder',
+                absent: 'ABSENT/LEAVE',
+                absentDesc: 'Absent staff'
+            },
+            tabs: {
+                list: 'List',
+                orgChart: 'Organization Chart'
+            },
+            table: {
+                title: 'Employee List',
+                employee: 'Employee',
+                position: 'Position',
+                department: 'Department',
+                status: 'Attendance Status',
+                checkin: 'Check-in',
+                empty: 'No employees found in your team',
+                directReport: 'Direct Report'
+            },
+            orgChart: {
+                title: 'Team Structure',
+                badge: 'Interactive'
+            }
+        },
+        approvalsPage: {
+            title: 'Pending Approvals',
+            subtitle: 'Review requests from employees: leave, attendance edits, profile updates...',
+            tabs: {
+                pending: 'Pending',
+                history: 'History',
+                all: 'All',
+                leave_request: 'Leave',
+                schedule_change: 'Schedule',
+                attendance_edit: 'Timesheet',
+                profile_update: 'Profile',
+                other: 'Other'
+            },
+            empty: {
+                title: 'No requests found',
+                pending: 'No pending activities at the moment.',
+                history: 'No approval history yet.'
+            },
+            table: {
+                employee: 'Employee',
+                type: 'Request Type',
+                time: 'Submitted At',
+                content: 'Content',
+                status: 'Status',
+                action: 'Action'
+            },
+            status: {
+                pending: 'Pending',
+                approved: 'Approved',
+                rejected: 'Rejected',
+                review: 'Review'
+            },
+            actions: {
+                detail: 'Details',
+                close: 'Close',
+                reject: 'Reject',
+                approve: 'Approve',
+                confirmReject: 'Confirm Reject',
+                confirmApprove: 'Confirm Approve',
+                cancel: 'Cancel',
+                processing: 'Processing...'
+            },
+            dialog: {
+                detailTitle: 'Request Details',
+                rejectTitle: 'Rejection Reason',
+                rejectDesc: 'This request will be rejected. Please enter a reason to notify the employee.',
+                rejectPlaceholder: 'Enter reason here...',
+                approveTitle: 'Confirm Approval',
+                approveDesc: 'Are you sure you want to approve this request from',
+                type: 'REQUEST TYPE',
+                time: 'SUBMITTED AT',
+                reason: 'REASON / CONTENT',
+                leaveDate: 'Leave Date',
+                attachment: 'Attachment',
+                newCheckIn: 'New Check In',
+                newCheckOut: 'New Check Out',
+                workDate: 'Work Date',
+                newShift: 'New Shift'
+            },
+            messages: {
+                fetchError: 'Failed to fetch activity data',
+                approveSuccess: 'Request approved',
+                approveError: 'Error approving',
+                rejectSuccess: 'Request rejected',
+                rejectError: 'Error rejecting',
+                error: 'An error occurred',
+                enterReason: 'Please enter a rejection reason',
+                date: "Date"
+            }
+        },
+        attendancePage: {
+            title: 'Company Attendance Overview',
+            subtitle: 'Real-time monitoring for today',
+            exportReport: 'Export Report',
+            manualEntry: 'Manual Entry',
+            stats: {
+                totalEmployees: 'Total Employees',
+                presentToday: 'Present Today',
+                lateArrivals: 'Late Arrivals',
+                onLeave: 'On Leave',
+                thisMonth: 'this month',
+                rate: 'Rate',
+                late: 'late',
+                today: 'Today'
+            },
+            filters: {
+                searchPlaceholder: 'Search employees by name, ID, or department...',
+                allDepartments: 'All Departments',
+                allStatuses: 'All Statuses',
+                present: 'Present',
+                late: 'Late',
+                absent: 'Absent',
+                onLeave: 'On Leave'
+            },
+            table: {
+                employee: 'Employee',
+                id: 'ID',
+                department: 'Department',
+                status: 'Today\'s Status',
+                clockIn: 'Clock-In',
+                clockOut: 'Clock-Out',
+                totalHours: 'Total Hours',
+                actions: 'Actions',
+                noData: 'No employees found matching your filters.'
+            },
+            pagination: {
+                showing: 'Showing'
+            },
+            insight: {
+                title: 'Daily Presence Insight',
+                description: 'Attendance is up by {percent} compared to last Tuesday. High punctuality observed in Engineering.'
+            }
+        }
     },
 
     // Time
@@ -233,5 +553,324 @@ export const en: Translations = {
             saveSuccess: 'Settings saved successfully',
             saveError: 'Save failed',
         }
-    }
+    },
+
+    // Admin Settings
+    adminSettings: {
+        // Layout & Navigation
+        title: 'System Configuration',
+        general: 'General Settings',
+        security: 'Security',
+        roles: 'Roles & Permissions',
+        notifications: 'Notifications',
+        featureToggles: 'Features',
+        comingSoon: 'Coming Soon',
+
+        // General Settings
+        organization: {
+            navTitle: 'Organization',
+            title: 'Organization Structure',
+            description: 'Manage department lists and employee job titles.',
+            navDescription: 'Department & Job Title Categories',
+            syncButton: 'Sync from Existing Data',
+            saveButton: 'Save Changes',
+            saving: 'Saving...',
+            departments: {
+                title: 'Departments',
+                description: 'Company divisions',
+                placeholder: 'Enter new department name...',
+                empty: 'No departments found.',
+                existsRef: 'This department already exists',
+            },
+            jobTitles: {
+                title: 'Job Titles / Positions',
+                description: 'Employee roles',
+                placeholder: 'Enter new job title...',
+                empty: 'No job titles found.',
+                existsRef: 'This job title already exists',
+            },
+            syncDialog: {
+                title: 'Sync Data?',
+                description: 'The system will scan all current employee profiles to find Departments and Job Titles not in the list and add them here. Existing items will be kept.',
+                cancel: 'Cancel',
+                confirm: 'Proceed to Sync',
+                success: 'Sync successful',
+                error: 'Sync failed',
+            },
+            success: 'Organization configuration saved successfully',
+            error: 'An error occurred while saving',
+            tips: {
+                dept: 'Tip: Type name and press Enter to add quickly. This list will appear in suggestions when creating employees.',
+                title: 'These titles will be suggested when filling in employee information.',
+            }
+        },
+
+        generalSettings: {
+            title: 'General Settings',
+            description: 'Manage company information, working hours, and attendance policies',
+            company: {
+                title: 'Company Information',
+                description: 'Configure company name, address, and contact details',
+                name: 'Company Name',
+                namePlaceholder: 'e.g.: FHB Vietnam',
+                website: 'Website',
+                websitePlaceholder: 'https://example.com',
+                address: 'Office Address',
+                addressPlaceholder: '123 ABC Street, XYZ District, HCMC',
+            },
+            workingHours: {
+                title: 'Working Hours',
+                description: 'Configure working time and lunch break',
+                startTime: 'Start Time',
+                endTime: 'End Time',
+                lunchStart: 'Lunch From',
+                lunchEnd: 'Lunch Until',
+            },
+            officeLocation: {
+                title: 'Office Location',
+                description: 'GPS coordinates and maximum allowed distance for attendance',
+                latitude: 'Latitude',
+                latitudePlaceholder: 'e.g.: 10.762622',
+                longitude: 'Longitude',
+                longitudePlaceholder: 'e.g.: 106.660172',
+                maxDistance: 'Maximum Allowed Distance',
+                meters: 'meters',
+                distanceNote: 'Employees must be within this radius to check in',
+            },
+            wifiRules: {
+                title: 'WiFi & Rules',
+                description: 'Configure company WiFi IP and attendance verification rules',
+                companyWifiIp: 'Company WiFi IP Address',
+                ipPlaceholder: 'e.g.: 14.161.22.181',
+                autoDetect: 'Auto Detect IP',
+                ipNote: 'Enter multiple IPs separated by commas. Default is `14.161.22.181`.',
+                requireBoth: 'Require Both GPS and WiFi',
+                requireBothNote: 'When enabled, employees must satisfy both conditions to check in',
+            },
+            offDays: {
+                title: 'Regular Days Off',
+                description: 'Select fixed days off in the week. These days will be displayed dimmer on employee statistics charts.',
+                monday: 'Monday',
+                tuesday: 'Tuesday',
+                wednesday: 'Wednesday',
+                thursday: 'Thursday',
+                friday: 'Friday',
+                saturday: 'Saturday',
+                sunday: 'Sunday',
+            },
+            actions: {
+                save: 'Save Configuration',
+                saving: 'Saving...',
+                saveSuccess: 'Configuration saved successfully!',
+                saveError: 'Unable to save configuration. Please try again.',
+                loadError: 'Unable to load configuration',
+            },
+        },
+
+        // Security Settings
+        securitySettings: {
+            title: 'Security',
+            description: 'Configure 2-factor authentication, reCAPTCHA, and security policies',
+            recaptcha: {
+                title: 'Google reCAPTCHA v3 (Invisible)',
+                description: 'Automatically invisible on User interface. Requires v3 Key.',
+                enabled: 'Enabled',
+                disabled: 'Disabled',
+                toggle: 'Enable reCAPTCHA v3',
+                toggleDescription: 'Protect Login/Register from Bots.',
+                siteKey: 'Site Key',
+                secretKey: 'Secret Key',
+                getKeyLink: 'Get key at Google reCAPTCHA Console',
+                testError: 'Verification error: {{error}}',
+                testErrorNote: 'This error may be due to using Ngrok or Domain not whitelisted on Google.',
+                retry: 'Retry',
+                forceSkip: 'I\'m sure the Key is correct, save anyway',
+                testSuccess: 'Recaptcha connection successful!',
+                validation: {
+                    missingKeys: 'Please enter both Site Key and Secret Key',
+                    initFailed: 'Unable to initialize Google reCAPTCHA. Site Key may be incorrect or Domain blocked.',
+                },
+            },
+            twoFactor: {
+                title: 'Two-Factor Authentication (2FA)',
+                toggle: 'Enable two-factor authentication',
+                toggleDescription: 'Require OTP when logging in as Admin.',
+            },
+            advancedSecurity: {
+                title: 'Advanced Security',
+                accountLockout: 'Account Lockout',
+                accountLockoutDescription: 'Automatically lock after 5 failed attempts.',
+            },
+            actions: {
+                saveChanges: 'Save Changes',
+                testing: 'Testing...',
+                loadError: 'Unable to load security configuration',
+                saveSuccess: 'Security configuration saved successfully!',
+                saveError: 'Unable to save configuration. Please try again.',
+            },
+        },
+
+        // Role Management
+        roleSettings: {
+            title: 'Role Management',
+            description: 'Configure detailed access permissions for each user group.',
+            roles: 'System Roles',
+            selectRole: 'Select Role',
+            searchRoles: 'Search roles...',
+            permissions: 'permissions',
+            fullAccess: 'FULL ACCESS',
+            systemRole: 'System',
+            defaultRole: 'Default',
+            adminNote: 'Admin has full access (Cannot be edited)',
+            adminTitle: 'Administrator Access',
+            adminDescription: 'The Admin role has full system access by default. You do not need (and cannot) configure permissions for this role.',
+            selectRolePlaceholder: 'Select a role to view details',
+            createRole: {
+                button: 'New',
+                title: 'Create New Role',
+                modalDescription: 'Define name and identifier for new permission group.',
+                displayName: 'Display Name',
+                displayNamePlaceholder: 'e.g.: Senior Manager',
+                roleId: 'Role ID',
+                roleIdPlaceholder: 'senior_manager',
+                roleIdNote: 'Used for system identification (no accents, no spaces).',
+                descriptionLabel: 'Description',
+                descriptionPlaceholder: 'Describe the responsibilities of this role...',
+                noDescription: 'No description',
+                required: '*',
+                cancel: 'Cancel',
+                create: 'Create Role',
+                creating: 'Creating...',
+                success: 'Role created successfully',
+                error: 'Please fill in both name and ID',
+            },
+            deleteRole: {
+                confirm: 'Are you sure you want to delete this role? This action cannot be undone.',
+                success: 'Role deleted',
+            },
+            actions: {
+                save: 'Save Changes',
+                saving: 'Saving...',
+                saveSuccess: 'Permissions updated',
+                loadError: 'Cannot access permission data',
+                permissionDenied: 'You do not have permission to access this page.',
+            },
+            // Permission translation mapping
+            permissionLabels: {
+                'dashboard.view': 'Access Dashboard',
+                'users.view': 'View Employees (Basic)',
+                'users.view_details': 'View Profile Details',
+                'users.view_salary': '⚠ View Salary & Contracts',
+                'users.create': 'Create New Employee',
+                'users.edit': 'Edit Employee Info',
+                'users.delete': 'Delete/Lock Employee',
+                'attendance.view': 'View Attendance Data',
+                'attendance.edit': '⚠ Edit Attendance Data',
+                'attendance.export': 'Export Attendance Report',
+                'leaves.view': 'View Leave Calendar',
+                'leaves.create_for_others': 'Create Leave for Others',
+                'approvals.view': 'View Approval Requests',
+                'approvals.approve': 'Approve/Reject Requests',
+                'reports.view': 'View Statistical Reports',
+                'reports.export': 'Export Summary Reports',
+                'settings.view': 'View System Settings',
+                'settings.manage': 'Edit Configuration',
+                'roles.view': 'View Role List',
+                'roles.manage': '⚠ Manage Permissions',
+            },
+            roleLabels: {
+                'admin': 'Administrator',
+                'manager': 'Manager',
+                'hr': 'Human Resources',
+                'accountant': 'Accountant',
+                'member': 'Employee',
+            },
+            roleDescriptions: {
+                'admin': 'Full access to system and management.',
+                'manager': 'Manage teams and approve personnel requests.',
+                'hr': 'Manage employee profiles and personnel procedures.',
+                'accountant': 'Only view and export attendance reports.',
+                'member': 'User-facing application only, no admin access.',
+            },
+            categories: {
+                'System': 'System',
+                'User Management': 'User Management',
+                'Attendance': 'Attendance',
+                'Leave Management': 'Leave Management',
+                'Approvals': 'Approvals',
+                'Reports': 'Reports',
+            }
+        },
+
+        // Integrations
+        integrations: {
+            title: 'WordPress Integration',
+            description: 'Connect with WordPress to upload files to Media Library',
+            status: {
+                connected: '✅ Connected',
+                failed: '❌ Connection Failed',
+                pending: '⏳ Not Tested',
+                lastTested: 'Last tested:',
+            },
+            form: {
+                siteUrl: 'WordPress Site URL',
+                siteUrlPlaceholder: 'https://yoursite.com',
+                siteUrlNote: 'Full URL of WordPress site (without trailing /)',
+                username: 'Username',
+                usernamePlaceholder: 'admin',
+                appPassword: 'Application Password',
+                appPasswordPlaceholder: 'xxxx xxxx xxxx xxxx xxxx xxxx',
+                appPasswordNote: 'Create Application Password at:',
+                wpProfile: 'WordPress Profile',
+                required: '*',
+            },
+            actions: {
+                test: 'Test Connection',
+                testing: 'Testing...',
+                save: 'Save Configuration',
+                saving: 'Saving...',
+                delete: 'Delete Configuration',
+                testSuccess: '✅ Connection successful! User: {{name}}',
+                testError: '❌ Connection failed: {{error}}',
+                saveSuccess: 'Configuration saved successfully!',
+                saveError: 'Failed to save configuration',
+                deleteConfirm: '⚠️ Are you sure you want to delete WordPress configuration?\\n\\nAfter deletion, file upload feature will not work.',
+                deleteSuccess: 'WordPress configuration deleted',
+                deleteError: 'Failed to delete configuration',
+                loadError: 'Unable to load configuration',
+                validation: {
+                    allFieldsRequired: 'Please fill in all fields',
+                    reenterPassword: 'Please re-enter Application Password',
+                    reenterPasswordTest: 'Please re-enter Application Password to test',
+                    testError: 'Unable to test connection',
+                },
+            },
+            security: {
+                title: '⚠️ Security Notice:',
+                note1: 'Application Password is stored in database (should be encrypted in production)',
+                note2: 'Only Admin has configuration rights',
+                note3: 'Do not share Application Password with others',
+            },
+            help: {
+                title: '📚 How to Create Application Password',
+                step1: 'Log in to WordPress Admin',
+                step2: 'Go to Users → Profile',
+                step3: 'Scroll down to Application Passwords section',
+                step4: 'Enter a name (e.g.: "Cham Cong App") and click Add New Application Password',
+                step5: 'Copy the generated password and paste into the form above',
+            },
+        },
+
+        // Coming Soon Pages
+        notificationsComingSoon: {
+            title: 'Notification Configuration',
+            description: 'Email, Push Notifications, and SMTP configuration will be available in the next version.',
+            badge: 'Coming in v2.0',
+        },
+        featureTogglesComingSoon: {
+            title: 'Feature Toggles',
+            description: 'Management of modules like GPS, OT, Leave Request... will be available in the next version.',
+            badge: 'Coming in v2.0',
+        },
+    },
 }

@@ -11,23 +11,50 @@ import { getMyProfile } from '@/app/actions/profile'
 import { getWorkSettings } from '@/app/actions/settings'
 import { getPendingStats } from '@/app/actions/approvals'
 import { Skeleton } from './ui/skeleton'
+import { useI18n } from '@/contexts/i18n-context'
 
-export function AdminSidebar() {
+interface AdminSidebarProps {
+    className?: string
+    mobile?: boolean
+    onLinkClick?: () => void
+    preloadedPermissions?: string[]
+    preloadedProfile?: any
+}
+
+export function AdminSidebar({ className, mobile, onLinkClick, preloadedPermissions, preloadedProfile }: AdminSidebarProps) {
     const pathname = usePathname()
-    const [profile, setProfile] = useState<any>(null)
-    const [loading, setLoading] = useState(true)
+    const { t } = useI18n()
+    // Use preloaded data if available, otherwise fallback to fetch
+    const [profile, setProfile] = useState<any>(preloadedProfile || null)
+    const [loading, setLoading] = useState(!preloadedProfile)
     const [companyName, setCompanyName] = useState('TimeTracker')
     const [pendingCount, setPendingCount] = useState(0)
 
     useEffect(() => {
         async function loadData() {
             try {
-                const [profileRes, settingsRes, pendingRes] = await Promise.all([
-                    getMyProfile(),
+                // If profile is preloaded, we just need settings and pending stats
+                const promises: any[] = [
                     getWorkSettings(),
                     getPendingStats()
-                ])
-                if (profileRes.profile) setProfile(profileRes.profile)
+                ]
+
+                // If no preloaded profile, fetch it too
+                if (!preloadedProfile) {
+                    promises.unshift(getMyProfile())
+                }
+
+                const results = await Promise.all(promises)
+
+                let settingsRes, pendingRes, profileRes
+
+                if (!preloadedProfile) {
+                    [profileRes, settingsRes, pendingRes] = results
+                    if (profileRes?.profile) setProfile(profileRes.profile)
+                } else {
+                    [settingsRes, pendingRes] = results
+                }
+
                 if (settingsRes?.company_name) setCompanyName(settingsRes.company_name)
                 if (pendingRes?.total) setPendingCount(pendingRes.total)
             } catch (e) {
@@ -37,31 +64,40 @@ export function AdminSidebar() {
             }
         }
         loadData()
-    }, [])
+    }, [preloadedProfile])
 
     const displayName = profile?.full_name || 'Admin User'
     const displayAvatar = profile?.avatar_url
-    const displayRole = (profile?.roles as any)?.display_name || 'Quản trị viên'
-    const userPermissions = (profile?.roles as any)?.permissions || []
+    const displayRole = (profile?.roles as any)?.display_name || t.nav.account
+
+    // Use preloaded permissions directly if available, otherwise extract from profile
+    const userPermissions = preloadedPermissions || (profile?.roles as any)?.permissions || []
 
     // Menu items with required permissions
     const links = [
-        { href: '/admin', label: 'Overview', icon: 'dashboard', permission: 'dashboard.view' },
-        { href: '/admin/employees', label: 'Employees', icon: 'group', permission: 'users.view' },
-        { href: '/admin/my-team', label: 'My Team', icon: 'diversity_3', permission: 'users.view' },
-        { href: '/admin/approvals', label: 'Approvals', icon: 'fact_check', permission: 'approvals.view' },
-        { href: '/admin/attendance', label: 'Attendance', icon: 'schedule', permission: 'attendance.view' },
-        { href: '/admin/reports', label: 'Reports', icon: 'analytics', permission: 'reports.view' },
-        { href: '/admin/audit-logs', label: 'Audit Logs', icon: 'history', permission: 'settings.view' },
-        { href: '/admin/settings', label: 'Settings', icon: 'settings', permission: 'settings.view' },
+        { href: '/admin', label: t.admin.overview, icon: 'dashboard', permission: 'dashboard.view' },
+        { href: '/admin/employees', label: t.admin.employees, icon: 'group', permission: 'users.view' },
+        { href: '/admin/my-team', label: t.admin.myTeam.title, icon: 'diversity_3', permission: 'users.view' },
+        { href: '/admin/approvals', label: t.admin.approvals, icon: 'fact_check', permission: 'approvals.view' },
+        { href: '/admin/attendance', label: t.admin.attendance, icon: 'schedule', permission: 'attendance.view' },
+        { href: '/admin/reports', label: t.admin.reports, icon: 'analytics', permission: 'reports.view' },
+        { href: '/admin/audit-logs', label: t.admin.auditLogs, icon: 'history', permission: 'settings.view' },
+        { href: '/admin/settings', label: t.admin.settings, icon: 'settings', permission: 'settings.view' },
     ]
 
     // Helper to check if user has permission
     const hasPermission = (permission: string) => {
+        // If profile is loading, show nothing or basic links? 
+        // Better: if profile not loaded yet, dont filter strictly or show skeletons.
+        // But here we rely on 'loading' state.
+
+        // Admin role bypasses all checks
+        if (profile?.role === 'admin' || (profile?.roles as any)?.name === 'admin') return true
+
         // Safe check for null/undefined
         if (!userPermissions) return false
 
-        // Normalize to array if needed (handle both array and single string cases if Supabase returns differently)
+        // Normalize to array if needed
         const perms: string[] = Array.isArray(userPermissions) ? userPermissions : []
 
         if (perms.length === 0) return false
@@ -79,7 +115,11 @@ export function AdminSidebar() {
 
 
     return (
-        <aside className="w-64 border-r border-[#1e293b] bg-[#0d131a] flex flex-col hidden lg:flex h-screen sticky top-0">
+        <aside className={cn(
+            "w-64 border-r border-[#1e293b] bg-[#0d131a] flex flex-col overflow-y-auto custom-scrollbar",
+            mobile ? "w-full h-full border-r-0" : "h-screen sticky top-0",
+            className
+        )}>
             <div className="p-6 flex flex-col gap-1">
                 <div className="flex items-center gap-2 mb-6">
                     <div className="bg-primary p-2 rounded-lg text-white shadow-lg shadow-primary/20">
@@ -87,7 +127,7 @@ export function AdminSidebar() {
                     </div>
                     <h1 className="text-xl font-bold tracking-tight text-white">{companyName}</h1>
                 </div>
-                <p className="text-slate-500 text-[10px] uppercase font-bold tracking-[0.2em] mb-2">Admin Panel</p>
+                <p className="text-slate-500 text-[10px] uppercase font-bold tracking-[0.2em] mb-2">{t.admin.adminPanel}</p>
             </div>
 
             <nav className="flex-1 px-4 space-y-1">
@@ -97,6 +137,7 @@ export function AdminSidebar() {
                         <Link
                             key={link.href}
                             href={link.href}
+                            onClick={onLinkClick}
                             className={cn(
                                 "flex items-center gap-3 px-3 py-3 rounded-xl transition-all group relative",
                                 isActive
@@ -119,13 +160,25 @@ export function AdminSidebar() {
                         </Link>
                     )
                 })}
+
+                {/* Switch to User View */}
+                <div className="my-2 border-t border-slate-800 mx-2"></div>
+                <Link
+                    href="/"
+                    onClick={onLinkClick}
+                    className="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all group"
+                >
+                    <span className="material-symbols-outlined text-[22px] group-hover:scale-110 transition-transform text-emerald-500">space_dashboard</span>
+                    <span className="text-sm font-medium">{t.admin.userDashboard}</span>
+                </Link>
+
                 <form action={signout} className="pt-2">
                     <button
                         type="submit"
                         className="flex w-full items-center gap-3 px-3 py-3 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all font-medium group cursor-pointer"
                     >
                         <span className="material-symbols-outlined text-[22px] group-hover:scale-110 transition-transform text-red-400/70">logout</span>
-                        <span className="text-sm">Logout</span>
+                        <span className="text-sm">{t.nav.signOut}</span>
                     </button>
                 </form>
             </nav>

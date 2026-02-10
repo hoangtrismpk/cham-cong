@@ -38,15 +38,13 @@ export async function middleware(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     // Protect routes example (Uncomment when ready)
-    /*
+    // Protect routes
     if (
-      !user &&
-      !request.nextUrl.pathname.startsWith('/login') &&
-      !request.nextUrl.pathname.startsWith('/auth')
+        !user &&
+        request.nextUrl.pathname.startsWith('/admin')
     ) {
-      return NextResponse.redirect(new URL('/login', request.url))
+        return NextResponse.redirect(new URL('/login', request.url))
     }
-    */
 
     return response
 }
