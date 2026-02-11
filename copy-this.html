@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Firebase Base64 Secret</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 40px;
+            background: #0f172a;
+            color: white;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #38bdf8;
+            margin-top: 0;
+        }
+
+        textarea {
+            width: 100%;
+            height: 250px;
+            background: #0f172a;
+            color: #38bdf8;
+            border: 1px solid #334155;
+            padding: 15px;
+            font-family: 'Cascadia Code', Consolas, monospace;
+            font-size: 13px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            resize: none;
+            word-break: break-all;
+        }
+
+        .btn {
+            background: #3b82f6;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .success-msg {
+            color: #4ade80;
+            font-weight: bold;
+            margin-left: 15px;
+            display: none;
+        }
+
+        code {
+            background: #334155;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #f472b6;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔑 Firebase Base64 Key</h1>
+        <p>1. Nhấn nút <b>"Copy to Clipboard"</b> bên dưới.</p>
+        <p>2. Dán vào ô giá trị của <code>FIREBASE_SERVICE_ACCOUNT_B64</code> trong <b>Supabase -> Edge Functions ->
+                Secrets</b>.</p>
+
+        <textarea id="secret"
+            readonly>ew0KICAgICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsDQogICAgInByb2plY3RfaWQiOiAiY2hhbS1jb25nLTYyZTVhIiwNCiAgICAicHJpdmF0ZV9rZXlfaWQiOiAiYzNkZDQwZWIyMzliZTBhZWJhYjUwNzYxODM4MTJiM2I0NDlmNjI5NCIsDQogICAgInByaXZhdGVfa2V5IjogIi0tLS0tQkVHSU4gUFJJVkFURSBLRVktLS0tLVxuTUlJRXZnSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2d3Z2dTa0FnRUFBb0lCQVFES3Z4YTh3MzdKYUIra1xuenZBS1RoNVE1emV2QWZmVVl6MGRxSmNTd0c1VHRHR2ZJNzYyUjhoK0tXM2hzbWhmOUJQN1Yrbjc5RVBkY2NtQ1xucVl1dXgzSGRpcXNzc3lXdkxGZjJaQWtVUFRTQmxOdnNnZWFMWThOeWk5N051WCtIeU1tTzhxNXZLUUNHWWJBN1xuS2lpKzk1aENHQzJoNkh4bzg2ZnRUbUFpNmZLNzBSOUtjbzZ2U3J1NlI0T3g1N1dIaW82N3Q5TVpqcHNjbUd5Q1xubEl2Qjc2VDg0bG0xWndhRjZkTStBSTlhRjd3RmtIVU5QaVVwSHBiNmVINEdjRzJHRkN3b1VnM0QrZmpteFc2blxuWFY5S3hlQ3NieTRoamRCRFpHMWNlVnJHVDRhUlc0ckowWlhTeUxKQ012RG5RZHhoWEpQT1YwVDhWZWRVRkd6MFxuRGtGeGhsT3ZBZ01CQUFFQ2dnRUFQWjM4bllxMmhpUjRkWUNVMERUMG5yYmVvL2Z2cDJNdnFFdGIrbzEwR2tsWVxuWCtLZnE4cytJaVdhS1AwdEhuaFIrRkc4SVdBWG5mM2VkYkRzYkVaZUV5djVJT0VqUTAweFFJY2ZnVUNtcS9rZlxuSzQ1QkVEeldJZ0pqU05lbTdBLzRQZE1BYzNVZEhUb2tNcDc1K2l2S1lNL3pVbUVUS2x4ZXZVN1VCZGhlOW5ncFxubVNob24xYXpienQwVDhMcHZqQkI3V2tIL0RDYkNWTUFSd2VzbWhHK2V4Uzh5b1JGb3ByVmNxOU5FdCthWWpHQlxuY3dOak1yZGw5MEpPNExRNjh5bGlCUitqUVRiSklzSmEvZ2QyVWlWNHlWaVhTSC9tRjJhemJTZDBLZEl4VzNlU1xuaGsvT0hmaVJXcmQwcHVzYUJ4SVdhb3ptY1EwYmtRNkEvZUZnWnhFSlBRS0JnUUR4Zjk2UHFIbEJEbUNJU2JDa1xubEltUWdJMEIvRElWcldxQ2xZRFRPQkR5M2tmb3hLTEFuV050L3ZLcHJZZG41NURnYW5hMGxITjZ3SlIxRG1ET1xuZjJTdXliN0J3Nzd4MDlBbi85RlJYc05lVVo0K2tmMXIxWFIydW1YbmMzbmdIMXhmbXA5a1lMTE5KZDUxWENJMVxualVMWVBwNm9pYjhzSWJ3WmlJWXpPcHNmTXdLQmdRRFc2NG9pWTNjUlNsc1FROGZEODdFR3k2WUluaHZqRE5jbFxuN2hTSFpma3hEdWFJWGtldjB6OUpGY2xWK1o4dFRCamQrWldDYnFlRDk1MzRzbWk4VWN6NmlEUkxuRnl5c3lpQ1xuNWVkeW5HN1pJTGphbnoreGhrQmpFQ05PbVZYUmRMUUdEQXVWWm1mN3ByVkMxbW5TR2pmN2Z6b0ZsNlMydkF1QVxucytWSnBjb3BsUUtCZ0Y1c09JREN4bVlCVVF6NGd2QldnMUxVY0UyT1phYkVIeGpmaTNjS1BOWTR3clRuN1JxU1xuYndYYTROWW0yd0p0TCtBT3dFcnFvQndtbitVRXNpVUsranE4OXJDYjhGUnRGTDRPNzdCNDlMb3ovME5Ib1daQVxuRjBFMHNCTkd1eWcrR3NmbWxOdVNVMWFTcitBREhmMENObGlHWTFKU1NVVGdDOE9QOWFpaUNYU3hBb0dCQU5RQ1xuNHU5dGcyV3hIZ2Y3ZFRNZVVJSE5uMnBjM2xHcXR3cVp3L0tWYTY4emJjTVVqazhxYXdHajFrdFR4ZXlmWnVDQ1xuZHpTR0NBWXMzTThhNENyMTN1aytONmhuQlNMYmpaa2pScUJQSlNKWUgwSzdXYys4Q2dRdlJVVWlDZ0JueWJjMVxuWnEvb3A2Y2VHeTFsNmxueXQwc0hoS3REbnA4TS9hUG0wc2RHSHhuSkFvR0JBSVIrb1VxRVdwWUFIWTROTmRNNFxuNXZFMnFtZXBmSGJJcDFWSzRtMjBRVkVMb3RES3lUT3Noc3ZxSnEyVU9xc1lWTWpyYTlkT3AzaHl2cUtmR29TQVxuSHdzd2h5Y3cyK2VwVDBPRm1SVi9WQUJDcHFPeHZxQlN5bjBENHV0RTd4NDJVNmVjNWplWVpKZTBBTDNscjlUZ1xuZmhIYzdKVGZ2OHo0WUZjcHYwYUlIek1rXG4tLS0tLUVORCBQUklWQVRFIEtFWS0tLS0tXG4iLA0KICAgICJjbGllbnRfZW1haWwiOiAiZmlyZWJhc2UtYWRtaW5zZGstZmJzdmNAY2hhbS1jb25nLTYyZTVhLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwNCiAgICAiY2xpZW50X2lkIjogIjExMDEyNzg2NjQ3NTE3MTM2OTg0MiIsDQogICAgImF1dGhfdXJpIjogImh0dHBzOi8vYWNjb3VudHMuZ29vZ2xlLmNvbS9vL29hdXRoMi9hdXRoIiwNCiAgICAidG9rZW5fdXJpIjogImh0dHBzOi8vb2F1dGgyLmdvb2dsZWFwaXMuY29tL3Rva2VuIiwNCiAgICAiYXV0aF9wcm92aWRlcl94NTA5X2NlcnRfdXJsIjogImh0dHBzOi8vd3d3Lmdvb2dsZWFwaXMuY29tL29hdXRoMi92MS9jZXJ0cyIsDQogICAgImNsaWVudF94NTA5X2NlcnRfdXJsIjogImh0dHBzOi8vd3d3Lmdvb2dsZWFwaXMuY29tL3JvYm90L3YxL21ldGFkYXRhL3g1MDkvZmlyZWJhc2UtYWRtaW5zZGstZmJzdmMlNDBjaGFtLWNvbmctNjJlNWEuaWFtLmdzZXJ2aWNlYWNjb3VudC5jb20iLA0KICAgICJ1bml2ZXJzZV9kb21haW4iOiAiZ29vZ2xlYXBpcy5jb20iDQp9</textarea>
+
+        <div style="display: flex; align-items: center;">
+            <button class="btn" onclick="copyToClipboard()">Copy to Clipboard</button>
+            <span id="success" class="success-msg">✅ Đã copy thành công!</span>
+        </div>
+
+        <p style="margin-top: 30px; font-size: 14px; color: #94a3b8;">
+            💡 <b>Tại sao lại lỗi?</b> Khi copy thủ công một chuỗi quá dài (3000+ ký tự), đôi khi trình duyệt hoặc việc
+            quét chuột bị thiếu mất vài ký tự ở cuối hoặc thêm khoảng trắng lạ. Nút Copy này sẽ lấy chính xác 100% dữ
+            liệu.
+        </p>
+    </div>
+
+    <script>
+        function copyToClipboard() {
+            const copyText = document.getElementById("secret");
+            copyText.select();
+            copyText.setSelectionRange(0, 99999); // For mobile devices
+            navigator.clipboard.writeText(copyText.value);
+
+            const success = document.getElementById("success");
+            success.style.display = "inline";
+            setTimeout(() => { success.style.display = "none"; }, 3000);
+        }
+    </script>
+</body>
+
+</html>

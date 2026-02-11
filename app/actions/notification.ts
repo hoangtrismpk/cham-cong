@@ -62,13 +62,50 @@ export async function markAllAsRead() {
 }
 
 // Internal function to create notification (for other server actions)
+// Internal function to create notification (for other server actions)
 export async function createNotification(userId: string, title: string, content: string, type: 'info' | 'success' | 'warning' | 'error' = 'info', link?: string) {
     const supabase = await createClient()
-    await supabase.from('notifications').insert({
+
+    // 1. Save to DB (For In-App Bell)
+    const { error } = await supabase.from('notifications').insert({
         user_id: userId,
         title,
         content,
         type,
         link
     })
+
+    if (error) {
+        console.error('Failed to save notification to DB:', error)
+    }
+
+    // 2. Trigger Push Notification (via Edge Function)
+    // We do this fire-and-forget style so it doesn't block the UI
+    try {
+        const functionUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/notify-dispatcher`
+
+        // Use service role key to authorize the edge function call
+        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+        if (functionUrl && serviceKey) {
+            fetch(functionUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${serviceKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    userIds: [userId],
+                    title,
+                    body: content, // Map content to body
+                    link,
+                    saveToDb: false // We already saved to DB above
+                })
+            }).catch(err => console.error('Push notification trigger error:', err))
+        } else {
+            console.warn('Missing configuration for Push Notifications')
+        }
+    } catch (e) {
+        console.error('Error referencing Push Notification service:', e)
+    }
 }
