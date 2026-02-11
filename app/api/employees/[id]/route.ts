@@ -31,11 +31,16 @@ export async function GET(
 
         console.log('[API] GET employee:', employeeId);
 
+        // Determine if ID is numeric or UUID
+        const isNumeric = /^\d+$/.test(employeeId);
+        const queryField = isNumeric ? 'numeric_id' : 'id';
+        const queryValue = isNumeric ? parseInt(employeeId) : employeeId;
+
         // Get employee info
         const { data: employee, error } = await supabase
             .from('profiles')
-            .select('id, full_name, email, employment_type, role_id')
-            .eq('id', employeeId)
+            .select('id, numeric_id, full_name, email, employment_type, role_id')
+            .eq(queryField, queryValue)
             .single();
 
         if (error) {
@@ -79,6 +84,11 @@ export async function PATCH(
         const body = await request.json();
         const { employment_type } = body;
 
+        // Determine if ID is numeric or UUID
+        const isNumeric = /^\d+$/.test(employeeId);
+        const queryField = isNumeric ? 'numeric_id' : 'id';
+        const queryValue = isNumeric ? parseInt(employeeId) : employeeId;
+
         // Validate employment type
         const validTypes = ['full-time', 'part-time', 'intern'];
         if (employment_type && !validTypes.includes(employment_type)) {
@@ -92,7 +102,7 @@ export async function PATCH(
         const { data, error } = await supabase
             .from('profiles')
             .update({ employment_type })
-            .eq('id', employeeId)
+            .eq(queryField, queryValue)
             .select()
             .single();
 

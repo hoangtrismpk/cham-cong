@@ -11,9 +11,20 @@ import { NextResponse } from 'next/server';
  * GET /api/employees
  * Get all employees
  */
-export async function GET() {
+// Helper to get array from search params safely
+function getArray(searchParams: URLSearchParams, key: string) {
+    const value = searchParams.get(key);
+    return value ? value.split(',') : [];
+}
+
+/**
+ * GET /api/employees
+ * Get employees with Server-Side Pagination & Filtering
+ */
+export async function GET(request: Request) {
     try {
         const supabase = await createClient();
+        const { searchParams } = new URL(request.url);
 
         // Check authentication
         const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -21,47 +32,81 @@ export async function GET() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Get all employees with full details
-        const { data: employees, error } = await supabase
+        // --- 1. Extract Query Parameters ---
+        const page = parseInt(searchParams.get('page') || '1');
+        const limit = parseInt(searchParams.get('limit') || '10');
+        const search = searchParams.get('search') || '';
+        const deptFilter = searchParams.get('department') || 'all';
+        const statusFilter = searchParams.get('status') || 'all';
+        const roleFilter = searchParams.get('role') || 'all';
+
+        // Calculate range
+        const from = (page - 1) * limit;
+        const to = from + limit - 1;
+
+        // --- 2. Build Query ---
+        let query = supabase
             .from('profiles')
             .select(`
                 id, 
+                numeric_id,
                 first_name,
                 last_name,
                 full_name, 
                 email, 
                 phone,
-                dob,
-                gender,
-                address,
-                city,
                 employee_code, 
                 job_title,
                 department, 
                 status, 
-                start_date,
-                contract_type,
                 avatar_url,
-                emergency_contact,
                 roles (
                     name,
                     display_name
                 ),
                 manager:profiles!manager_id (
-                    full_name,
-                    employee_code
+                    full_name
                 )
-            `)
-            .order('full_name', { ascending: true });
+            `, { count: 'exact' });
 
-        if (error) {
-            return NextResponse.json(
-                { error: error.message },
-                { status: 400 }
-            );
+        // --- 3. Apply Filters ---
+        if (search) {
+            query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,employee_code.ilike.%${search}%`);
         }
 
-        return NextResponse.json(employees || []);
+        if (deptFilter !== 'all') {
+            query = query.eq('department', deptFilter);
+        }
+
+        if (statusFilter !== 'all') {
+            query = query.eq('status', statusFilter);
+        }
+
+        if (roleFilter !== 'all') {
+            // Filter by role display_name
+            query = query.eq('roles.display_name', roleFilter);
+        }
+
+        // --- 4. Pagination & Sorting ---
+        const { data: employees, error, count } = await query
+            .order('created_at', { ascending: false })
+            .range(from, to);
+
+        if (error) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
+        }
+
+        // --- 5. Return Response ---
+        return NextResponse.json({
+            data: employees || [],
+            meta: {
+                total: count || 0,
+                page,
+                limit,
+                totalPages: Math.ceil((count || 0) / limit)
+            }
+        });
+
     } catch (error: any) {
         console.error('GET /api/employees error:', error);
         return NextResponse.json(

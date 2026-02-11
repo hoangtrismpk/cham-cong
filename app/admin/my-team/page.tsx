@@ -12,7 +12,7 @@ export default async function MyTeamPage() {
 
     if (!user) redirect('/login')
 
-    const { team, stats, error } = await getMyTeamData()
+    const { team, stats, error, meta } = await getMyTeamData()
 
     if (error) {
         return (
@@ -29,5 +29,5 @@ export default async function MyTeamPage() {
         )
     }
 
-    return <MyTeamClient team={team} stats={stats} currentUserId={user.id} />
+    return <MyTeamClient team={team} stats={stats} currentUserId={user.id} meta={meta} />
 }

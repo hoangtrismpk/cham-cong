@@ -30,7 +30,8 @@ export interface Employee {
     employee_code: string | null
     job_title: string | null
     department: string | null
-    contract_type: string | null // NEW: Contract Type
+    contract_type?: string | null // NEW: Contract Type
+    employment_type?: string | null // NEW: Employment Type (full-time, part-time, etc.)
     role_id: string | null
     role_name?: string
     manager_id?: string | null // NEW: Direct Supervisor
@@ -125,7 +126,6 @@ export async function getEmployees(filters: EmployeeFilters = {}) {
             employee_code,
             job_title,
             department,
-            contract_type,
             avatar_url,
             role_id,
             manager_id,
@@ -226,7 +226,6 @@ export async function getEmployeeById(id: string | number) {
             employee_code,
             job_title,
             department,
-            contract_type,
             avatar_url,
             role_id,
             manager_id,
@@ -377,7 +376,6 @@ export async function createEmployee(formData: Partial<Employee> & { password?: 
             employee_code: formData.employee_code || null,
             job_title: formData.job_title || 'Member',
             department: formData.department || null,
-            contract_type: formData.contract_type || null, // NEW
             role_id: formData.role_id || null,
             manager_id: formData.manager_id || null, // SAVE MANAGER
             start_date: formData.start_date || new Date().toISOString(),
@@ -442,7 +440,6 @@ export async function updateEmployee(employeeId: string | number, formData: Part
             employee_code: formData.employee_code,
             job_title: formData.job_title,
             department: formData.department,
-            contract_type: formData.contract_type, // NEW
             role_id: formData.role_id,
             manager_id: formData.manager_id || null, // SAVE MANAGER
             start_date: formData.start_date,

@@ -17,6 +17,10 @@ export const en: Translations = {
         back: 'Back',
         next: 'Next',
         results: 'results',
+        male: 'Male',
+        female: 'Female',
+        other: 'Other',
+        none: 'None'
     },
 
     // Navigation
@@ -250,6 +254,100 @@ export const en: Translations = {
                 employees: 'employees',
                 page: 'Page'
             }
+        },
+
+        detail: {
+            breadcrumbAdmin: 'Main Console',
+            breadcrumbList: 'Employee Directory',
+            editButton: 'Edit Details',
+            exportPDF: 'Export PDF',
+            statusActive: 'Active',
+            statusInactive: 'Inactive',
+            tabs: {
+                personal: 'Personal Info',
+                schedule: 'Work Schedule',
+                attendance: 'Attendance History',
+                documents: 'Documents'
+            },
+            sections: {
+                contact: 'Contact Details',
+                emergency: 'SOS - Emergency Contacts',
+                stats: 'Quick Stats',
+                nextShift: 'Next Shift'
+            },
+            labels: {
+                id: 'Employee ID',
+                jobTitle: 'Job Title',
+                department: 'Department',
+                fullName: 'Full Name',
+                dob: 'Date of Birth',
+                gender: 'Gender',
+                email: 'Email',
+                phone: 'Phone',
+                manager: 'Direct Manager',
+                address: 'Address',
+                joined: 'Joined'
+            },
+            skillsTitle: 'Skills',
+            nextShiftContent: {
+                remote: 'Remote',
+                standard: '8 Hours Standard',
+                viewAll: 'View Full Schedule',
+                tomorrow: 'Tomorrow'
+            },
+            schedule: {
+                comingSoon: 'Coming Soon',
+                title: 'Weekly Schedule',
+                desc: 'Work schedule visualization will be implemented here.'
+            },
+            emergencyLabels: {
+                name: 'Contact Name',
+                phone: 'Contact Phone',
+                relationship: 'Relationship',
+                empty: 'No emergency contact information provided',
+                description: 'Contact information in case of emergency'
+            },
+            stats: {
+                punctuality: 'Punctuality Rate',
+                pto: 'PTO Balance',
+                overtime: 'Monthly Overtime',
+                unitDays: 'Days',
+                unitHours: 'Hrs'
+            },
+            attendance: {
+                title: 'Log Entries: {{month}}',
+                monthlyRate: 'Monthly Rate',
+                onTime: 'On-Time',
+                late: 'Late',
+                absent: 'Absent',
+                table: {
+                    date: 'DATE',
+                    checkIn: 'CHECK-IN',
+                    checkOut: 'CHECK-OUT',
+                    total: 'TOTAL HOURS',
+                    status: 'STATUS'
+                }
+            },
+            messages: {
+                notFound: 'Employee not found',
+                loading: 'Loading employee details...',
+                noAttendance: 'No attendance logs found for this period'
+            }
+        },
+
+        edit: {
+            title: 'Edit Information',
+            subtitle: 'Update profile details, role, and department for employee',
+            sections: {
+                account: 'Account Information',
+                internal: 'Internal Information',
+                personal: 'Personal Info & Contact'
+            },
+            saveButton: 'Save Changes',
+            saving: 'Saving...',
+            success: 'Updated successfully!',
+            error: 'An error occurred while updating',
+            notFound: 'Employee not found'
         },
         myTeam: {
             title: 'My Team',
@@ -866,6 +964,62 @@ export const en: Translations = {
             title: 'Notification Configuration',
             description: 'Email, Push Notifications, and SMTP configuration will be available in the next version.',
             badge: 'Coming in v2.0',
+        },
+        notificationDashboard: {
+            title: 'Push Notification Dashboard',
+            subtitle: 'Check status, diagnose issues, and send test notifications',
+            tabs: {
+                diagnostics: 'Diagnostics',
+                testPush: 'Send Test',
+                logs: 'Send History',
+            },
+            diagnostics: {
+                title: 'System Health Check',
+                runCheck: 'Run Check',
+                running: 'Running check...',
+                envVars: 'Environment Variables',
+                fcmTokens: 'FCM Tokens',
+                totalTokens: 'Total tokens',
+                uniqueUsers: 'Users with tokens',
+                byDevice: 'By device',
+                userCoverage: 'User Coverage',
+                totalUsers: 'Total employees',
+                withTokens: 'With tokens',
+                withoutTokens: 'Without tokens',
+                todayShifts: 'Today\'s Shifts',
+                recentLogs: 'Recent Logs',
+                noData: 'No data yet. Click "Run Check" to start.',
+                healthy: 'Healthy',
+                warning: 'Warning',
+                error: 'Error',
+            },
+            testPush: {
+                title: 'Send Test Notification',
+                selectUser: 'Select Employee',
+                selectUserPlaceholder: 'Select employee to send test...',
+                notifTitle: 'Title',
+                notifTitlePlaceholder: '🔔 Test Notification',
+                notifMessage: 'Message',
+                notifMessagePlaceholder: 'This is a test notification from Admin',
+                sendTest: 'Send Test Notification',
+                sending: 'Sending...',
+                success: 'Sent successfully!',
+                failed: 'Send failed',
+                result: 'Result',
+                successCount: 'Success',
+                failCount: 'Failed',
+                staleRemoved: 'Stale tokens removed',
+            },
+            logs: {
+                title: 'Notification Send History',
+                empty: 'No logs yet',
+                userId: 'User ID',
+                shiftId: 'Shift',
+                type: 'Type',
+                status: 'Status',
+                sentAt: 'Sent At',
+                clickedAt: 'Clicked At',
+            },
         },
         featureTogglesComingSoon: {
             title: 'Feature Toggles',

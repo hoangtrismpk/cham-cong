@@ -55,7 +55,7 @@ export default function EditEmployeePage() {
             // Load employee
             const result = await getEmployeeById(employeeId)
             if (result.error || !result.employee) {
-                toast.error('Không tìm thấy nhân viên')
+                toast.error(t.admin.edit.notFound)
                 router.push('/admin/employees')
                 return
             }
@@ -86,11 +86,11 @@ export default function EditEmployeePage() {
             if (result.error) {
                 toast.error(result.error)
             } else {
-                toast.success('Cập nhật thông tin thành công!')
+                toast.success(t.admin.edit.success)
                 router.push(`/admin/employees/${employeeId}`)
             }
         } catch (error) {
-            toast.error('Có lỗi xảy ra khi cập nhật')
+            toast.error(t.admin.edit.error)
         } finally {
             setSaving(false)
         }
@@ -101,7 +101,7 @@ export default function EditEmployeePage() {
             <div className="flex items-center justify-center min-h-screen bg-[#0d1117]">
                 <div className="text-center">
                     <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-                    <p className="text-slate-400">Đang tải thông tin...</p>
+                    <p className="text-slate-400">{t.admin.detail.messages.loading}</p>
                 </div>
             </div>
         )
@@ -115,32 +115,32 @@ export default function EditEmployeePage() {
                     {/* Breadcrumb */}
                     <div className="flex items-center gap-2 text-sm text-slate-400 mb-4">
                         <Link href="/admin" className="hover:text-white transition-colors">
-                            Main Console
+                            {t.admin.detail.breadcrumbAdmin}
                         </Link>
                         <span>/</span>
                         <Link href="/admin/employees" className="hover:text-white transition-colors">
-                            Employee Directory
+                            {t.admin.detail.breadcrumbList}
                         </Link>
                         <span>/</span>
                         <Link href={`/admin/employees/${employeeId}`} className="hover:text-white transition-colors">
                             {formData.full_name}
                         </Link>
                         <span>/</span>
-                        <span className="text-primary">Edit</span>
+                        <span className="text-primary">{t.common.edit}</span>
                     </div>
 
                     {/* Title */}
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-3xl font-bold mb-2">Edit Employee</h1>
+                            <h1 className="text-3xl font-bold mb-2">{t.admin.edit.title}</h1>
                             <p className="text-slate-400">
-                                Cập nhật thông tin cho {formData.full_name}
+                                {t.admin.edit.subtitle.replace('employee', formData.full_name || '')}
                             </p>
                         </div>
                         <Link href={`/admin/employees/${employeeId}`}>
                             <Button variant="outline" className="bg-slate-800 border-slate-700">
                                 <ArrowLeft className="h-4 w-4 mr-2" />
-                                Quay lại
+                                {t.common.back}
                             </Button>
                         </Link>
                     </div>
@@ -153,15 +153,15 @@ export default function EditEmployeePage() {
                     {/* Personal Information */}
                     <Card className="bg-[#161b22] border-slate-800">
                         <CardHeader>
-                            <CardTitle>Thông tin cá nhân</CardTitle>
+                            <CardTitle>{t.admin.edit.sections.account}</CardTitle>
                             <CardDescription className="text-slate-400">
-                                Thông tin cơ bản của nhân viên
+                                {t.admin.employeeManagement.create.desc}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="first_name">Họ <span className="text-red-500">*</span></Label>
+                                    <Label htmlFor="first_name">{t.admin.employeeManagement.create.firstName} <span className="text-red-500">*</span></Label>
                                     <Input
                                         id="first_name"
                                         value={formData.first_name}
@@ -171,7 +171,7 @@ export default function EditEmployeePage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="last_name">Tên <span className="text-red-500">*</span></Label>
+                                    <Label htmlFor="last_name">{t.admin.employeeManagement.create.lastName} <span className="text-red-500">*</span></Label>
                                     <Input
                                         id="last_name"
                                         value={formData.last_name}
@@ -184,7 +184,7 @@ export default function EditEmployeePage() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="email">Email</Label>
+                                    <Label htmlFor="email">{t.admin.employeeManagement.create.email}</Label>
                                     <Input
                                         id="email"
                                         type="email"
@@ -195,7 +195,7 @@ export default function EditEmployeePage() {
                                     <p className="text-xs text-slate-500">Email không thể thay đổi</p>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="phone">Số điện thoại</Label>
+                                    <Label htmlFor="phone">{t.admin.detail.labels.phone}</Label>
                                     <Input
                                         id="phone"
                                         value={formData.phone || ''}
@@ -207,7 +207,7 @@ export default function EditEmployeePage() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="dob">Ngày sinh</Label>
+                                    <Label htmlFor="dob">{t.admin.detail.labels.dob}</Label>
                                     <Input
                                         id="dob"
                                         type="date"
@@ -217,7 +217,7 @@ export default function EditEmployeePage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="gender">Giới tính</Label>
+                                    <Label htmlFor="gender">{t.admin.detail.labels.gender}</Label>
                                     <Select
                                         value={formData.gender || undefined}
                                         onValueChange={(value: any) => setFormData({ ...formData, gender: value })}
@@ -226,9 +226,9 @@ export default function EditEmployeePage() {
                                             <SelectValue placeholder="Chọn giới tính" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="Male">Nam</SelectItem>
-                                            <SelectItem value="Female">Nữ</SelectItem>
-                                            <SelectItem value="Other">Khác</SelectItem>
+                                            <SelectItem value="Male">{t.common.male || 'Male'}</SelectItem>
+                                            <SelectItem value="Female">{t.common.female || 'Female'}</SelectItem>
+                                            <SelectItem value="Other">{t.common.other || 'Other'}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -236,7 +236,7 @@ export default function EditEmployeePage() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="address">Địa chỉ</Label>
+                                    <Label htmlFor="address">{t.admin.detail.labels.address}</Label>
                                     <Input
                                         id="address"
                                         value={formData.address || ''}
@@ -260,9 +260,9 @@ export default function EditEmployeePage() {
                     {/* Work Information */}
                     <Card className="bg-[#161b22] border-slate-800">
                         <CardHeader>
-                            <CardTitle>Thông tin công việc</CardTitle>
+                            <CardTitle>{t.admin.edit.sections.internal}</CardTitle>
                             <CardDescription className="text-slate-400">
-                                Thông tin về vị trí và phòng ban
+                                {t.admin.employeeManagement.subtitle}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -289,13 +289,13 @@ export default function EditEmployeePage() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="department">Phòng ban</Label>
+                                    <Label htmlFor="department">{t.admin.detail.labels.department}</Label>
                                     <Select
                                         value={formData.department || undefined}
                                         onValueChange={(value) => setFormData({ ...formData, department: value })}
                                     >
                                         <SelectTrigger className="bg-[#0d1117] border-slate-700">
-                                            <SelectValue placeholder="Chọn phòng ban" />
+                                            <SelectValue placeholder={t.admin.employeeManagement.create.selectDept} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {departments.map((dept) => (
@@ -325,13 +325,13 @@ export default function EditEmployeePage() {
                                     </Select>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="role_id">Vai trò</Label>
+                                    <Label htmlFor="role_id">{t.admin.employeeManagement.create.role}</Label>
                                     <Select
                                         value={formData.role_id || undefined}
                                         onValueChange={(value) => setFormData({ ...formData, role_id: value })}
                                     >
                                         <SelectTrigger className="bg-[#0d1117] border-slate-700">
-                                            <SelectValue placeholder="Chọn vai trò" />
+                                            <SelectValue placeholder={t.admin.employeeManagement.create.selectRole} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {roles.map((role) => (
@@ -346,7 +346,7 @@ export default function EditEmployeePage() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="manager_id">Người quản lý trực tiếp</Label>
+                                    <Label htmlFor="manager_id">{t.admin.detail.labels.manager}</Label>
                                     <Select
                                         value={formData.manager_id || 'none'}
                                         onValueChange={(value) => setFormData({ ...formData, manager_id: value === 'none' ? null : value })}
@@ -355,7 +355,7 @@ export default function EditEmployeePage() {
                                             <SelectValue placeholder="Chọn người quản lý" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="none" className="text-slate-500 italic">Không có</SelectItem>
+                                            <SelectItem value="none" className="text-slate-500 italic">{t.common.none || 'None'}</SelectItem>
                                             {managers.map((mgr) => (
                                                 <SelectItem key={mgr.id} value={mgr.id}>
                                                     {mgr.full_name} ({mgr.employee_code || 'N/A'})
@@ -368,7 +368,7 @@ export default function EditEmployeePage() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="start_date">Ngày bắt đầu</Label>
+                                    <Label htmlFor="start_date">{t.admin.detail.labels.joined}</Label>
                                     <Input
                                         id="start_date"
                                         type="date"
@@ -378,7 +378,7 @@ export default function EditEmployeePage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="status">Trạng thái</Label>
+                                    <Label htmlFor="status">{t.admin.employeeManagement.filters.status}</Label>
                                     <Select
                                         value={formData.status}
                                         onValueChange={(value: any) => setFormData({ ...formData, status: value })}
@@ -387,8 +387,8 @@ export default function EditEmployeePage() {
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="active">Active</SelectItem>
-                                            <SelectItem value="inactive">Inactive</SelectItem>
+                                            <SelectItem value="active">{t.admin.detail.statusActive}</SelectItem>
+                                            <SelectItem value="inactive">{t.admin.detail.statusInactive}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -399,15 +399,15 @@ export default function EditEmployeePage() {
                     {/* Emergency Contact */}
                     <Card className="bg-[#161b22] border-slate-800">
                         <CardHeader>
-                            <CardTitle>Liên hệ khẩn cấp</CardTitle>
+                            <CardTitle>{t.admin.detail.sections.emergency}</CardTitle>
                             <CardDescription className="text-slate-400">
-                                Thông tin liên hệ trong trường hợp khẩn cấp
+                                {t.admin.detail.emergencyLabels.description}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-3 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="ec_name">Tên người liên hệ</Label>
+                                    <Label htmlFor="ec_name">{t.admin.detail.emergencyLabels.name}</Label>
                                     <Input
                                         id="ec_name"
                                         value={(formData.emergency_contact as any)?.name || ''}
@@ -422,7 +422,7 @@ export default function EditEmployeePage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="ec_phone">Số điện thoại</Label>
+                                    <Label htmlFor="ec_phone">{t.admin.detail.emergencyLabels.phone}</Label>
                                     <Input
                                         id="ec_phone"
                                         value={(formData.emergency_contact as any)?.phone || ''}
@@ -437,7 +437,7 @@ export default function EditEmployeePage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="ec_relationship">Mối quan hệ</Label>
+                                    <Label htmlFor="ec_relationship">{t.admin.detail.emergencyLabels.relationship}</Label>
                                     <Input
                                         id="ec_relationship"
                                         value={(formData.emergency_contact as any)?.relationship || ''}
@@ -463,23 +463,23 @@ export default function EditEmployeePage() {
                                 variant="outline"
                                 className="bg-slate-800 border-slate-700"
                             >
-                                Hủy
+                                {t.common.cancel}
                             </Button>
                         </Link>
                         <Button
                             type="submit"
-                            className="bg-primary hover:bg-primary/90 text-black"
+                            className="bg-primary hover:bg-primary/90 text-black font-bold"
                             disabled={saving}
                         >
                             {saving ? (
                                 <>
                                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                    Đang lưu...
+                                    {t.admin.edit.saving}
                                 </>
                             ) : (
                                 <>
                                     <Save className="h-4 w-4 mr-2" />
-                                    Lưu thay đổi
+                                    {t.admin.edit.saveButton}
                                 </>
                             )}
                         </Button>

@@ -15,6 +15,10 @@ export const vi = {
         back: 'Quay lại',
         next: 'Tiếp theo',
         results: 'kết quả',
+        male: 'Nam',
+        female: 'Nữ',
+        other: 'Khác',
+        none: 'Không có'
     },
 
     // Navigation
@@ -248,6 +252,100 @@ export const vi = {
                 employees: 'nhân viên',
                 page: 'Trang'
             }
+        },
+
+        detail: {
+            breadcrumbAdmin: 'Bảng điều khiển',
+            breadcrumbList: 'Danh sách nhân viên',
+            editButton: 'Chỉnh sửa hồ sơ',
+            exportPDF: 'Xuất PDF',
+            statusActive: 'Đang hoạt động',
+            statusInactive: 'Ngừng hoạt động',
+            tabs: {
+                personal: 'Thông tin cá nhân',
+                schedule: 'Lịch làm việc',
+                attendance: 'Lịch sử chấm công',
+                documents: 'Tài liệu'
+            },
+            sections: {
+                contact: 'Chi tiết liên hệ',
+                emergency: 'SOS - Liên hệ khẩn cấp',
+                stats: 'Thống kê nhanh',
+                nextShift: 'Ca làm tiếp theo'
+            },
+            labels: {
+                id: 'Mã NV',
+                jobTitle: 'Chức danh',
+                department: 'Phòng ban',
+                fullName: 'Họ và tên',
+                dob: 'Ngày sinh',
+                gender: 'Giới tính',
+                email: 'Email',
+                phone: 'SĐT',
+                manager: 'Sếp trực tiếp',
+                address: 'Địa chỉ',
+                joined: 'Gia nhập'
+            },
+            skillsTitle: 'Kỹ năng',
+            nextShiftContent: {
+                remote: 'Từ xa',
+                standard: 'Tiêu chuẩn 8 Giờ',
+                viewAll: 'Xem lịch biểu đầy đủ',
+                tomorrow: 'Ngày mai'
+            },
+            schedule: {
+                comingSoon: 'Sắp ra mắt',
+                title: 'Lịch làm việc hàng tuần',
+                desc: 'Tính năng xem lịch trình làm việc sẽ sớm được cập nhật.'
+            },
+            emergencyLabels: {
+                name: 'Tên liên hệ',
+                phone: 'SĐT liên hệ',
+                relationship: 'Mối quan hệ',
+                empty: 'Chưa có thông tin liên hệ khẩn cấp',
+                description: 'Thông tin liên hệ trong trường hợp khẩn cấp'
+            },
+            stats: {
+                punctuality: 'Tỷ lệ đúng giờ',
+                pto: 'Phép năm còn lại',
+                overtime: 'Tăng ca (Tháng)',
+                unitDays: 'ngày',
+                unitHours: 'giờ'
+            },
+            attendance: {
+                title: 'Lịch sử chấm công: {{month}}',
+                monthlyRate: 'Tỷ lệ tháng',
+                onTime: 'Đúng giờ',
+                late: 'Đi muộn',
+                absent: 'Vắng mặt',
+                table: {
+                    date: 'NGÀY',
+                    checkIn: 'GIỜ VÀO',
+                    checkOut: 'GIỜ RA',
+                    total: 'TỔNG GIỜ',
+                    status: 'TRẠNG THÁI'
+                }
+            },
+            messages: {
+                notFound: 'Không tìm thấy nhân viên',
+                loading: 'Đang tải thông tin nhân viên...',
+                noAttendance: 'Không tìm thấy nhật ký chấm công trong giai đoạn này'
+            }
+        },
+
+        edit: {
+            title: 'Chỉnh sửa thông tin',
+            subtitle: 'Cập nhật hồ sơ, vai trò và bộ phận cho nhân viên',
+            sections: {
+                account: 'Thông tin tài khoản',
+                internal: 'Thông tin nội bộ',
+                personal: 'Thông tin cá nhân & Liên hệ'
+            },
+            saveButton: 'Lưu thay đổi',
+            saving: 'Đang lưu...',
+            success: 'Cập nhật thông tin thành công!',
+            error: 'Có lỗi xảy ra khi cập nhật',
+            notFound: 'Không tìm thấy nhân viên'
         },
         myTeam: {
             title: 'Đội ngũ của tôi',
@@ -864,6 +962,62 @@ export const vi = {
             title: 'Cấu hình Thông báo',
             description: 'Quản lý cấu hình Email, Push Notifications và SMTP sẽ có trong phiên bản tiếp theo.',
             badge: 'Coming in v2.0',
+        },
+        notificationDashboard: {
+            title: 'Push Notification Dashboard',
+            subtitle: 'Kiểm tra trạng thái, chẩn đoán và gửi thông báo test',
+            tabs: {
+                diagnostics: 'Chẩn đoán',
+                testPush: 'Gửi Test',
+                logs: 'Lịch sử gửi',
+            },
+            diagnostics: {
+                title: 'Kiểm tra sức khỏe hệ thống',
+                runCheck: 'Chạy kiểm tra',
+                running: 'Đang kiểm tra...',
+                envVars: 'Biến môi trường',
+                fcmTokens: 'FCM Tokens',
+                totalTokens: 'Tổng tokens',
+                uniqueUsers: 'User có token',
+                byDevice: 'Theo thiết bị',
+                userCoverage: 'Phạm vi người dùng',
+                totalUsers: 'Tổng nhân viên',
+                withTokens: 'Có token',
+                withoutTokens: 'Chưa có token',
+                todayShifts: 'Ca làm hôm nay',
+                recentLogs: 'Log gần đây',
+                noData: 'Chưa có dữ liệu. Bấm "Chạy kiểm tra" để bắt đầu.',
+                healthy: 'Tốt',
+                warning: 'Cảnh báo',
+                error: 'Lỗi',
+            },
+            testPush: {
+                title: 'Gửi thông báo Test',
+                selectUser: 'Chọn nhân viên',
+                selectUserPlaceholder: 'Chọn nhân viên để gửi test...',
+                notifTitle: 'Tiêu đề',
+                notifTitlePlaceholder: '🔔 Test Notification',
+                notifMessage: 'Nội dung',
+                notifMessagePlaceholder: 'Đây là thông báo test từ Admin',
+                sendTest: 'Gửi thông báo Test',
+                sending: 'Đang gửi...',
+                success: 'Gửi thành công!',
+                failed: 'Gửi thất bại',
+                result: 'Kết quả',
+                successCount: 'Thành công',
+                failCount: 'Thất bại',
+                staleRemoved: 'Token hết hạn đã xóa',
+            },
+            logs: {
+                title: 'Lịch sử gửi thông báo',
+                empty: 'Chưa có log nào',
+                userId: 'User ID',
+                shiftId: 'Ca làm',
+                type: 'Loại',
+                status: 'Trạng thái',
+                sentAt: 'Thời gian gửi',
+                clickedAt: 'Đã nhấn lúc',
+            },
         },
         featureTogglesComingSoon: {
             title: 'Bật/Tắt Tính năng',

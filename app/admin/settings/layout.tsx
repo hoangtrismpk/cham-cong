@@ -71,8 +71,7 @@ export default function SettingsLayout({
             title: t.adminSettings.notifications,
             href: '/admin/settings/notifications',
             icon: Bell,
-            description: t.adminSettings.notificationsComingSoon.description,
-            comingSoon: true,
+            description: t.adminSettings.notificationDashboard.subtitle,
             permission: 'settings.view'
         },
         {

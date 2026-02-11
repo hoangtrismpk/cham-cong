@@ -40,8 +40,10 @@ import {
 import { format } from 'date-fns'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import { useI18n } from '@/contexts/i18n-context'
 
 export default function EmployeeDetailPage() {
+    const { t } = useI18n()
     const params = useParams()
     const router = useRouter()
     const employeeId = params.id as string
@@ -99,7 +101,7 @@ export default function EmployeeDetailPage() {
             <div className="flex items-center justify-center min-h-screen bg-[#0d1117]">
                 <div className="text-center">
                     <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-slate-400">Đang tải thông tin nhân viên...</p>
+                    <p className="text-slate-400">{t.admin.detail.messages.loading}</p>
                 </div>
             </div>
         )
@@ -122,14 +124,14 @@ export default function EmployeeDetailPage() {
             return (
                 <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
                     <CheckCircle2 className="h-3 w-3 mr-1" />
-                    Active
+                    {t.admin.detail.statusActive}
                 </Badge>
             )
         }
         return (
             <Badge className="bg-rose-500/10 text-rose-500 border-rose-500/20">
                 <XCircle className="h-3 w-3 mr-1" />
-                Inactive
+                {t.admin.detail.statusInactive}
             </Badge>
         )
     }
@@ -142,11 +144,11 @@ export default function EmployeeDetailPage() {
                     {/* Breadcrumb */}
                     <div className="flex items-center gap-2 text-sm text-slate-400 mb-6">
                         <Link href="/admin" className="hover:text-white transition-colors">
-                            Main Console
+                            {t.admin.detail.breadcrumbAdmin}
                         </Link>
                         <span>/</span>
                         <Link href="/admin/employees" className="hover:text-white transition-colors">
-                            Employee Directory
+                            {t.admin.detail.breadcrumbList}
                         </Link>
                         <span>/</span>
                         <span className="text-primary">{employee.full_name}</span>
@@ -172,7 +174,7 @@ export default function EmployeeDetailPage() {
                                 <div className="flex items-center gap-3 mb-2">
                                     <h1 className="text-3xl font-bold">{employee.full_name}</h1>
                                     <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                                        FULL-TIME
+                                        {employee.employment_type?.toUpperCase() || 'N/A'}
                                     </Badge>
                                 </div>
                                 <p className="text-lg text-slate-300 mb-1">
@@ -181,11 +183,11 @@ export default function EmployeeDetailPage() {
                                 <div className="flex items-center gap-4 text-sm text-slate-400">
                                     <span className="flex items-center gap-1">
                                         <Briefcase className="h-3.5 w-3.5" />
-                                        ID: #{employee.employee_code}
+                                        {t.admin.detail.labels.id}: #{employee.employee_code || (employee.numeric_id ? employee.numeric_id.toString().padStart(6, '0') : 'N/A')}
                                     </span>
                                     <span className="flex items-center gap-1">
                                         <Calendar className="h-3.5 w-3.5" />
-                                        Joined {employee.start_date ? format(new Date(employee.start_date), 'MMM yyyy') : 'N/A'}
+                                        {t.admin.detail.labels.joined} {employee.start_date ? format(new Date(employee.start_date), 'MMM yyyy') : 'N/A'}
                                     </span>
                                 </div>
                             </div>
@@ -199,14 +201,17 @@ export default function EmployeeDetailPage() {
                                 onClick={() => toast.info('Export PDF feature coming soon!')}
                             >
                                 <Download className="h-4 w-4 mr-2" />
-                                Export PDF
+                                {t.admin.detail.exportPDF}
                             </Button>
                             <Button
                                 className="bg-primary hover:bg-primary/90 text-black"
-                                onClick={() => router.push(`/admin/employees/${employeeId}/edit`)}
+                                onClick={() => {
+                                    const displayId = employee.numeric_id ? employee.numeric_id.toString().padStart(6, '0') : employeeId;
+                                    router.push(`/admin/employees/${displayId}/edit`);
+                                }}
                             >
                                 <Edit className="h-4 w-4 mr-2" />
-                                Edit Details
+                                {t.admin.detail.editButton}
                             </Button>
                         </div>
                     </div>
@@ -219,19 +224,19 @@ export default function EmployeeDetailPage() {
                     <TabsList className="grid w-full grid-cols-4 bg-slate-800/50 p-1 h-12">
                         <TabsTrigger value="personal" className="data-[state=active]:bg-primary data-[state=active]:text-black font-bold">
                             <FileText className="h-4 w-4 mr-2" />
-                            Personal Info
+                            {t.admin.detail.tabs.personal}
                         </TabsTrigger>
                         <TabsTrigger value="schedule" className="data-[state=active]:bg-primary data-[state=active]:text-black font-bold">
                             <Calendar className="h-4 w-4 mr-2" />
-                            Work Schedule
+                            {t.admin.detail.tabs.schedule}
                         </TabsTrigger>
                         <TabsTrigger value="attendance" className="data-[state=active]:bg-primary data-[state=active]:text-black font-bold">
                             <Clock className="h-4 w-4 mr-2" />
-                            Attendance History
+                            {t.admin.detail.tabs.attendance}
                         </TabsTrigger>
                         <TabsTrigger value="documents" className="data-[state=active]:bg-primary data-[state=active]:text-black font-bold">
                             <FileText className="h-4 w-4 mr-2" />
-                            Documents
+                            {t.admin.detail.tabs.documents}
                         </TabsTrigger>
                     </TabsList>
 
@@ -245,53 +250,53 @@ export default function EmployeeDetailPage() {
                                     <CardHeader>
                                         <CardTitle className="flex items-center gap-2 text-lg">
                                             <Mail className="h-5 w-5 text-primary" />
-                                            Contact Details
+                                            {t.admin.detail.sections.contact}
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent>
                                         <div className="grid grid-cols-2 gap-x-8 gap-y-5">
                                             <div>
-                                                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">Mã NV</p>
+                                                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">{t.admin.detail.labels.id}</p>
                                                 <p className="text-white font-medium">{employee.employee_code || 'N/A'}</p>
                                             </div>
                                             <div>
-                                                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">Phòng ban</p>
+                                                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">{t.admin.detail.labels.department}</p>
                                                 <p className="text-white font-medium">{employee.department || 'N/A'}</p>
                                             </div>
                                             <div>
-                                                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">Họ và tên</p>
+                                                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">{t.admin.detail.labels.fullName}</p>
                                                 <p className="text-white font-medium">{employee.full_name || `${employee.first_name} ${employee.last_name}`}</p>
                                             </div>
                                             <div>
-                                                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">Ngày sinh</p>
+                                                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">{t.admin.detail.labels.dob}</p>
                                                 <p className="text-white font-medium">
                                                     {employee.dob ? format(new Date(employee.dob), 'dd/MM/yyyy') : 'N/A'}
                                                 </p>
                                             </div>
                                             <div>
-                                                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">Giới tính</p>
+                                                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">{t.admin.detail.labels.gender}</p>
                                                 <p className="text-white font-medium">{employee.gender || 'N/A'}</p>
                                             </div>
                                             <div>
-                                                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">Email</p>
+                                                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">{t.admin.detail.labels.email}</p>
                                                 <p className="text-white font-medium">{employee.email}</p>
                                             </div>
                                             <div>
-                                                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">SĐT</p>
+                                                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">{t.admin.detail.labels.phone}</p>
                                                 <p className="text-white font-medium">{employee.phone || 'N/A'}</p>
                                             </div>
                                             <div>
-                                                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">Chức danh</p>
+                                                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">{t.admin.detail.labels.jobTitle}</p>
                                                 <p className="text-white font-medium">{employee.job_title || 'N/A'}</p>
                                             </div>
                                             <div>
-                                                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">Báo cáo trực tiếp (Sếp)</p>
+                                                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">{t.admin.detail.labels.manager}</p>
                                                 <p className="text-white font-medium flex items-center gap-2">
                                                     {employee.manager_name ? <span className="text-emerald-400 font-bold">{employee.manager_name}</span> : 'N/A'}
                                                 </p>
                                             </div>
                                             <div className="col-span-2">
-                                                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">Địa chỉ</p>
+                                                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">{t.admin.detail.labels.address}</p>
                                                 <p className="text-white font-medium">
                                                     {employee.address || 'N/A'}
                                                 </p>
@@ -305,7 +310,7 @@ export default function EmployeeDetailPage() {
                                     <CardHeader>
                                         <CardTitle className="flex items-center gap-2 text-lg">
                                             <AlertCircle className="h-5 w-5 text-rose-500" />
-                                            SOS - Liên hệ khẩn cấp
+                                            {t.admin.detail.sections.emergency}
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent>
@@ -315,21 +320,21 @@ export default function EmployeeDetailPage() {
                                                 : employee.emergency_contact
 
                                             if (!contact || !contact.name) {
-                                                return <p className="text-slate-500 italic">Chưa có thông tin liên hệ khẩn cấp</p>
+                                                return <p className="text-slate-500 italic">{t.admin.detail.emergencyLabels.empty}</p>
                                             }
 
                                             return (
                                                 <div className="grid grid-cols-3 gap-x-6 gap-y-4">
                                                     <div>
-                                                        <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">Tên liên hệ</p>
+                                                        <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">{t.admin.detail.emergencyLabels.name}</p>
                                                         <p className="text-white font-medium">{contact.name}</p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">SĐT liên hệ</p>
+                                                        <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">{t.admin.detail.emergencyLabels.phone}</p>
                                                         <p className="text-white font-medium">{contact.phone}</p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">Mối quan hệ</p>
+                                                        <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">{t.admin.detail.emergencyLabels.relationship}</p>
                                                         <p className="text-white font-medium">{contact.relationship}</p>
                                                     </div>
                                                 </div>
@@ -345,7 +350,7 @@ export default function EmployeeDetailPage() {
                                 <Card className="bg-[#161b22] border-slate-800">
                                     <CardHeader>
                                         <CardTitle className="text-base font-bold uppercase tracking-wide text-slate-400">
-                                            Thống kê nhanh
+                                            {t.admin.detail.sections.stats}
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
@@ -354,7 +359,7 @@ export default function EmployeeDetailPage() {
                                                 <div className="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center">
                                                     <Activity className="h-5 w-5 text-emerald-400" />
                                                 </div>
-                                                <span className="text-sm text-slate-300 font-medium">Tỷ lệ đúng giờ</span>
+                                                <span className="text-sm text-slate-300 font-medium">{t.admin.detail.stats.punctuality}</span>
                                             </div>
                                             <span className="text-2xl font-black text-emerald-500">
                                                 {quickStats.punctuality > 0 ? `${quickStats.punctuality}%` : 'N/A'}
@@ -366,10 +371,10 @@ export default function EmployeeDetailPage() {
                                                 <div className="w-10 h-10 bg-cyan-500/20 rounded-lg flex items-center justify-center">
                                                     <Calendar className="h-5 w-5 text-cyan-400" />
                                                 </div>
-                                                <span className="text-sm text-slate-300 font-medium">Phép năm còn lại</span>
+                                                <span className="text-sm text-slate-300 font-medium">{t.admin.detail.stats.pto}</span>
                                             </div>
                                             <span className="text-2xl font-black text-cyan-500">
-                                                {parseFloat(quickStats.ptoBalance) > 0 ? `${quickStats.ptoBalance} ngày` : '12.0 ngày'}
+                                                {parseFloat(quickStats.ptoBalance) > 0 ? `${quickStats.ptoBalance} ${t.admin.detail.stats.unitDays}` : `12.0 ${t.admin.detail.stats.unitDays}`}
                                             </span>
                                         </div>
 
@@ -378,10 +383,10 @@ export default function EmployeeDetailPage() {
                                                 <div className="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center">
                                                     <Clock className="h-5 w-5 text-amber-400" />
                                                 </div>
-                                                <span className="text-sm text-slate-300 font-medium">Tăng ca (Tháng)</span>
+                                                <span className="text-sm text-slate-300 font-medium">{t.admin.detail.stats.overtime}</span>
                                             </div>
                                             <span className="text-2xl font-black text-amber-500">
-                                                {parseFloat(quickStats.overtime) > 0 ? `${quickStats.overtime}h` : '0h'}
+                                                {parseFloat(quickStats.overtime) > 0 ? `${quickStats.overtime}${t.admin.detail.stats.unitHours}` : `0${t.admin.detail.stats.unitHours}`}
                                             </span>
                                         </div>
                                     </CardContent>
@@ -390,18 +395,22 @@ export default function EmployeeDetailPage() {
                                 {/* Next Shift */}
                                 <Card className="bg-gradient-to-br from-blue-600 to-blue-700 border-blue-500/50 shadow-xl shadow-blue-500/20">
                                     <CardHeader className="pb-3">
-                                        <p className="text-xs text-blue-200 uppercase tracking-wider font-bold">NEXT SHIFT</p>
+                                        <p className="text-xs text-blue-200 uppercase tracking-wider font-bold">{t.admin.detail.sections.nextShift}</p>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         <div>
-                                            <h3 className="text-2xl font-black text-white mb-1">Tomorrow, 09:00 AM</h3>
-                                            <p className="text-sm text-blue-100 font-medium">Remote • 8 Hours Standard</p>
+                                            <h3 className="text-2xl font-black text-white mb-1">
+                                                {t.admin.detail.nextShiftContent.tomorrow}, 09:00 AM
+                                            </h3>
+                                            <p className="text-sm text-blue-100 font-medium">
+                                                {t.admin.detail.nextShiftContent.remote} • {t.admin.detail.nextShiftContent.standard}
+                                            </p>
                                         </div>
                                         <Button
                                             className="w-full bg-white hover:bg-blue-50 text-blue-700 font-bold shadow-lg"
                                             size="lg"
                                         >
-                                            View Full Schedule
+                                            {t.admin.detail.nextShiftContent.viewAll}
                                         </Button>
                                     </CardContent>
                                 </Card>
@@ -412,7 +421,7 @@ export default function EmployeeDetailPage() {
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2 text-lg">
                                                 <Briefcase className="h-5 w-5 text-cyan-400" />
-                                                Kỹ năng
+                                                {t.admin.detail.skillsTitle}
                                             </CardTitle>
                                         </CardHeader>
                                         <CardContent>
@@ -438,10 +447,10 @@ export default function EmployeeDetailPage() {
                     <TabsContent value="schedule" className="mt-6">
                         <Card className="bg-[#161b22] border-slate-800">
                             <CardHeader>
-                                <CardTitle>Weekly Schedule (Coming Soon)</CardTitle>
+                                <CardTitle>{t.admin.detail.schedule.title} ({t.admin.detail.schedule.comingSoon})</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-slate-400">Work schedule visualization will be implemented here.</p>
+                                <p className="text-slate-400">{t.admin.detail.schedule.desc}</p>
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -452,25 +461,25 @@ export default function EmployeeDetailPage() {
                         <div className="grid grid-cols-4 gap-4">
                             <Card className="bg-[#161b22] border-slate-800">
                                 <CardContent className="pt-6">
-                                    <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Monthly Rate</p>
+                                    <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">{t.admin.detail.attendance.monthlyRate}</p>
                                     <p className="text-3xl font-black text-emerald-500">94%</p>
                                 </CardContent>
                             </Card>
                             <Card className="bg-[#161b22] border-slate-800">
                                 <CardContent className="pt-6">
-                                    <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">On-Time</p>
+                                    <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">{t.admin.detail.attendance.onTime}</p>
                                     <p className="text-3xl font-black text-cyan-500">{attendanceStats?.daysPresent || 0}</p>
                                 </CardContent>
                             </Card>
                             <Card className="bg-[#161b22] border-slate-800">
                                 <CardContent className="pt-6">
-                                    <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Late</p>
+                                    <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">{t.admin.detail.attendance.late}</p>
                                     <p className="text-3xl font-black text-amber-500">2</p>
                                 </CardContent>
                             </Card>
                             <Card className="bg-[#161b22] border-slate-800">
                                 <CardContent className="pt-6">
-                                    <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Absent</p>
+                                    <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">{t.admin.detail.attendance.absent}</p>
                                     <p className="text-3xl font-black text-rose-500">1</p>
                                 </CardContent>
                             </Card>
@@ -480,9 +489,11 @@ export default function EmployeeDetailPage() {
                         <Card className="bg-[#161b22] border-slate-800">
                             <CardHeader>
                                 <div className="flex items-center justify-between">
-                                    <CardTitle>Log Entries: Oct 2023</CardTitle>
-                                    <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700">
-                                        October 2023
+                                    <CardTitle>
+                                        {t.admin.detail.attendance.title.replace('{{month}}', format(new Date(), 'MMM yyyy'))}
+                                    </CardTitle>
+                                    <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 font-bold">
+                                        {format(new Date(), 'MMMM yyyy')}
                                     </Button>
                                 </div>
                             </CardHeader>
@@ -490,11 +501,11 @@ export default function EmployeeDetailPage() {
                                 <Table>
                                     <TableHeader>
                                         <TableRow className="border-slate-700 hover:bg-slate-800/40">
-                                            <TableHead className="text-slate-400">DATE</TableHead>
-                                            <TableHead className="text-slate-400">CHECK-IN</TableHead>
-                                            <TableHead className="text-slate-400">CHECK-OUT</TableHead>
-                                            <TableHead className="text-slate-400">TOTAL HOURS</TableHead>
-                                            <TableHead className="text-slate-400">STATUS</TableHead>
+                                            <TableHead className="text-slate-400 font-bold tracking-wider">{t.admin.detail.attendance.table.date}</TableHead>
+                                            <TableHead className="text-slate-400 font-bold tracking-wider">{t.admin.detail.attendance.table.checkIn}</TableHead>
+                                            <TableHead className="text-slate-400 font-bold tracking-wider">{t.admin.detail.attendance.table.checkOut}</TableHead>
+                                            <TableHead className="text-slate-400 font-bold tracking-wider">{t.admin.detail.attendance.table.total}</TableHead>
+                                            <TableHead className="text-slate-400 font-bold tracking-wider">{t.admin.detail.attendance.table.status}</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -524,15 +535,20 @@ export default function EmployeeDetailPage() {
                                                                         : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
                                                             }
                                                         >
-                                                            {log.status === 'present' ? 'ON-TIME' : log.status === 'late' ? 'LATE' : 'ABSENT'}
+                                                            {log.status === 'present'
+                                                                ? t.admin.detail.attendance.onTime.toUpperCase()
+                                                                : log.status === 'late'
+                                                                    ? t.admin.detail.attendance.late.toUpperCase()
+                                                                    : t.admin.detail.attendance.absent.toUpperCase()
+                                                            }
                                                         </Badge>
                                                     </TableCell>
                                                 </TableRow>
                                             ))
                                         ) : (
                                             <TableRow>
-                                                <TableCell colSpan={5} className="text-center py-12 text-slate-500">
-                                                    No attendance logs found for this period
+                                                <TableCell colSpan={5} className="text-center py-12 text-slate-500 italic">
+                                                    {t.admin.detail.messages.noAttendance}
                                                 </TableCell>
                                             </TableRow>
                                         )}
@@ -546,10 +562,10 @@ export default function EmployeeDetailPage() {
                     <TabsContent value="documents" className="mt-6">
                         <Card className="bg-[#161b22] border-slate-800">
                             <CardHeader>
-                                <CardTitle>Documents (Coming Soon)</CardTitle>
+                                <CardTitle>{t.admin.detail.tabs.documents} ({t.admin.detail.schedule.comingSoon})</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-slate-400">Employee documents will be available here.</p>
+                                <p className="text-slate-400">{t.admin.detail.schedule.desc}</p>
                             </CardContent>
                         </Card>
                     </TabsContent>
