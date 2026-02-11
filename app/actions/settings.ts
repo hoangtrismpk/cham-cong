@@ -116,6 +116,8 @@ export async function updateSetting(key: string, value: unknown): Promise<{ succ
     })
 
     revalidatePath('/admin/settings')
+    revalidatePath('/admin/employees')
+    revalidatePath('/schedule')
     return { success: true }
 }
 
@@ -146,6 +148,8 @@ export async function updateSettings(updates: { key: string; value: unknown }[])
     }
 
     revalidatePath('/admin/settings')
+    revalidatePath('/admin/employees')
+    revalidatePath('/schedule')
     return { success: true }
 }
 

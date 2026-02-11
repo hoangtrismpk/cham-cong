@@ -291,7 +291,9 @@ export const vi = {
                 remote: 'Từ xa',
                 standard: 'Tiêu chuẩn 8 Giờ',
                 viewAll: 'Xem lịch biểu đầy đủ',
-                tomorrow: 'Ngày mai'
+                tomorrow: 'Ngày mai',
+                unscheduled: 'Chưa có lịch',
+                noFutureShifts: 'Không có ca làm việc sắp tới'
             },
             schedule: {
                 comingSoon: 'Sắp ra mắt',

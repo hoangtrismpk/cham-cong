@@ -293,7 +293,9 @@ export const en: Translations = {
                 remote: 'Remote',
                 standard: '8 Hours Standard',
                 viewAll: 'View Full Schedule',
-                tomorrow: 'Tomorrow'
+                tomorrow: 'Tomorrow',
+                unscheduled: 'Unscheduled',
+                noFutureShifts: 'No future shifts scheduled'
             },
             schedule: {
                 comingSoon: 'Coming Soon',

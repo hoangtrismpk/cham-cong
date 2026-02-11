@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns'
 import { revalidatePath } from 'next/cache'
+import { getWorkSettings } from './settings'
 
 export async function getMonthlyShifts(dateStr: string) { // YYYY-MM
     const supabase = await createClient()
@@ -88,6 +89,7 @@ export async function getMonthlyShifts(dateStr: string) { // YYYY-MM
     // C. Populate Priority 3: Default Templates (Fill gaps)
     if (templates && templates.length > 0) {
         const allDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
+        const workSettings = await getWorkSettings()
 
         allDays.forEach(day => {
             const dateKey = format(day, 'yyyy-MM-dd')
@@ -106,14 +108,17 @@ export async function getMonthlyShifts(dateStr: string) { // YYYY-MM
                 if (template.shift_type === 'custom') title = 'Tùy Chỉnh'
 
                 // Assign Virtual Shift
+                const startTime = template.custom_start_time || workSettings.work_start_time
+                const endTime = template.custom_end_time || workSettings.work_end_time
+
                 shiftsMap[dateKey] = {
                     id: `template-${dateKey}`, // Virtual ID
                     work_date: dateKey,
                     type: template.shift_type,
                     title: title,
-                    start_time: template.custom_start_time || '08:30',
-                    end_time: template.custom_end_time || '17:30',
-                    time: `${template.custom_start_time || '08:30'} - ${template.custom_end_time || '17:30'}`,
+                    start_time: startTime,
+                    end_time: endTime,
+                    time: `${startTime} - ${endTime}`,
                     status: 'active', // Template is considered active by default until changed
                     location: 'Văn phòng',
                     members_count: 0,
@@ -215,13 +220,71 @@ export async function getTodayShift() {
         let title = 'Ca Làm Việc'
         if (template.shift_type === 'full') title = 'Cả Ngày'
 
+        const workSettings = await getWorkSettings()
+        const startTime = template.custom_start_time || workSettings.work_start_time
+        const endTime = template.custom_end_time || workSettings.work_end_time
+
         return {
             id: `template-${todayDate}`,
             work_date: todayDate,
             shift_type: template.shift_type,
             title: title,
-            start_time: template.custom_start_time || '08:30',
-            end_time: template.custom_end_time || '17:30',
+            start_time: startTime,
+            end_time: endTime,
+            location: 'Văn phòng',
+            status: 'active'
+        }
+    }
+
+    return null
+}
+
+export async function getEmployeeNextShift(employeeId: string) {
+    const supabase = await createClient()
+
+    const todayDate = format(new Date(), 'yyyy-MM-dd')
+
+    // 1. Try to find specific override for today onwards
+    const { data: specificShift, error } = await supabase
+        .from('work_schedules')
+        .select('*')
+        .eq('user_id', employeeId)
+        .gte('work_date', todayDate)
+        .order('work_date', { ascending: true })
+        .order('start_time', { ascending: true })
+        .limit(1)
+        .maybeSingle()
+
+    if (!error && specificShift) {
+        return specificShift
+    }
+
+    // 2. Fallback to template for tomorrow
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const tomorrowDate = format(tomorrow, 'yyyy-MM-dd')
+    const dayOfWeek = tomorrow.getDay()
+
+    const { data: template } = await supabase
+        .from('employee_default_schedules')
+        .select('*')
+        .eq('employee_id', employeeId)
+        .eq('is_template', true)
+        .eq('day_of_week', dayOfWeek)
+        .single()
+
+    if (template && template.shift_type !== 'off') {
+        const workSettings = await getWorkSettings()
+        const startTime = template.custom_start_time || workSettings.work_start_time
+        const endTime = template.custom_end_time || workSettings.work_end_time
+
+        return {
+            id: `template-${tomorrowDate}`,
+            work_date: tomorrowDate,
+            shift_type: template.shift_type,
+            title: template.shift_type === 'full' ? 'Cả Ngày' : 'Ca Làm Việc',
+            start_time: startTime,
+            end_time: endTime,
             location: 'Văn phòng',
             status: 'active'
         }

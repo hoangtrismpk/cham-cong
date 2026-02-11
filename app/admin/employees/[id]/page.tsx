@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { getEmployeeById, Employee } from '@/app/actions/employees'
 import { getAttendanceLogsRange, getEmployeeQuickStats } from '@/app/actions/attendance'
+import { getEmployeeNextShift } from '@/app/actions/schedule'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -53,6 +54,7 @@ export default function EmployeeDetailPage() {
     const [attendanceStats, setAttendanceStats] = useState<any>(null)
     const [quickStats, setQuickStats] = useState<any>({ punctuality: 0, ptoBalance: '0', overtime: '0' })
     const [loading, setLoading] = useState(true)
+    const [nextShift, setNextShift] = useState<any>(null)
     const [activeTab, setActiveTab] = useState('personal')
 
     // Load employee data
@@ -90,6 +92,10 @@ export default function EmployeeDetailPage() {
             if (statsResult.error) {
                 console.warn('⚠️ Quick stats partial error:', statsResult.error)
             }
+
+            // Load next shift
+            const nextShiftResult = await getEmployeeNextShift(result.employee.id)
+            setNextShift(nextShiftResult)
 
             setLoading(false)
         }
@@ -399,12 +405,25 @@ export default function EmployeeDetailPage() {
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         <div>
-                                            <h3 className="text-2xl font-black text-white mb-1">
-                                                {t.admin.detail.nextShiftContent.tomorrow}, 09:00 AM
-                                            </h3>
-                                            <p className="text-sm text-blue-100 font-medium">
-                                                {t.admin.detail.nextShiftContent.remote} • {t.admin.detail.nextShiftContent.standard}
-                                            </p>
+                                            {nextShift ? (
+                                                <>
+                                                    <h3 className="text-2xl font-black text-white mb-1">
+                                                        {format(new Date(nextShift.work_date), 'EEEE, dd/MM')}, {nextShift.start_time}
+                                                    </h3>
+                                                    <p className="text-sm text-blue-100 font-medium">
+                                                        {nextShift.location} • {nextShift.title}
+                                                    </p>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <h3 className="text-2xl font-black text-white mb-1">
+                                                        {t.admin.detail.nextShiftContent.unscheduled || 'Chưa có lịch'}
+                                                    </h3>
+                                                    <p className="text-sm text-blue-100 font-medium">
+                                                        {t.admin.detail.nextShiftContent.noFutureShifts || 'Không có ca làm việc sắp tới'}
+                                                    </p>
+                                                </>
+                                            )}
                                         </div>
                                         <Button
                                             className="w-full bg-white hover:bg-blue-50 text-blue-700 font-bold shadow-lg"
