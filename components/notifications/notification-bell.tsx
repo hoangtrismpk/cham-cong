@@ -7,6 +7,7 @@ import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
 import { useNotifications } from '@/hooks/use-notifications'
 import { Notification } from '@/app/actions/notifications'
+import { trackNotificationClick } from '@/app/actions/campaigns'
 
 export default function NotificationBell() {
     const [isOpen, setIsOpen] = useState(false)
@@ -22,11 +23,25 @@ export default function NotificationBell() {
     } = useNotifications()
 
     const handleNotificationClick = async (notification: Notification) => {
-        if (!notification.is_read) {
+        // 1. Mark as Read & Track Click
+        if (notification.campaign_id) {
+            // If it's a campaign, track the click (which also marks as read)
+            await trackNotificationClick(notification.id)
+            // Functionally equivalent to markAsRead but adds clicked_at
+        } else if (!notification.is_read) {
             await markAsRead(notification.id)
         }
 
-        if (notification.report_id) {
+        // 2. Navigate
+        if (notification.link) {
+            // Check if external
+            if (notification.link.startsWith('http')) {
+                window.open(notification.link, '_blank')
+            } else {
+                router.push(notification.link)
+            }
+            setIsOpen(false)
+        } else if (notification.report_id) {
             // Updated logic: Navigate with 'edit' param
             if (notification.type === 'report_changes_requested') {
                 router.push(`/reports?report_id=${notification.report_id}&action=edit&t=${Date.now()}`)

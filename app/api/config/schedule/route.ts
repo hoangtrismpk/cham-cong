@@ -85,7 +85,7 @@ export async function GET() {
             // Calculate working days
             if (settings.work_off_days !== undefined) {
                 let offDays: any[] = [];
-                let raw = settings.work_off_days;
+                const raw = settings.work_off_days;
 
                 // 1. If it's already an array
                 if (Array.isArray(raw)) offDays = raw;

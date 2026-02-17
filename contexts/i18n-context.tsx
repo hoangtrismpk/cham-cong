@@ -26,7 +26,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         if (savedLocale && (savedLocale === 'vi' || savedLocale === 'en')) {
             setLocaleState(savedLocale)
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
     }, [])
 
     const setLocale = (newLocale: Locale) => {

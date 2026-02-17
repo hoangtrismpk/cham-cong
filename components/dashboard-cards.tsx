@@ -84,14 +84,18 @@ export function AttendanceProgressCard({ initialData }: AttendanceProgressCardPr
 
                 <div className="flex flex-col items-end gap-3">
                     {/* Legend */}
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-primary/80"></div>
-                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{t.dashboard.standardHours}</span>
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-primary/80"></div>
+                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t.dashboard.standardHours}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-purple-500/80"></div>
-                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{t.dashboard.overtime}</span>
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-purple-500/80"></div>
+                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t.dashboard.overtime}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-rose-500/80"></div>
+                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t.dashboard.lateArrivals}</span>
                         </div>
                     </div>
 
@@ -132,6 +136,15 @@ export function AttendanceProgressCard({ initialData }: AttendanceProgressCardPr
                         <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t.dashboard.overtime}</span>
                         <span className="text-lg font-black text-purple-400/80">{data.totalOT}h</span>
                     </div>
+                    {/* Late Stats */}
+                    <div className="flex flex-col">
+                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t.dashboard.lateArrivals}</span>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-lg font-black text-rose-500/80">{data.totalLateCount || 0}</span>
+                            <span className="text-[9px] font-bold text-slate-600 lowercase px-0.5">x</span>
+                            <span className="text-sm font-bold text-rose-500/60">{data.totalLateMinutes || 0}m</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -140,6 +153,10 @@ export function AttendanceProgressCard({ initialData }: AttendanceProgressCardPr
                 {data.dailyStats.map((stat: any, i: number) => {
                     const stdPercentage = (stat.standard / 12) * 100
                     const otPercentage = (stat.ot / 12) * 100
+                    // Late percentage for visualization (max 60 mins scale or just fixed height indicator)
+                    // Let's make it proportional to 60 mins = 20% height for visibility
+                    const latePercentage = Math.min((stat.lateMinutes / 60) * 10, 15)
+
                     const hasActivity = stat.standard > 0 || stat.ot > 0
                     const isFuture = stat.date && new Date(stat.date) > new Date()
 
@@ -147,18 +164,29 @@ export function AttendanceProgressCard({ initialData }: AttendanceProgressCardPr
                         <div key={i} className={`flex-1 flex flex-col items-center gap-3 group/bar h-full justify-end ${stat.isOffDay ? 'opacity-20 hover:opacity-100' : 'opacity-100'} transition-opacity`}>
                             <div className="w-full flex flex-col justify-end h-full relative">
                                 {/* Tooltip */}
-                                <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[9px] py-1 px-2 rounded-md border border-white/10 opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none shadow-xl">
-                                    {stat.standard}h + {stat.ot}h
+                                <div className="absolute -top-14 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[9px] py-1.5 px-2.5 rounded-md border border-white/10 opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none shadow-xl flex flex-col items-center gap-0.5">
+                                    <span className="font-bold">{stat.standard}h + {stat.ot}h OT</span>
+                                    {stat.lateMinutes > 0 && (
+                                        <span className="text-rose-400 font-bold">Late: {stat.lateMinutes}m</span>
+                                    )}
                                 </div>
 
                                 <div className={`w-full mx-auto ${view === 'month' ? 'max-w-full' : 'max-w-[24px] sm:max-w-[48px]'} bg-slate-800/20 rounded-full overflow-hidden flex flex-col justify-end h-[160px] transition-all group-hover/bar:bg-slate-800/40 relative`}>
+                                    {/* Late Indicator (Top of stack or overlay?) -> Let's put it at the bottom as "Negative" space or distinct color */}
+                                    {stat.lateMinutes > 0 && (
+                                        <div
+                                            className="w-full bg-rose-500/60 transition-all duration-700 absolute bottom-0 z-10"
+                                            style={{ height: `${latePercentage}%`, bottom: 0 }}
+                                        ></div>
+                                    )}
+
                                     <div
-                                        className="w-full bg-purple-500/60 transition-all duration-700"
+                                        className="w-full bg-purple-500/60 transition-all duration-700 relative z-0"
                                         style={{ height: `${otPercentage}%` }}
                                     ></div>
                                     <div
-                                        className="w-full bg-primary/60 transition-all duration-700 border-t border-white/5"
-                                        style={{ height: `${stdPercentage}%` }}
+                                        className="w-full bg-primary/60 transition-all duration-700 border-t border-white/5 relative z-0"
+                                        style={{ height: `${stdPercentage}%`, marginBottom: stat.lateMinutes > 0 ? `${latePercentage}%` : 0 }}
                                     ></div>
                                 </div>
                             </div>

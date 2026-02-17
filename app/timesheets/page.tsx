@@ -7,6 +7,9 @@ import { getAttendanceLogsRange } from '@/app/actions/attendance'
 import { getWorkSettings } from '@/app/actions/settings'
 import { startOfMonth, endOfMonth, format } from 'date-fns'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function TimesheetsPage() {
     const supabase = await createClient()
 

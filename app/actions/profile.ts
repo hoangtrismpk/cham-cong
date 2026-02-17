@@ -94,6 +94,103 @@ export async function getAutoCheckOutSetting() {
     return data?.auto_checkout_enabled || false
 }
 
+export async function getPushNotificationSetting() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return true // Default: enabled
+
+    const { data } = await supabase
+        .from('profiles')
+        .select('push_enabled')
+        .eq('id', user.id)
+        .single()
+
+    // Default to true if column doesn't exist yet
+    return data?.push_enabled ?? true
+}
+
+export async function updatePushNotificationSetting(enabled: boolean) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const { error } = await supabase
+        .from('profiles')
+        .update({ push_enabled: enabled })
+        .eq('id', user.id)
+
+    if (error) throw new Error(error.message)
+
+    // If disabling, also remove all FCM tokens for this user
+    if (!enabled) {
+        await supabase
+            .from('fcm_tokens')
+            .delete()
+            .eq('user_id', user.id)
+    }
+
+    return { success: true }
+}
+
+export async function getClockSettings() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return {
+        clockInRemindMinutes: 5,
+        clockOutRemindMode: 'before' as const,
+        clockOutRemindMinutes: 5
+    }
+
+    const { data } = await supabase
+        .from('profiles')
+        .select('clock_in_remind_minutes, clock_out_remind_mode, clock_out_remind_minutes')
+        .eq('id', user.id)
+        .single()
+
+    return {
+        clockInRemindMinutes: data?.clock_in_remind_minutes ?? 5,
+        clockOutRemindMode: (data?.clock_out_remind_mode ?? 'before') as 'before' | 'after',
+        clockOutRemindMinutes: data?.clock_out_remind_minutes ?? 5
+    }
+}
+
+export async function updateClockInSettings(remindMinutes: number) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    // Clamp value
+    const clamped = Math.max(1, Math.min(30, remindMinutes))
+
+    const { error } = await supabase
+        .from('profiles')
+        .update({ clock_in_remind_minutes: clamped })
+        .eq('id', user.id)
+
+    if (error) throw new Error(error.message)
+    return { success: true }
+}
+
+export async function updateClockOutSettings(mode: 'before' | 'after', remindMinutes: number) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    // Clamp value
+    const clamped = Math.max(1, Math.min(10, remindMinutes))
+
+    const { error } = await supabase
+        .from('profiles')
+        .update({
+            clock_out_remind_mode: mode,
+            clock_out_remind_minutes: clamped
+        })
+        .eq('id', user.id)
+
+    if (error) throw new Error(error.message)
+    return { success: true }
+}
+
 // FULL PROFILE MANAGEMENT FOR USER
 export async function getMyProfile() {
     const supabase = await createClient()

@@ -572,7 +572,7 @@ export async function getMissingReports(userId: string, daysBack = 30) {
 
     // 4. Generate missing dates
     const missingDates: string[] = []
-    let currentDate = new Date(startDate)
+    const currentDate = new Date(startDate)
 
     while (currentDate <= endDate) {
         const dateStr = currentDate.toISOString().split('T')[0]

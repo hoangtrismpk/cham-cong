@@ -7,6 +7,7 @@ import { RecaptchaProvider } from '@/components/recaptcha-provider'
 import { FCMManager } from '@/components/fcm-manager'
 import { getWorkSettings, getSecuritySettings } from '@/app/actions/settings'
 
+
 const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
@@ -34,6 +35,10 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
+import { LoadingProvider } from '@/contexts/loading-context'
+
+import { NotificationProvider } from '@/contexts/notification-context'
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -56,14 +61,35 @@ export default async function RootLayout({
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
         />
+        {/* Pre-emptive handler: runs BEFORE Next.js registers its own unhandledrejection listener */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.addEventListener('unhandledrejection', function(event) {
+                var reason = event.reason;
+                var msg = (reason && reason.message) ? reason.message : String(reason || '');
+                if (msg === 'Timeout' || msg === 'TimeoutError' || msg.indexOf('Timeout') !== -1) {
+                  event.preventDefault();
+                  event.stopImmediatePropagation();
+                  console.warn('[Suppressed] Unhandled rejection:', msg);
+                }
+              });
+            `,
+          }}
+        />
       </head>
       <body className="font-display antialiased bg-background text-foreground">
         <I18nProvider>
-          <RecaptchaProvider siteKey={siteKey} enabled={enabled}>
-            <FCMManager />
-            {children}
-          </RecaptchaProvider>
-          <Toaster />
+          <LoadingProvider>
+            <RecaptchaProvider siteKey={siteKey} enabled={enabled}>
+              <NotificationProvider>
+                <FCMManager />
+
+                {children}
+              </NotificationProvider>
+            </RecaptchaProvider>
+            <Toaster />
+          </LoadingProvider>
         </I18nProvider>
         <script
           dangerouslySetInnerHTML={{

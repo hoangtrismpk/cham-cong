@@ -85,10 +85,7 @@ export default function EmployeeEmploymentPage({ params }: PageProps) {
                 throw new Error(errData.error || errData.message || 'Không thể cập nhật loại nhân viên');
             }
 
-            // 2. TODO: Save Schedule (If we had schedule state here)
-            // For Full-time, it's auto. For others, child component manages it.
-            // In a real app with global save, we'd need to lift state up.
-            // For now, we assume Full-time (read-only) or Part-time placeholder save.
+            // 2. Schedule details are managed by the child components and saved individually
 
             setOriginalType(employmentType);
             setHasChanges(false);

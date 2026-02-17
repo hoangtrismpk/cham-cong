@@ -51,14 +51,15 @@ export async function approveReport(reportId: string, note?: string) {
     }
 
     // Create notification for user
-    const { createNotification } = await import('@/app/actions/notifications')
-    await createNotification(
-        report.user_id,
-        'report_approved',
-        'Báo cáo đã được phê duyệt',
-        note || 'Báo cáo của bạn đã được phê duyệt',
-        reportId
-    )
+    const { sendNotification } = await import('@/app/actions/notification-system')
+    await sendNotification({
+        userId: report.user_id,
+        type: 'report_approved',
+        title: 'Báo cáo đã được phê duyệt',
+        message: note || 'Báo cáo của bạn đã được phê duyệt',
+        reportId: reportId,
+        priority: 'high'
+    })
 
     revalidatePath('/reports')
     revalidatePath('/admin/reports')
@@ -122,16 +123,17 @@ export async function requestReportChanges(reportId: string, note: string) {
     }
 
     // Create notification for user using helper function
-    const { createNotification } = await import('@/app/actions/notifications')
+    const { sendNotification } = await import('@/app/actions/notification-system')
     console.log('🔔 Sending notification to:', report.user_id)
 
-    await createNotification(
-        report.user_id,
-        'report_changes_requested',
-        'Yêu cầu chỉnh sửa báo cáo',
-        note || 'Vui lòng chỉnh sửa báo cáo',
-        reportId
-    )
+    await sendNotification({
+        userId: report.user_id,
+        type: 'report_changes_requested',
+        title: 'Yêu cầu chỉnh sửa báo cáo',
+        message: note || 'Vui lòng chỉnh sửa báo cáo',
+        reportId: reportId,
+        priority: 'high'
+    })
 
     revalidatePath('/reports')
     revalidatePath('/admin/reports')
@@ -181,14 +183,14 @@ export async function addReportFeedback(reportId: string, note: string) {
     }
 
     // Create notification for user
-    const { createNotification } = await import('@/app/actions/notifications')
-    await createNotification(
-        report.user_id,
-        'report_feedback',
-        'Góp ý mới cho báo cáo',
-        note,
-        reportId
-    )
+    const { sendNotification } = await import('@/app/actions/notification-system')
+    await sendNotification({
+        userId: report.user_id,
+        type: 'report_feedback',
+        title: 'Góp ý mới cho báo cáo',
+        message: note,
+        reportId: reportId
+    })
 
     revalidatePath('/reports')
     revalidatePath('/admin/reports')
@@ -220,16 +222,16 @@ export async function notifyReportUpdated(reportId: string) {
     if (admins.length === 0) return
 
     // Create notifications for all admins
-    const { createNotification } = await import('@/app/actions/notifications')
+    const { sendNotification } = await import('@/app/actions/notification-system')
 
     for (const admin of admins) {
-        await createNotification(
-            admin.id,
-            'report_updated',
-            'Báo cáo đã được cập nhật',
-            `${user.email} đã cập nhật báo cáo`,
-            reportId
-        )
+        await sendNotification({
+            userId: admin.id,
+            type: 'report_updated',
+            title: 'Báo cáo đã được cập nhật',
+            message: `${user.email} đã cập nhật báo cáo`,
+            reportId: reportId
+        })
     }
 
     revalidatePath('/admin/reports')

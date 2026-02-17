@@ -59,6 +59,9 @@ export const en: Translations = {
         history: 'History',
         standardHours: 'Standard Hours',
         overtime: 'Overtime',
+        lateArrivals: 'Late Arrivals',
+        lateCount: 'Count',
+        lateMinutes: 'Minutes',
         weeklyBreakdown: 'Weekly Hours Breakdown',
         monthlyBreakdown: 'Monthly Hours Breakdown',
         visualizingWeekly: 'Visualizing daily performance across the week',
@@ -703,6 +706,17 @@ export const en: Translations = {
                 dept: 'Tip: Type name and press Enter to add quickly. This list will appear in suggestions when creating employees.',
                 title: 'These titles will be suggested when filling in employee information.',
             }
+        },
+
+        // Layout settings
+        settingsLayout: {
+            backToDashboard: 'Back to Dashboard',
+            systemConfig: 'System Configuration',
+            manageSystemSettings: 'Manage all system-wide settings',
+            config: 'Settings',
+            collapsed: 'Collapsed',
+            expanded: 'Expanded',
+            soon: 'Soon'
         },
 
         generalSettings: {

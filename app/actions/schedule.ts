@@ -54,48 +54,17 @@ export async function getMonthlyShifts(dateStr: string) { // YYYY-MM
         console.error('Error fetching templates:', templatesError)
     }
 
-    // Transform array to Record<string, any> map
-    const shiftsMap: Record<string, any> = {}
+    // Transform array to Record<string, any[]> map
+    const shiftsMap: Record<string, any[]> = {}
 
-    // A. Populate Priority 1: Work Schedules (Specific days)
-    shifts?.forEach((shift) => {
-        shiftsMap[shift.work_date] = {
-            ...shift,
-            type: shift.shift_type,
-            time: `${shift.start_time} - ${shift.end_time}`,
-            source: 'schedule'
-        }
-    })
-
-    // B. Populate Priority 2: Leaves (Override schedules)
-    leaves?.forEach((leave) => {
-        const isPending = leave.status === 'pending'
-        const title = isPending ? 'Xin nghỉ (Chờ duyệt)' : 'Nghỉ phép (Đã duyệt)'
-
-        shiftsMap[leave.leave_date] = {
-            id: leave.id,
-            work_date: leave.leave_date,
-            type: 'leave',
-            title: title,
-            time: leave.start_time && leave.end_time ? `${leave.start_time} - ${leave.end_time}` : 'Full Day',
-            location: 'Remote/Home',
-            status: leave.status,
-            members_count: 0,
-            is_leave: true,
-            source: 'leave'
-        }
-    })
-
-    // C. Populate Priority 3: Default Templates (Fill gaps)
+    // A. Populate Priority 3: Default Templates (Base Layer)
     if (templates && templates.length > 0) {
         const allDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
         const workSettings = await getWorkSettings()
 
         allDays.forEach(day => {
             const dateKey = format(day, 'yyyy-MM-dd')
-
-            // Skip if already has shift or leave
-            if (shiftsMap[dateKey]) return
+            // Skip if day already has data? No, templates are base.
 
             // Find template for this day of week (0=Sun, 1=Mon...)
             const dayOfWeek = day.getDay()
@@ -107,26 +76,66 @@ export async function getMonthlyShifts(dateStr: string) { // YYYY-MM
                 if (template.shift_type === 'full') title = 'Cả Ngày'
                 if (template.shift_type === 'custom') title = 'Tùy Chỉnh'
 
-                // Assign Virtual Shift
                 const startTime = template.custom_start_time || workSettings.work_start_time
                 const endTime = template.custom_end_time || workSettings.work_end_time
 
-                shiftsMap[dateKey] = {
+                shiftsMap[dateKey] = [{
                     id: `template-${dateKey}`, // Virtual ID
                     work_date: dateKey,
-                    type: template.shift_type,
+                    type: template.shift_type, // 'full', 'morning', 'afternoon'
                     title: title,
                     start_time: startTime,
                     end_time: endTime,
                     time: `${startTime} - ${endTime}`,
-                    status: 'active', // Template is considered active by default until changed
+                    status: 'active',
                     location: 'Văn phòng',
                     members_count: 0,
                     source: 'template'
-                }
+                }]
             }
         })
     }
+
+    // B. Populate Priority 1: Work Schedules (Overrides - Replace Template)
+    shifts?.forEach((shift) => {
+        const scheduleShift = {
+            ...shift,
+            type: shift.shift_type, // 'full_day', 'morning', etc.. NOTE: DB might store 'full_day' vs template 'full'
+            time: `${shift.start_time} - ${shift.end_time}`,
+            source: 'schedule',
+            title: shift.title || (shift.shift_type === 'full_day' ? 'Cả Ngày' : 'Tùy Chỉnh'),
+            members: shift.members_count
+        }
+
+        // Overrides replace the Template for that day
+        shiftsMap[shift.work_date] = [scheduleShift]
+    })
+
+    // C. Populate Priority 2: Leaves (Append)
+    leaves?.forEach((leave) => {
+        const isPending = leave.status === 'pending'
+        const title = isPending ? 'Nghỉ (Chờ duyệt)' : 'Nghỉ (Đã duyệt)'
+
+        const leaveShift = {
+            id: leave.id,
+            work_date: leave.leave_date,
+            type: 'leave',
+            title: title,
+            time: leave.start_time && leave.end_time ? `${leave.start_time} - ${leave.end_time}` : 'Full Day',
+            start_time: leave.start_time,
+            end_time: leave.end_time,
+            location: 'Remote/Home',
+            status: leave.status,
+            members_count: 0,
+            is_leave: true,
+            source: 'leave'
+        }
+
+        if (!shiftsMap[leave.leave_date]) {
+            shiftsMap[leave.leave_date] = []
+        }
+        shiftsMap[leave.leave_date].push(leaveShift)
+    })
 
     return shiftsMap
 }
@@ -171,15 +180,17 @@ export async function saveShift(shiftData: any) {
         .in('role', ['admin', 'manager', 'hr_manager'])
 
     if (adminProfiles && adminProfiles.length > 0) {
-        // Use dynamic import for notification to avoid potential circular dependencies
-        const { createNotification } = await import('@/app/actions/notification')
+        const { sendNotification } = await import('@/app/actions/notification-system')
         const dateStr = new Date(work_date).toLocaleDateString('vi-VN')
         const requesterName = user.user_metadata?.full_name || user.email || 'Nhân viên'
         const message = `${requesterName} đã yêu cầu đổi lịch làm việc ngày ${dateStr}.`
 
-        await Promise.all(adminProfiles.map(admin =>
-            createNotification(admin.id, 'Yêu cầu đổi lịch mới', message, 'info')
-        ))
+        await sendNotification({
+            userIds: adminProfiles.map(a => a.id),
+            title: 'Yêu cầu đổi lịch mới',
+            message: message,
+            type: 'info'
+        })
     }
 
     revalidatePath('/schedule')

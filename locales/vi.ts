@@ -57,6 +57,9 @@ export const vi = {
         history: 'Lịch sử',
         standardHours: 'Giờ chuẩn',
         overtime: 'Tăng ca',
+        lateArrivals: 'Đi trễ',
+        lateCount: 'Số lần',
+        lateMinutes: 'Số phút',
         weeklyBreakdown: 'Chi tiết theo tuần',
         monthlyBreakdown: 'Chi tiết theo tháng',
         visualizingWeekly: 'Theo dõi hiệu suất làm việc trong tuần',
@@ -703,6 +706,17 @@ export const vi = {
             }
         },
 
+        // Layout settings
+        settingsLayout: {
+            backToDashboard: 'Quay lại Dashboard',
+            systemConfig: 'Cấu hình hệ thống',
+            manageSystemSettings: 'Quản lý cài đặt toàn hệ thống',
+            config: 'Cấu hình',
+            collapsed: 'Thu gọn',
+            expanded: 'Mở rộng',
+            soon: 'Sắp tới'
+        },
+
         generalSettings: {
             title: 'Cấu hình chung',
             description: 'Quản lý thông tin công ty, giờ làm việc và quy định chấm công',
@@ -817,8 +831,8 @@ export const vi = {
             searchRoles: 'Tìm kiếm vai trò...',
             permissions: 'quyền',
             fullAccess: 'FULL ACCESS',
-            systemRole: 'System',
-            defaultRole: 'Default',
+            systemRole: 'Hệ thống',
+            defaultRole: 'Mặc định',
             adminNote: 'Admin có toàn quyền (Không thể chỉnh sửa)',
             adminTitle: 'Administrator Access',
             adminDescription: 'Vai trò Admin có toàn quyền truy cập hệ thống mặc định. Bạn không cần (và không thể) cấu hình quyền hạn cho vai trò này.',

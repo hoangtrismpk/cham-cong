@@ -29,7 +29,7 @@ import { toast } from 'sonner';
 import { useI18n } from '@/contexts/i18n-context';
 import CreateEmployeeDialog from '@/components/admin/employees/create-employee-dialog';
 import { getDepartments } from '@/app/actions/employees';
-import * as XLSX from 'xlsx';
+
 
 interface Employee {
     id: string;
@@ -171,33 +171,37 @@ export default function EmployeesClientPage() {
                 const emergency = Array.isArray(emergencyRaw) ? (emergencyRaw[0] || {}) : (emergencyRaw || {});
 
                 return {
-                    'Họ': emp.first_name || '',
-                    'Tên': emp.last_name || '',
-                    'Email': emp.email,
-                    'Số điện thoại': emp.phone || 'N/A',
-                    // 'Ngày sinh': emp.dob ? new Date(emp.dob).toLocaleDateString('vi-VN') : 'N/A', // Removed from API for performance
-                    // 'Giới tính': emp.gender || 'N/A', // Removed from API
-                    // 'Địa chỉ': emp.address || 'N/A', // Removed from API
-                    // 'Thành phố': emp.city || 'N/A', // Removed from API
-                    'Mã nhân viên': emp.employee_code || `EMP-${emp.id.substring(0, 4).toUpperCase()}`,
-                    'Chức danh': emp.job_title || 'N/A',
-                    'Phòng ban': emp.department || 'N/A',
-                    'Vai trò': emp.roles?.display_name || 'Thành viên',
-                    'Người quản lý trực tiếp': emp.manager ? `${emp.manager.full_name}` : 'N/A',
-                    // 'Ngày bắt đầu': emp.start_date ? new Date(emp.start_date).toLocaleDateString('vi-VN') : 'N/A', // Removed
-                    'Trạng thái': emp.status === 'active' ? 'Active' : 'Inactive',
+                    firstName: emp.first_name || '',
+                    lastName: emp.last_name || '',
+                    email: emp.email,
+                    phone: emp.phone || 'N/A',
+                    empCode: emp.employee_code || `EMP-${emp.id.substring(0, 4).toUpperCase()}`,
+                    job: emp.job_title || 'N/A',
+                    dept: emp.department || 'N/A',
+                    role: emp.roles?.display_name || 'Thành viên',
+                    manager: emp.manager ? `${emp.manager.full_name}` : 'N/A',
+                    status: emp.status === 'active' ? 'Active' : 'Inactive',
                 };
             });
 
-            const ws = XLSX.utils.json_to_sheet(exportData);
-            const colWidths = Object.keys(exportData[0] || {}).map(key => ({ wch: Math.max(key.length, 15) }));
-            ws['!cols'] = colWidths;
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Danh sách nhân viên');
-            XLSX.writeFile(wb, `Danh_sach_nhan_vien_${new Date().toISOString().split('T')[0]}.xlsx`);
+            const columns = [
+                { header: 'Họ', key: 'firstName', width: 20 },
+                { header: 'Tên', key: 'lastName', width: 20 },
+                { header: 'Email', key: 'email', width: 30 },
+                { header: 'Số điện thoại', key: 'phone', width: 15 },
+                { header: 'Mã nhân viên', key: 'empCode', width: 15 },
+                { header: 'Chức danh', key: 'job', width: 20 },
+                { header: 'Phòng ban', key: 'dept', width: 20 },
+                { header: 'Vai trò', key: 'role', width: 15 },
+                { header: 'Người quản lý trực tiếp', key: 'manager', width: 25 },
+                { header: 'Trạng thái', key: 'status', width: 10 }
+            ]
 
-            toast.dismiss(loadingToast);
-            toast.success('Đã xuất danh sách thành công');
+            import('@/lib/export-utils').then(({ exportToExcel }) => {
+                exportToExcel(exportData, `Danh_sach_nhan_vien_${new Date().toISOString().split('T')[0]}.xlsx`, 'Danh sách nhân viên', columns)
+                toast.dismiss(loadingToast);
+                toast.success('Đã xuất danh sách thành công');
+            })
 
         } catch (error) {
             console.error(error);

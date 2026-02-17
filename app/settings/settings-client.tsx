@@ -24,10 +24,16 @@ import {
     updateAutoCheckInSetting,
     getAutoCheckOutSetting,
     updateAutoCheckOutSetting,
+    getPushNotificationSetting,
+    updatePushNotificationSetting,
+    getClockSettings,
+    updateClockInSettings,
+    updateClockOutSettings,
     getMyProfile,
     updateMyProfile,
     updateMyAvatar
 } from '@/app/actions/profile'
+import { messaging, VAPID_KEY, getToken } from '@/utils/firebase'
 import { useSidebar } from '@/contexts/sidebar-context'
 import { Badge } from '@/components/ui/badge'
 import { MobileHeader } from '@/components/mobile-header'
@@ -44,6 +50,11 @@ export function SettingsClient({ user }: SettingsClientProps) {
     const [pushEnabled, setPushEnabled] = useState(false)
     const [autoCheckInEnabled, setAutoCheckInEnabled] = useState(false)
     const [autoCheckOutSetting, setAutoCheckOutSetting] = useState(false)
+    const [clockInMinutes, setClockInMinutes] = useState(5)
+    const [clockOutMode, setClockOutMode] = useState<'before' | 'after'>('before')
+    const [clockOutMinutes, setClockOutMinutes] = useState(5)
+    const clockInSaveTimer = useRef<NodeJS.Timeout | null>(null)
+    const clockOutSaveTimer = useRef<NodeJS.Timeout | null>(null)
     const [currentAvatar, setCurrentAvatar] = useState(user?.user_metadata?.avatar_url || getDefaultAvatar(user?.id))
     const [isAvatarOpen, setIsAvatarOpen] = useState(false)
 
@@ -66,6 +77,19 @@ export function SettingsClient({ user }: SettingsClientProps) {
     useEffect(() => {
         getAutoCheckInSetting().then(enabled => setAutoCheckInEnabled(enabled))
         getAutoCheckOutSetting().then(enabled => setAutoCheckOutSetting(enabled))
+        getPushNotificationSetting().then(enabled => {
+            // Only show as enabled if both DB says enabled AND browser permission is granted
+            if (enabled && 'Notification' in window && Notification.permission === 'granted') {
+                setPushEnabled(true)
+            } else {
+                setPushEnabled(false)
+            }
+        })
+        getClockSettings().then(settings => {
+            setClockInMinutes(settings.clockInRemindMinutes)
+            setClockOutMode(settings.clockOutRemindMode)
+            setClockOutMinutes(settings.clockOutRemindMinutes)
+        })
         loadMyProfile()
     }, [])
 
@@ -209,7 +233,79 @@ export function SettingsClient({ user }: SettingsClientProps) {
         }
     }
 
-    const handlePushToggle = (checked: boolean) => setPushEnabled(checked)
+    const handlePushToggle = async (checked: boolean) => {
+        if (checked) {
+            // Step 1: Check browser support
+            if (!('Notification' in window)) {
+                toast.error('Trình duyệt không hỗ trợ thông báo đẩy')
+                return
+            }
+
+            // Step 2: Request browser permission
+            let permission = Notification.permission
+            if (permission === 'denied') {
+                toast.error('Quyền thông báo đã bị chặn. Vui lòng nhấn vào biểu tượng ổ khóa trên thanh địa chỉ để bật lại.', {
+                    duration: 8000
+                })
+                return
+            }
+
+            if (permission === 'default') {
+                permission = await Notification.requestPermission()
+            }
+
+            if (permission !== 'granted') {
+                toast.error('Bạn cần cho phép thông báo để bật tính năng này')
+                return
+            }
+
+            // Step 3: Register FCM token
+            try {
+                const msg = await messaging()
+                if (msg) {
+                    const currentToken = await getToken(msg, { vapidKey: VAPID_KEY })
+                    if (currentToken) {
+                        // Save token to database
+                        const supabase = (await import('@/utils/supabase/client')).createClient()
+                        const { data: { user } } = await supabase.auth.getUser()
+                        if (user) {
+                            const getDeviceType = () => {
+                                const ua = navigator.userAgent
+                                if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) return 'tablet'
+                                if (/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(ua)) return 'mobile'
+                                return 'desktop'
+                            }
+                            await supabase.from('fcm_tokens').upsert({
+                                user_id: user.id,
+                                token: currentToken,
+                                device_type: getDeviceType()
+                            }, { onConflict: 'user_id, token' })
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn('FCM registration warning:', err)
+            }
+
+            // Step 4: Save to database
+            setPushEnabled(true)
+            updatePushNotificationSetting(true).then(() => {
+                toast.success('Đã bật thông báo đẩy')
+            }).catch(() => {
+                setPushEnabled(false)
+                toast.error('Không thể lưu cài đặt')
+            })
+        } else {
+            // Turning OFF: Remove tokens and update database
+            setPushEnabled(false)
+            updatePushNotificationSetting(false).then(() => {
+                toast.success('Đã tắt thông báo đẩy')
+            }).catch(() => {
+                setPushEnabled(true)
+                toast.error('Không thể lưu cài đặt')
+            })
+        }
+    }
     const handleAutoCheckInToggle = (checked: boolean) => {
         setAutoCheckInEnabled(checked)
         updateAutoCheckInSetting(checked).catch(() => setAutoCheckInEnabled(!checked))
@@ -217,6 +313,27 @@ export function SettingsClient({ user }: SettingsClientProps) {
     const handleAutoCheckOutToggle = (checked: boolean) => {
         setAutoCheckOutSetting(checked)
         updateAutoCheckOutSetting(checked).catch(() => setAutoCheckOutSetting(!checked))
+    }
+
+    const handleClockInMinutesChange = (value: number) => {
+        setClockInMinutes(value)
+        if (clockInSaveTimer.current) clearTimeout(clockInSaveTimer.current)
+        clockInSaveTimer.current = setTimeout(() => {
+            updateClockInSettings(value).catch(() => toast.error('Không thể lưu cài đặt'))
+        }, 600)
+    }
+
+    const handleClockOutModeChange = (mode: 'before' | 'after') => {
+        setClockOutMode(mode)
+        updateClockOutSettings(mode, clockOutMinutes).catch(() => toast.error('Không thể lưu cài đặt'))
+    }
+
+    const handleClockOutMinutesChange = (value: number) => {
+        setClockOutMinutes(value)
+        if (clockOutSaveTimer.current) clearTimeout(clockOutSaveTimer.current)
+        clockOutSaveTimer.current = setTimeout(() => {
+            updateClockOutSettings(clockOutMode, value).catch(() => toast.error('Không thể lưu cài đặt'))
+        }, 600)
     }
 
     const handleAvatarSelect = async (url: string) => {
@@ -511,29 +628,63 @@ export function SettingsClient({ user }: SettingsClientProps) {
                             {activeTabMobile === 'preferences-mobile' && (
                                 <div className="space-y-6">
                                     <div className="bg-slate-800/30 rounded-2xl p-4 border border-white/5 space-y-4">
+                                        {/* Clock In */}
                                         <div className="flex items-center justify-between py-2">
                                             <div className="flex items-center gap-3">
                                                 <div className="text-emerald-500 size-8 bg-emerald-500/10 rounded-lg flex items-center justify-center"><span className="material-symbols-outlined text-lg">timer_play</span></div>
                                                 <div className="flex-1">
-                                                    <p className="text-sm font-bold text-slate-200">Auto Check-in</p>
+                                                    <p className="text-sm font-bold text-slate-200">Auto Clock In</p>
                                                     <p className="text-[10px] text-slate-500">Tự động khi đến công ty</p>
                                                 </div>
                                             </div>
                                             <Switch checked={autoCheckInEnabled} onCheckedChange={handleAutoCheckInToggle} />
                                         </div>
+                                        {autoCheckInEnabled && (
+                                            <div className="ml-11 p-3 bg-emerald-500/5 rounded-xl border border-emerald-500/10 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                                                <div className="flex items-center justify-between">
+                                                    <p className="text-xs text-slate-400">Nhắc trước</p>
+                                                    <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">{clockInMinutes} phút</span>
+                                                </div>
+                                                <input type="range" min={1} max={30} step={1} value={clockInMinutes} onChange={(e) => handleClockInMinutesChange(Number(e.target.value))} className="w-full h-1.5 bg-slate-700 rounded-full appearance-none cursor-pointer accent-emerald-500" />
+                                                <div className="flex justify-between text-[10px] text-slate-600">
+                                                    <span>1 phút</span>
+                                                    <span>15 phút</span>
+                                                    <span>30 phút</span>
+                                                </div>
+                                            </div>
+                                        )}
 
                                         <div className="border-t border-white/5"></div>
 
+                                        {/* Clock Out */}
                                         <div className="flex items-center justify-between py-2">
                                             <div className="flex items-center gap-3">
                                                 <div className="text-orange-500 size-8 bg-orange-500/10 rounded-lg flex items-center justify-center"><span className="material-symbols-outlined text-lg">timer_off</span></div>
                                                 <div className="flex-1">
-                                                    <p className="text-sm font-bold text-slate-200">Auto Check-out</p>
+                                                    <p className="text-sm font-bold text-slate-200">Auto Clock Out</p>
                                                     <p className="text-[10px] text-slate-500">Tự động khi rời công ty</p>
                                                 </div>
                                             </div>
                                             <Switch checked={autoCheckOutSetting} onCheckedChange={handleAutoCheckOutToggle} />
                                         </div>
+                                        {autoCheckOutSetting && (
+                                            <div className="ml-11 p-3 bg-orange-500/5 rounded-xl border border-orange-500/10 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                                                <div className="flex gap-2">
+                                                    <button onClick={() => handleClockOutModeChange('before')} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${clockOutMode === 'before' ? 'bg-orange-500 text-black' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>Trước giờ tan</button>
+                                                    <button onClick={() => handleClockOutModeChange('after')} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${clockOutMode === 'after' ? 'bg-orange-500 text-black' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>Sau giờ tan</button>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <p className="text-xs text-slate-400">{clockOutMode === 'before' ? 'Nhắc trước' : 'Nhắc sau'}</p>
+                                                    <span className="text-xs font-bold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full">{clockOutMinutes} phút</span>
+                                                </div>
+                                                <input type="range" min={1} max={10} step={1} value={clockOutMinutes} onChange={(e) => handleClockOutMinutesChange(Number(e.target.value))} className="w-full h-1.5 bg-slate-700 rounded-full appearance-none cursor-pointer accent-orange-500" />
+                                                <div className="flex justify-between text-[10px] text-slate-600">
+                                                    <span>1 phút</span>
+                                                    <span>5 phút</span>
+                                                    <span>10 phút</span>
+                                                </div>
+                                            </div>
+                                        )}
 
                                         <div className="border-t border-white/5"></div>
 
@@ -720,20 +871,72 @@ export function SettingsClient({ user }: SettingsClientProps) {
                         <div className="p-6 border-b border-border">
                             <h3 className="text-xl font-bold text-white uppercase tracking-wider">Cài đặt chung</h3>
                         </div>
-                        <div className="p-8 space-y-8">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                    <div className="text-emerald-500 size-10 bg-emerald-500/10 rounded-xl flex items-center justify-center"><span className="material-symbols-outlined">timer_play</span></div>
-                                    <div><p className="text-white font-bold text-sm">Tự động Check-in</p></div>
+                        <div className="p-8 space-y-6">
+                            {/* Clock In */}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div className="text-emerald-500 size-10 bg-emerald-500/10 rounded-xl flex items-center justify-center"><span className="material-symbols-outlined">timer_play</span></div>
+                                        <div>
+                                            <p className="text-white font-bold text-sm">Auto Clock In</p>
+                                            <p className="text-slate-500 text-xs">Tự động chấm công khi đến văn phòng</p>
+                                        </div>
+                                    </div>
+                                    <Switch checked={autoCheckInEnabled} onCheckedChange={handleAutoCheckInToggle} />
                                 </div>
-                                <Switch checked={autoCheckInEnabled} onCheckedChange={handleAutoCheckInToggle} />
+                                {autoCheckInEnabled && (
+                                    <div className="ml-14 p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/10 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-sm text-slate-300">Nhắc trước giờ vào ca</p>
+                                            <span className="text-sm font-black text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full min-w-[72px] text-center">{clockInMinutes} phút</span>
+                                        </div>
+                                        <input type="range" min={1} max={30} step={1} value={clockInMinutes} onChange={(e) => handleClockInMinutesChange(Number(e.target.value))} className="w-full h-2 bg-slate-700 rounded-full appearance-none cursor-pointer accent-emerald-500" />
+                                        <div className="flex justify-between text-[10px] text-slate-600 font-bold">
+                                            <span>1 phút</span>
+                                            <span>15 phút</span>
+                                            <span>30 phút</span>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                    <div className="text-orange-500 size-10 bg-orange-500/10 rounded-xl flex items-center justify-center"><span className="material-symbols-outlined">timer_off</span></div>
-                                    <div><p className="text-white font-bold text-sm">Tự động Check-out</p></div>
+
+                            <div className="border-t border-white/5"></div>
+
+                            {/* Clock Out */}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div className="text-orange-500 size-10 bg-orange-500/10 rounded-xl flex items-center justify-center"><span className="material-symbols-outlined">timer_off</span></div>
+                                        <div>
+                                            <p className="text-white font-bold text-sm">Auto Clock Out</p>
+                                            <p className="text-slate-500 text-xs">Tự động chấm công khi hết giờ làm</p>
+                                        </div>
+                                    </div>
+                                    <Switch checked={autoCheckOutSetting} onCheckedChange={handleAutoCheckOutToggle} />
                                 </div>
-                                <Switch checked={autoCheckOutSetting} onCheckedChange={handleAutoCheckOutToggle} />
+                                {autoCheckOutSetting && (
+                                    <div className="ml-14 p-4 bg-orange-500/5 rounded-xl border border-orange-500/10 space-y-4 animate-in slide-in-from-top-2 duration-200">
+                                        <div>
+                                            <p className="text-xs text-slate-400 mb-2 font-bold uppercase tracking-wider">Thời điểm nhắc</p>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => handleClockOutModeChange('before')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${clockOutMode === 'before' ? 'bg-orange-500 text-black shadow-lg shadow-orange-500/20' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>⏰ Trước giờ tan</button>
+                                                <button onClick={() => handleClockOutModeChange('after')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${clockOutMode === 'after' ? 'bg-orange-500 text-black shadow-lg shadow-orange-500/20' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>🔔 Sau giờ tan</button>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-sm text-slate-300">{clockOutMode === 'before' ? 'Nhắc trước' : 'Nhắc sau'} giờ tan ca</p>
+                                                <span className="text-sm font-black text-orange-400 bg-orange-500/10 px-3 py-1 rounded-full min-w-[72px] text-center">{clockOutMinutes} phút</span>
+                                            </div>
+                                            <input type="range" min={1} max={10} step={1} value={clockOutMinutes} onChange={(e) => handleClockOutMinutesChange(Number(e.target.value))} className="w-full h-2 bg-slate-700 rounded-full appearance-none cursor-pointer accent-orange-500" />
+                                            <div className="flex justify-between text-[10px] text-slate-600 font-bold">
+                                                <span>1 phút</span>
+                                                <span>5 phút</span>
+                                                <span>10 phút</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </section>

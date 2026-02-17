@@ -27,7 +27,7 @@ export function useAutoCheckIn(workSettings: any) {
 
                 const { data: profile } = await supabase
                     .from('profiles')
-                    .select('auto_checkin_enabled')
+                    .select('auto_checkin_enabled, clock_in_remind_minutes')
                     .eq('id', user.id)
                     .single()
 
@@ -35,6 +35,8 @@ export function useAutoCheckIn(workSettings: any) {
                     console.log('🤖 Auto-CheckIn: Disabled by user.')
                     return
                 }
+
+                const remindMinutes = profile.clock_in_remind_minutes ?? 5
 
                 // Get Today in VN Time (YYYY-MM-DD)
                 const today = new Intl.DateTimeFormat('en-CA', {
@@ -82,10 +84,10 @@ export function useAutoCheckIn(workSettings: any) {
                     const diffMins = diffMs / 60000
 
                     // Log for debugging
-                    console.log(`🤖 Shift ${schedule.start_time}: diff = ${diffMins.toFixed(1)} mins`)
+                    console.log(`🤖 Shift ${schedule.start_time}: diff = ${diffMins.toFixed(1)} mins (remind window: ${remindMinutes} mins)`)
 
-                    // Validation: diffMins <= 30 (Not too early) AND diffMins > -600 (Up to 10 hours late)
-                    if (diffMins <= 30 && diffMins > -600) {
+                    // Validation: diffMins <= remindMinutes (Not too early) AND diffMins > -600 (Up to 10 hours late)
+                    if (diffMins <= remindMinutes && diffMins > -600) {
                         targetSchedule = schedule
                         console.log('🤖 Match found:', schedule.title, 'at', schedule.start_time)
                         break // Found the relevant shift, stop looking

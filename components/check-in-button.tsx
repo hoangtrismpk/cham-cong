@@ -44,9 +44,9 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
 
         navigator.geolocation.getCurrentPosition(
             async (position) => {
-                const { latitude, longitude } = position.coords
-
                 try {
+                    const { latitude, longitude } = position.coords
+
                     let result
                     if (isCheckedIn) {
                         result = await checkOut(latitude, longitude)
@@ -65,13 +65,14 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
                         }, 1500)
                     }
                 } catch (e) {
+                    console.error('❌ [CheckInButton] Action error:', e)
                     setError(t.common.error)
                     setLoading(false)
                 }
             },
             async (err) => {
-                console.log('GPS failed, trying IP verification...', err.message)
                 try {
+                    console.log('GPS failed, trying IP verification...', err.message)
                     let result
                     if (isCheckedIn) {
                         result = await checkOut()
@@ -90,13 +91,14 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
                         }, 1500)
                     }
                 } catch (e) {
+                    console.error('❌ [CheckInButton] IP Fallback error:', e)
                     setError(t.common.error)
                     setLoading(false)
                 }
             },
             {
                 enableHighAccuracy: true,
-                timeout: 5000,
+                timeout: 10000, // Increased to 10s for better stability on Windows
                 maximumAge: 0
             }
         )
@@ -147,7 +149,7 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
         setLoading(false)
         setIsProcessing(false)
         setSuccess(null)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+
     }, [isCheckedIn, isCheckedOut])
 
     // Neon Circular Button Design

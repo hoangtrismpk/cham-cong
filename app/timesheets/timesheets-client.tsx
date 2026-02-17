@@ -37,9 +37,7 @@ export function TimesheetsClient({ user, initialData, workSettings }: Timesheets
     const [filterRange, setFilterRange] = useState<FilterRange>('month')
     const [customRange, setCustomRange] = useState({ start: '', end: '' })
     const [showFilterDropdown, setShowFilterDropdown] = useState(false)
-    const [showDownloadDropdown, setShowDownloadDropdown] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
-    const downloadRef = useRef<HTMLDivElement>(null)
 
     // Report Issue State
     const [isReportModalOpen, setIsReportModalOpen] = useState(false)
@@ -60,9 +58,6 @@ export function TimesheetsClient({ user, initialData, workSettings }: Timesheets
         function handleClickOutside(event: MouseEvent) {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setShowFilterDropdown(false)
-            }
-            if (downloadRef.current && !downloadRef.current.contains(event.target as Node)) {
-                setShowDownloadDropdown(false)
             }
         }
         document.addEventListener("mousedown", handleClickOutside)
@@ -262,6 +257,9 @@ export function TimesheetsClient({ user, initialData, workSettings }: Timesheets
     }
 
     // Effect: Handle Data Fetching
+    const viewDateStr = format(viewDate, 'yyyy-MM')
+    const customRangeStr = JSON.stringify(customRange)
+
     useEffect(() => {
         const fetch = async () => {
             let start: Date, end: Date
@@ -293,7 +291,7 @@ export function TimesheetsClient({ user, initialData, workSettings }: Timesheets
         }
 
         fetch()
-    }, [viewDate, filterRange, currentPage, customRange])
+    }, [viewDateStr, filterRange, currentPage, customRangeStr])
 
     // Sync input when page changes via buttons
     useEffect(() => {
@@ -356,41 +354,7 @@ export function TimesheetsClient({ user, initialData, workSettings }: Timesheets
                     >
                         <span className="material-symbols-outlined text-[18px]">filter_list</span>
                     </button>
-                    <div className="relative" ref={downloadRef}>
-                        <button
-                            onClick={() => setShowDownloadDropdown(!showDownloadDropdown)}
-                            className="p-2 rounded-lg bg-slate-900/50 border border-white/10 text-slate-400 hover:text-white transition-colors"
-                        >
-                            <span className="material-symbols-outlined text-[18px]">file_download</span>
-                        </button>
-                        {showDownloadDropdown && (
-                            <div className="absolute right-0 mt-2 w-48 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl z-50 p-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                                <button
-                                    onClick={() => {
-                                        exportAttendanceToExcel(data.logs, rangeLabel)
-                                        setShowDownloadDropdown(false)
-                                    }}
-                                    className="w-full px-4 py-3 text-left text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all flex items-center gap-2"
-                                >
-                                    <span className="material-symbols-outlined text-lg">date_range</span>
-                                    {t.timesheets.exportRange}
-                                </button>
-                                <button
-                                    onClick={async () => {
-                                        setLoading(true)
-                                        const allData = await getAllAttendanceLogs()
-                                        exportAttendanceToExcel(allData.logs, 'All History')
-                                        setLoading(false)
-                                        setShowDownloadDropdown(false)
-                                    }}
-                                    className="w-full px-4 py-3 text-left text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all flex items-center gap-2"
-                                >
-                                    <span className="material-symbols-outlined text-lg">all_inclusive</span>
-                                    {t.timesheets.exportAll}
-                                </button>
-                            </div>
-                        )}
-                    </div>
+
                 </div>
             </div>
 
@@ -420,9 +384,7 @@ export function TimesheetsClient({ user, initialData, workSettings }: Timesheets
                             </button>
                         </div>
                     )}
-                    <button onClick={() => setShowDownloadDropdown(!showDownloadDropdown)} className="h-10 w-10 flex items-center justify-center bg-slate-900/50 rounded-xl border border-white/5 text-slate-400 hover:text-white transition-all">
-                        <span className="material-symbols-outlined text-xl">download</span>
-                    </button>
+
                 </div>
             </header>
 

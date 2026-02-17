@@ -56,11 +56,11 @@ Thumbs.db
 # Personal/Project specific
 .vscode/
 .idea/
-.agent/
 *.plan
 *.task
-*.md
 !README.md
 !CONTRIBUTING.md
 !LICENSE.md
 Design/
+
+firebase-b64.txt

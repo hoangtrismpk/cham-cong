@@ -4,10 +4,15 @@ import { Metadata } from 'next'
 import { getMyReports } from '@/app/actions/work-reports'
 import ClientOnly from '@/components/client-only'
 import ReportsContainer from '@/components/reports/reports-container'
+import { DashboardLayout } from '@/components/dashboard-layout'
+import { MobileHeader } from '@/components/mobile-header'
 
 export const metadata: Metadata = {
     title: 'Báo cáo công việc | Chấm công',
 }
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default async function ReportsPage() {
     const supabase = await createClient()
@@ -18,15 +23,25 @@ export default async function ReportsPage() {
     }
 
     // Fetch reports for history
-    const { reports, total } = await getMyReports(1, 100) // Fetch last 100 reports for history
+    const { reports } = await getMyReports(1, 100) // Fetch last 100 reports for history
 
     return (
-        <ClientOnly>
-            {/* 
-              Wrap everything in ClientOnly to avoid hydration mismatch if date parsing 
-              differs between server/client, although we handle UTC manually now.
-            */}
-            <ReportsContainer initialReports={reports} userId={user.id} />
-        </ClientOnly>
+        <DashboardLayout user={user}>
+            <div className="flex flex-col h-full overflow-hidden">
+                {/* Mobile Header */}
+                <MobileHeader
+                    title="Báo cáo công việc"
+                    subtitle="Báo cáo tiến độ & kế hoạch"
+                />
+
+                <ClientOnly>
+                    {/* 
+                      Wrap in ClientOnly to avoid hydration mismatch if date parsing 
+                      differs between server/client.
+                    */}
+                    <ReportsContainer initialReports={reports} userId={user.id} />
+                </ClientOnly>
+            </div>
+        </DashboardLayout>
     )
 }

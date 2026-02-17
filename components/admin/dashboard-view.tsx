@@ -6,6 +6,34 @@ import { format, differenceInMinutes, parseISO } from 'date-fns'
 import Link from 'next/link'
 import { useI18n } from '@/contexts/i18n-context'
 
+
+interface TrendData {
+    name: string
+    value: number
+}
+
+interface DeptData {
+    name: string
+    value: number
+    color: string
+}
+
+interface UserProfile {
+    full_name: string | null
+    email: string | null
+    avatar_url: string | null
+    department: string | null
+}
+
+interface ActiveLog {
+    id: string
+    check_in_time: string
+    check_out_time: string | null
+    status: string | null
+    profiles: UserProfile | null
+    work_date: string
+}
+
 interface AdminDashboardClientProps {
     stats: {
         totalEmployees: number
@@ -22,10 +50,10 @@ interface AdminDashboardClientProps {
         leaves: number
         changes: number
     }
-    trendData: any[]
-    trendData30Days: any[]
-    deptData: any[]
-    activeLogs: any[]
+    trendData: TrendData[]
+    trendData30Days: TrendData[]
+    deptData: DeptData[]
+    activeLogs: ActiveLog[]
     todayStr: string
 }
 
@@ -193,7 +221,7 @@ export function AdminDashboardClient({
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#2d3748]/50">
-                            {activeLogs?.map((log: any) => {
+                            {activeLogs?.map((log: ActiveLog) => {
                                 const checkIn = parseISO(log.check_in_time)
                                 const durationMinutes = differenceInMinutes(new Date(), checkIn)
                                 const hours = Math.floor(durationMinutes / 60)

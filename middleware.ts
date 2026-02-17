@@ -37,14 +37,32 @@ export async function middleware(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser()
 
-    // Protect routes example (Uncomment when ready)
     // Protect routes
-    if (
-        !user &&
-        request.nextUrl.pathname.startsWith('/admin')
-    ) {
-        return NextResponse.redirect(new URL('/login', request.url))
+    // Only redirect if user is NOT logged in and trying to access protected routes
+    const isProtectedRoute = request.nextUrl.pathname.startsWith('/admin') ||
+        request.nextUrl.pathname.startsWith('/dashboard') ||
+        request.nextUrl.pathname.startsWith('/schedule') ||
+        request.nextUrl.pathname.startsWith('/timesheets') ||
+        request.nextUrl.pathname.startsWith('/reports') ||
+        request.nextUrl.pathname.startsWith('/settings');
+
+    if (!user && isProtectedRoute) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/login'
+        url.searchParams.set('next', request.nextUrl.pathname)
+        return NextResponse.redirect(url)
     }
+
+    // Add Security Headers
+    response.headers.set('X-Frame-Options', 'DENY')
+    response.headers.set('X-Content-Type-Options', 'nosniff')
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+    response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)')
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
+    // Basic CSP - adjust as needed based on used third-party scripts
+    // Added wss://*.supabase.co for Realtime subscriptions
+    // Added identitytoolkit.googleapis.com for Firebase Auth (if used)
+    response.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.google.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com;")
 
     return response
 }

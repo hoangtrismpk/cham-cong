@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { useRouter } from 'next/navigation'
-import * as XLSX from 'xlsx'
+
 import { getGlobalReportExport } from '@/app/actions/work-reports-admin'
 import ReportDetailModal from './report-detail-modal'
 import { createClient } from '@/utils/supabase/client'
@@ -142,24 +142,46 @@ export default function AdminReportsDashboard({ reports: initialReports, total, 
             const data = await getGlobalReportExport(filters.month, filters.year)
             if (data.length === 0) return
 
-            const worksheet = XLSX.utils.json_to_sheet(data)
-            const workbook = XLSX.utils.book_new()
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Bao Cao")
+            // Map keys if needed or ensure data matches expected format
+            // Assuming getGlobalReportExport returns objects properly, we just need to define columns
 
-            // Set column widths
-            const wscols = [
-                { wch: 15 }, // Mã NV
-                { wch: 25 }, // Họ tên
-                { wch: 20 }, // Phòng ban
-                { wch: 20 }, // Số báo cáo phải nộp
-                { wch: 15 }, // Báo cáo ngày
-                { wch: 15 }, // Báo cáo tuần
-                { wch: 15 }, // Báo cáo tháng
-                { wch: 20 }  // Tỉ lệ đúng hạn
+            const columns = [
+                { header: 'Mã NV', key: 'employee_code', width: 15 },
+                { header: 'Họ tên', key: 'full_name', width: 25 },
+                { header: 'Phòng ban', key: 'department', width: 20 },
+                { header: 'Số báo cáo phải nộp', key: 'required_reports', width: 20 },
+                { header: 'Báo cáo ngày', key: 'daily_count', width: 15 },
+                { header: 'Báo cáo tuần', key: 'weekly_count', width: 15 },
+                { header: 'Báo cáo tháng', key: 'monthly_count', width: 15 },
+                { header: 'Tỉ lệ đúng hạn', key: 'on_time_rate', width: 20 }
             ]
-            worksheet['!cols'] = wscols
 
-            XLSX.writeFile(workbook, `Bao_Cao_Tong_Hop_Thang_${filters.month}_${filters.year}.xlsx`)
+            import('@/lib/export-utils').then(({ exportToExcel }) => {
+                // We might need to map data keys here if they differ from column keys
+                // Let's assume the API returns keys matching what we want, or we map them.
+                // Inspecting getGlobalReportExport return types would be better, but generic mapping works too.
+                // Based on previous code: XLSX.utils.json_to_sheet(data) implies data keys WERE the headers.
+                // So we should probably keep that behavior OR map 'data' keys to our new column keys.
+                // Since we can't easily see the API response structure here without checking, 
+                // and previous code relied on object keys being the headers (or maybe not?), 
+                // wait, previous code set `wscols` but didn't map keys. That means `data` keys matched headers?
+                // Actually, `getGlobalReportExport` likely returns raw data, so valid keys.
+
+                // Let's map strict keys to safely use the utility
+                const mappedData = data.map((item: any) => ({
+                    employee_code: item['Mã NV'] || item.employee_code,
+                    full_name: item['Họ tên'] || item.full_name,
+                    department: item['Phòng ban'] || item.department,
+                    required_reports: item['Số báo cáo phải nộp'] || item.required_reports,
+                    daily_count: item['Báo cáo ngày'] || item.daily_count,
+                    weekly_count: item['Báo cáo tuần'] || item.weekly_count,
+                    monthly_count: item['Báo cáo tháng'] || item.monthly_count,
+                    on_time_rate: item['Tỉ lệ đúng hạn'] || item.on_time_rate
+                }))
+
+                exportToExcel(mappedData, `Bao_Cao_Tong_Hop_Thang_${filters.month}_${filters.year}.xlsx`, 'Bao Cao', columns)
+            })
+
         } catch (error) {
             console.error('Export error:', error)
         }

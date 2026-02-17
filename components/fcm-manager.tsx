@@ -38,65 +38,82 @@ export function FCMManager() {
             toast.error(`Lỗi lưu Token: ${error.message}`);
         } else {
             console.log('FCM token saved successfully for user:', user.id);
-            // toast.success('Đã đăng ký nhận thông báo thành công!'); // Silent success for better UX after initial verify
         }
     };
 
     useEffect(() => {
         const setupFCM = async () => {
-            // 0. Check if browser supports notifications
-            if (!('Notification' in window)) {
-                console.log('This browser does not support desktop notification');
-                return;
-            }
-
-            // 1. Check/Request Permission
-            let permission = Notification.permission;
-
-            if (permission === 'denied') {
-                console.log('Notification permission denied');
-                toast.error('Quyền thông báo đang bị chặn. Vui lòng nhấn vào biểu tượng ổ khóa trên thanh địa chỉ để bật lại.', {
-                    duration: 10000,
-                });
-                return;
-            }
-
-            if (permission === 'default') {
-                permission = await Notification.requestPermission();
-            }
-
-            if (permission !== 'granted') {
-                console.log('Notification permission not granted after request');
-                return;
-            }
-
-            // 2. Get Token & Listen
             try {
-                const msg = await messaging();
-                if (!msg) {
-                    console.log('Firebase Messaging not supported');
+                // 0. Check if browser supports notifications
+                if (!('Notification' in window)) {
+                    console.log('This browser does not support desktop notification');
                     return;
                 }
 
-                // Foreground listener
-                onMessage(msg, (payload) => {
-                    console.log('Foreground message received:', payload);
-                    toast(payload.notification?.title || 'Thông báo', {
-                        description: payload.notification?.body,
-                        duration: 5000,
+                // 1. Check user's push notification preference in database
+                const supabase = createClient();
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('push_enabled')
+                    .eq('id', user.id)
+                    .single();
+
+                // If user has explicitly disabled push notifications, skip setup
+                if (profile && profile.push_enabled === false) {
+                    console.log('[FCMManager] Push notifications disabled by user preference');
+                    return;
+                }
+
+                // 2. Check/Request Permission
+                let permission = Notification.permission;
+
+                if (permission === 'denied') {
+                    console.log('Notification permission denied');
+                    return;
+                }
+
+                if (permission === 'default') {
+                    permission = await Notification.requestPermission();
+                }
+
+                if (permission !== 'granted') {
+                    console.log('Notification permission not granted after request');
+                    return;
+                }
+
+                // 3. Get Token & Listen
+                try {
+                    const msg = await messaging();
+                    if (!msg) {
+                        console.log('Firebase Messaging not supported');
+                        return;
+                    }
+
+                    // Foreground listener
+                    onMessage(msg, (payload) => {
+                        console.log('Foreground message received:', payload);
+                        toast(payload.notification?.title || 'Thông báo', {
+                            description: payload.notification?.body,
+                            duration: 5000,
+                        });
                     });
-                });
 
-                const currentToken = await getToken(msg, { vapidKey: VAPID_KEY });
+                    const currentToken = await getToken(msg, { vapidKey: VAPID_KEY });
 
-                if (currentToken) {
-                    console.log('FCM Token:', currentToken);
-                    await saveTokenToDatabase(currentToken);
-                } else {
-                    console.log('No registration token available. Request permission to generate one.');
+                    if (currentToken) {
+                        console.log('FCM Token:', currentToken);
+                        await saveTokenToDatabase(currentToken);
+                    } else {
+                        console.log('No registration token available. Request permission to generate one.');
+                    }
+                } catch (err) {
+                    console.log('An error occurred while retrieving token. ', err);
                 }
             } catch (err) {
-                console.log('An error occurred while retrieving token. ', err);
+                console.warn('⚠️ [FCMManager] Setup failed:', err);
             }
         };
 
@@ -106,3 +123,4 @@ export function FCMManager() {
 
     return null; // This component renders nothing
 }
+

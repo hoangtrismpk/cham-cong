@@ -1,7 +1,7 @@
 'use client'
 
 import React, { memo } from 'react'
-import { Handle, Position, NodeProps } from '@xyflow/react'
+import { Handle, Position, NodeProps, Node } from '@xyflow/react'
 import { Badge } from '@/components/ui/badge'
 
 interface CustomNodeData extends Record<string, unknown> {
@@ -11,11 +11,14 @@ interface CustomNodeData extends Record<string, unknown> {
     initials: string
     status: string
     isRoot?: boolean
+    department?: string
 }
 
-const CustomNode = ({ data }: NodeProps<any>) => {
+type CustomNodeType = Node<CustomNodeData>
+
+const CustomNode = ({ data }: NodeProps<CustomNodeType>) => {
     // Cast data safely
-    const nodeData = data as unknown as CustomNodeData
+    const nodeData = data
 
     return (
         <div className={`px-4 py-3 shadow-xl rounded-xl bg-[#161b22] border-2 min-w-[220px] text-center transition-all duration-300 ${nodeData.isRoot ? 'border-primary shadow-primary/20 scale-105' : 'border-slate-700 hover:border-slate-500'}`}>

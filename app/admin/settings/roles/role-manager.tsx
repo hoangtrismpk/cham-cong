@@ -167,7 +167,7 @@ export function RoleManager({ roles, permissions }: RoleManagerProps) {
                                         </span>
                                     </div>
                                     {role.is_system_role && (
-                                        <Badge variant="secondary" className="text-[9px] h-5 bg-slate-700 text-slate-400 ml-2">System</Badge>
+                                        <Badge variant="secondary" className="text-[9px] h-5 bg-slate-700 text-slate-400 ml-2">{t.adminSettings.roleSettings.systemRole}</Badge>
                                     )}
                                 </button>
                             ))}
@@ -242,7 +242,7 @@ export function RoleManager({ roles, permissions }: RoleManagerProps) {
                                                     </span>
                                                 </div>
                                                 {role.is_system_role && (
-                                                    <Badge variant="secondary" className="text-[9px] h-5 bg-slate-700 text-slate-400">System</Badge>
+                                                    <Badge variant="secondary" className="text-[9px] h-5 bg-slate-700 text-slate-400">{t.adminSettings.roleSettings.systemRole}</Badge>
                                                 )}
                                                 {selectedRole?.id === role.id && (
                                                     <Check className="h-5 w-5 text-primary ml-2" />
@@ -264,7 +264,7 @@ export function RoleManager({ roles, permissions }: RoleManagerProps) {
                                 <div>
                                     <div className="flex items-center gap-3">
                                         <h2 className="text-2xl font-bold text-white">{(t.adminSettings.roleSettings as any).roleLabels?.[selectedRole.name] || selectedRole.display_name}</h2>
-                                        {selectedRole.is_system_role && <Badge variant="outline" className="border-primary/20 text-primary bg-primary/10">Default</Badge>}
+                                        {selectedRole.is_system_role && <Badge variant="outline" className="border-primary/20 text-primary bg-primary/10">{t.adminSettings.roleSettings.defaultRole}</Badge>}
                                     </div>
                                     <p className="text-slate-400 mt-1 max-w-2xl">
                                         {(t.adminSettings.roleSettings as any).roleDescriptions?.[selectedRole.name] || selectedRole.description || t.adminSettings.roleSettings.defaultRole}

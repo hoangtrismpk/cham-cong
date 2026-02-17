@@ -1,4 +1,3 @@
-import { LanguageSwitcher } from '@/components/language-switcher'
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import { format } from 'date-fns'
@@ -41,13 +40,21 @@ export default async function DashboardPage() {
   const todayShift = await getTodayShift()
   const workSettings = await getWorkSettings()
 
+  // Fetch user's clock-in remind minutes setting
+  const { data: profileSettings } = await supabase
+    .from('profiles')
+    .select('clock_in_remind_minutes')
+    .eq('id', user.id)
+    .single()
+  const clockInRemindMinutes = profileSettings?.clock_in_remind_minutes ?? 5
+
   // Multi-session Logic
   const isCheckedIn = !!todayLog?.check_in_time && !todayLog?.check_out_time
   const isCheckedOut = !!todayLog?.check_out_time
 
   return (
     <DashboardLayout user={user}>
-      <PwaHandler todayShift={todayShift} todayLog={todayLog} />
+      <PwaHandler todayShift={todayShift} todayLog={todayLog} clockInRemindMinutes={clockInRemindMinutes} />
 
       {/* MOBILE HEADER */}
       <HomeMobileHeader userName={user.user_metadata.full_name || 'Bạn'} />

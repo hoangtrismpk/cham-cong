@@ -15,9 +15,10 @@ import type { UpdateLeaveRequestDTO } from '@/types/employment';
  */
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await context.params;
         const supabase = await createClient();
 
         // Check authentication
@@ -29,7 +30,7 @@ export async function GET(
             );
         }
 
-        const leaveRequest = await LeaveRequestService.getLeaveRequestWithEmployee(params.id);
+        const leaveRequest = await LeaveRequestService.getLeaveRequestWithEmployee(id);
 
         if (!leaveRequest) {
             return NextResponse.json(
@@ -71,9 +72,10 @@ export async function GET(
  */
 export async function PATCH(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await context.params;
         const supabase = await createClient();
 
         // Check authentication
@@ -105,7 +107,7 @@ export async function PATCH(
         body.approved_by = user.id; // Set approver to current user
 
         // Update leave request
-        const data = await LeaveRequestService.updateLeaveRequest(params.id, body);
+        const data = await LeaveRequestService.updateLeaveRequest(id, body);
 
         return NextResponse.json({
             message: `Leave request ${body.status} successfully`,
@@ -126,9 +128,10 @@ export async function PATCH(
  */
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await context.params;
         const supabase = await createClient();
 
         // Check authentication
@@ -141,7 +144,7 @@ export async function DELETE(
         }
 
         // Cancel leave request
-        const data = await LeaveRequestService.cancelLeaveRequest(params.id, user.id);
+        const data = await LeaveRequestService.cancelLeaveRequest(id, user.id);
 
         return NextResponse.json({
             message: 'Leave request cancelled successfully',

@@ -471,17 +471,19 @@ export async function getAttendanceStats(view: 'week' | 'month' = 'week') {
     if (error || !logs) return { totalHours: 0, totalOT: 0, dailyStats: [] }
 
     // Map logs to days
-    const statsMap = new Map<string, { standard: number, ot: number }>()
+    const statsMap = new Map<string, { standard: number, ot: number, lateMinutes: number }>()
 
     // Initialize stats for each day in range
     const current = new Date(startDate)
     while (current <= endDate) {
-        statsMap.set(current.toISOString().split('T')[0], { standard: 0, ot: 0 })
+        statsMap.set(current.toISOString().split('T')[0], { standard: 0, ot: 0, lateMinutes: 0 })
         current.setDate(current.getDate() + 1)
     }
 
     let totalStandardMinutes = 0
     let totalOTMinutes = 0
+    let totalLateCount = 0
+    let totalLateMinutes = 0
 
     logs.forEach(log => {
         if (log.check_in_time && log.check_out_time) {
@@ -542,10 +544,20 @@ export async function getAttendanceStats(view: 'week' | 'month' = 'week') {
             totalOTMinutes += otMinutes
 
             const dateKey = log.work_date
-            const dayStats = statsMap.get(dateKey) || { standard: 0, ot: 0 }
+            const dayStats = statsMap.get(dateKey) || { standard: 0, ot: 0, lateMinutes: 0 }
             dayStats.standard += (standardMinutes / 60)
             dayStats.ot += (otMinutes / 60)
             statsMap.set(dateKey, dayStats)
+        }
+
+        // Aggregate late stats per day
+        if (log.status === 'late' && log.late_minutes > 0) {
+            const dateKey = log.work_date
+            const dayStats = statsMap.get(dateKey) || { standard: 0, ot: 0, lateMinutes: 0 }
+            dayStats.lateMinutes += (log.late_minutes || 0)
+            statsMap.set(dateKey, dayStats)
+            totalLateCount++
+            totalLateMinutes += (log.late_minutes || 0)
         }
     })
 
@@ -556,6 +568,7 @@ export async function getAttendanceStats(view: 'week' | 'month' = 'week') {
             date,
             standard: Math.round(stats.standard * 10) / 10,
             ot: Math.round(stats.ot * 10) / 10,
+            lateMinutes: stats.lateMinutes,
             hasData: stats.standard > 0 || stats.ot > 0,
             isOffDay: (settings.work_off_days || [6, 0]).includes(d.getDay()),
             // Height reference is 12h for better visualization of OT
@@ -577,6 +590,7 @@ export async function getAttendanceStats(view: 'week' | 'month' = 'week') {
                 date: '',
                 standard: 0,
                 ot: 0,
+                lateMinutes: 0,
                 percentage: 0,
                 hasData: false,
                 isOffDay: offDays.includes(dayToNum[o])
@@ -587,6 +601,8 @@ export async function getAttendanceStats(view: 'week' | 'month' = 'week') {
     return {
         totalHours: Math.round((totalStandardMinutes / 60) * 10) / 10,
         totalOT: Math.round((totalOTMinutes / 60) * 10) / 10,
+        totalLateCount,
+        totalLateMinutes,
         dailyStats: finalStats
     }
 }
@@ -665,8 +681,8 @@ function parseTime(timeStr: string): [number, number] {
 
 // Helper to process logs (extracted from original logic)
 function processLogs(logs: any[], settings: any) {
-    let totalStandardMinutes = 0 // Local var just for processing, not used for total stats
-    let totalOTMinutes = 0
+    const totalStandardMinutes = 0 // Local var just for processing, not used for total stats
+    const totalOTMinutes = 0
 
     return logs.map(log => {
         let standard = 0

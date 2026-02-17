@@ -109,7 +109,7 @@ export async function sendCampaign(campaignId: string) {
 
     if (!campaign) return { error: 'Campaign not found' }
 
-    let payload: any = {
+    const payload: any = {
         title: campaign.title,
         body: campaign.message,
         link: campaign.link,

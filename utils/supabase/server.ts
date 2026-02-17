@@ -15,7 +15,7 @@ export async function createClient(params?: { forceSession?: boolean }) {
                 setAll(cookiesToSet) {
                     try {
                         cookiesToSet.forEach(({ name, value, options }) => {
-                            let finalOptions = { ...options }
+                            const finalOptions = { ...options }
                             if (params?.forceSession) {
                                 delete finalOptions.maxAge
                                 delete finalOptions.expires

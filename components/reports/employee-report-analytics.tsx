@@ -22,7 +22,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
-import * as XLSX from 'xlsx'
+
 
 interface Props {
     data: any // The result from getEmployeeReportAnalytics
@@ -51,27 +51,31 @@ export default function EmployeeReportAnalytics({ data, month, year, userId }: P
             const monthlyCount = reports.filter((r: any) => r.report_type === 'monthly').length
 
             const exportData = [{
-                'Tháng': `${month}/${year}`,
-                'Mã nhân viên': profile.employee_code,
-                'Họ và tên': profile.full_name,
-                'Số báo cáo phải nộp': stats.totalRequired,
-                'Báo cáo ngày': dailyCount,
-                'Báo cáo tuần': weeklyCount,
-                'Báo cáo tháng': monthlyCount,
-                'Tỉ lệ đúng hạn (%)': `${stats.onTimeRate}%`
+                month: `${month}/${year}`,
+                empCode: profile.employee_code,
+                fullName: profile.full_name,
+                required: stats.totalRequired,
+                daily: dailyCount,
+                weekly: weeklyCount,
+                monthly: monthlyCount,
+                rate: `${stats.onTimeRate}%`
             }]
 
-            const worksheet = XLSX.utils.json_to_sheet(exportData)
-            const workbook = XLSX.utils.book_new()
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Bao Cao Ca Nhan")
-
-            // Set column widths
-            const wscols = [
-                { wch: 12 }, { wch: 15 }, { wch: 25 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 20 }
+            const columns = [
+                { header: 'Tháng', key: 'month', width: 12 },
+                { header: 'Mã nhân viên', key: 'empCode', width: 15 },
+                { header: 'Họ và tên', key: 'fullName', width: 25 },
+                { header: 'Số báo cáo phải nộp', key: 'required', width: 20 },
+                { header: 'Báo cáo ngày', key: 'daily', width: 15 },
+                { header: 'Báo cáo tuần', key: 'weekly', width: 15 },
+                { header: 'Báo cáo tháng', key: 'monthly', width: 15 },
+                { header: 'Tỉ lệ đúng hạn (%)', key: 'rate', width: 20 }
             ]
-            worksheet['!cols'] = wscols
 
-            XLSX.writeFile(workbook, `Bao_Cao_${profile.full_name}_Thang_${month}_${year}.xlsx`)
+            import('@/lib/export-utils').then(({ exportToExcel }) => {
+                exportToExcel(exportData, `Bao_Cao_${profile.full_name}_Thang_${month}_${year}.xlsx`, 'Bao Cao Ca Nhan', columns)
+            })
+
         } catch (error) {
             console.error('Download error:', error)
         }

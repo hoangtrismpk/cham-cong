@@ -25,7 +25,7 @@ interface UseSettingsSyncReturn {
 export function useSettingsSync(options: UseSettingsSyncOptions = {}): UseSettingsSyncReturn {
     const {
         category,
-        pollingInterval = 10000, // 10 seconds default
+        pollingInterval = 60000,
         enabled = true
     } = options
 
@@ -74,7 +74,7 @@ export function useSettingsSync(options: UseSettingsSyncOptions = {}): UseSettin
                 setIsOutdated(true)
             }
         } catch (err) {
-            console.error('Error checking settings version:', err)
+            console.warn('⚠️ [useSettingsSync] Error checking settings version:', err)
         }
     }, [])
 
@@ -98,7 +98,10 @@ export function useSettingsSync(options: UseSettingsSyncOptions = {}): UseSettin
     useEffect(() => {
         if (!enabled || loading) return
 
-        const intervalId = setInterval(checkForUpdates, pollingInterval)
+        const intervalId = setInterval(() => {
+            // console.log('🔄 Checking for settings update...')
+            checkForUpdates().catch(() => { })
+        }, pollingInterval)
 
         return () => {
             clearInterval(intervalId)

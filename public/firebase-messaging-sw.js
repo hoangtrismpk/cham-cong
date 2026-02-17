@@ -53,6 +53,7 @@ self.addEventListener('notificationclick', (event) => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     shiftId: event.notification.data?.shiftId,
+                    campaignId: event.notification.data?.campaignId,
                     type: 'server_push'
                 })
             }).catch(e => console.error('Tracking error:', e))

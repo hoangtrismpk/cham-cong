@@ -141,7 +141,7 @@ export default function SettingsLayout({
                 <button
                     onClick={() => setIsCollapsed(!isCollapsed)}
                     className={cn("p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 transition-colors", collapsed && "mx-auto")}
-                    title={collapsed ? "Mở rộng" : "Thu gọn"}
+                    title={collapsed ? t.adminSettings.settingsLayout.expanded : t.adminSettings.settingsLayout.collapsed}
                 >
                     {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
                 </button>
@@ -196,7 +196,7 @@ export default function SettingsLayout({
                                                 <span className="font-medium text-sm truncate">{item.title}</span>
                                                 {item.comingSoon && (
                                                     <span className="text-[9px] px-1 py-0.5 bg-slate-800 text-slate-400 rounded border border-slate-700">
-                                                        Soon
+                                                        {t.adminSettings.settingsLayout.soon}
                                                     </span>
                                                 )}
                                             </div>
@@ -285,7 +285,7 @@ export default function SettingsLayout({
                                             <span className="font-medium text-sm">{item.title}</span>
                                             {item.comingSoon && (
                                                 <span className="text-[9px] px-1.5 py-0.5 bg-slate-800 text-slate-400 rounded border border-slate-700">
-                                                    Soon
+                                                    {t.adminSettings.settingsLayout.soon}
                                                 </span>
                                             )}
                                         </Link>
@@ -317,10 +317,10 @@ export default function SettingsLayout({
                                             className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-3"
                                         >
                                             <ChevronLeft className="h-4 w-4" />
-                                            <span className="text-sm">Quay lại Dashboard</span>
+                                            <span className="text-sm">{t.adminSettings.settingsLayout.backToDashboard}</span>
                                         </Link>
-                                        <h1 className="text-xl font-semibold text-white">Cấu hình hệ thống</h1>
-                                        <p className="text-sm text-slate-400 mt-1">Quản lý cài đặt toàn hệ thống</p>
+                                        <h1 className="text-xl font-semibold text-white">{t.adminSettings.settingsLayout.systemConfig}</h1>
+                                        <p className="text-sm text-slate-400 mt-1">{t.adminSettings.settingsLayout.manageSystemSettings}</p>
                                     </div>
 
                                     {/* Mobile Menu Navigation */}
@@ -386,7 +386,7 @@ export default function SettingsLayout({
                         </Sheet>
                         <div className="flex items-center gap-2">
                             <Settings className="h-4 w-4 text-blue-500" />
-                            <span className="font-bold text-white text-sm">Cấu hình</span>
+                            <span className="font-bold text-white text-sm">{t.adminSettings.settingsLayout.config}</span>
                         </div>
                     </div>
                 </div>
@@ -396,6 +396,6 @@ export default function SettingsLayout({
             <div className="flex-1 w-full">
                 {children}
             </div>
-        </div>
+        </div >
     )
 }

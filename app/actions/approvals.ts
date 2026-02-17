@@ -256,7 +256,7 @@ export async function approveActivity(id: string, type: string): Promise<{ succe
 
     try {
         let userId = ''
-        let notificationTitle = 'Yêu cầu được chấp thuận'
+        const notificationTitle = 'Yêu cầu được chấp thuận'
         let notificationBody = 'Yêu cầu của bạn đã được phê duyệt.'
 
         if (type === 'leave_request') {
@@ -332,8 +332,14 @@ export async function approveActivity(id: string, type: string): Promise<{ succe
         }
 
         if (userId) {
-            const { createNotification } = await import('@/app/actions/notification')
-            await createNotification(userId, notificationTitle, notificationBody, 'success')
+            const { sendNotification } = await import('@/app/actions/notification-system')
+            await sendNotification({
+                userId,
+                title: notificationTitle,
+                message: notificationBody,
+                type: 'success',
+                priority: 'high'
+            })
         }
 
         revalidatePath('/admin/approvals')
@@ -349,7 +355,7 @@ export async function rejectActivity(id: string, type: string, note: string): Pr
 
     try {
         let userId = ''
-        let notificationTitle = 'Yêu cầu bị từ chối'
+        const notificationTitle = 'Yêu cầu bị từ chối'
         let notificationBody = `Yêu cầu của bạn đã bị từ chối. Lý do: ${note}`
 
         if (type === 'leave_request') {
@@ -399,8 +405,14 @@ export async function rejectActivity(id: string, type: string, note: string): Pr
         }
 
         if (userId) {
-            const { createNotification } = await import('@/app/actions/notification')
-            await createNotification(userId, notificationTitle, notificationBody, 'error')
+            const { sendNotification } = await import('@/app/actions/notification-system')
+            await sendNotification({
+                userId,
+                title: notificationTitle,
+                message: notificationBody,
+                type: 'error',
+                priority: 'high'
+            })
         }
 
         revalidatePath('/admin/approvals')

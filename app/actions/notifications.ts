@@ -6,11 +6,13 @@ import { createAdminClient } from '@/utils/supabase/admin'
 export interface Notification {
     id: string
     user_id: string
-    type: 'report_approved' | 'report_changes_requested' | 'report_feedback' | 'report_updated'
+    type: string // Broaden for system_push
     title: string
     message?: string
     content?: string // Legacy or alternative column
     report_id?: string
+    campaign_id?: string
+    link?: string
     is_read: boolean
     created_at: string
 }
@@ -56,39 +58,44 @@ export async function createNotification(
 }
 
 export async function getNotifications(limit = 20, onlyUnread = false) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) return { notifications: [], unreadCount: 0 }
+        if (!user) return { notifications: [], unreadCount: 0 }
 
-    let query = supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(limit)
+        let query = supabase
+            .from('notifications')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(limit)
 
-    if (onlyUnread) {
-        query = query.eq('is_read', false)
-    }
+        if (onlyUnread) {
+            query = query.eq('is_read', false)
+        }
 
-    const { data, error } = await query
+        const { data, error } = await query
 
-    if (error) {
-        console.error('Get notifications error:', error)
+        if (error) {
+            console.error('Get notifications error:', error)
+            return { notifications: [], unreadCount: 0 }
+        }
+
+        // Get unread count
+        const { count } = await supabase
+            .from('notifications')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('is_read', false)
+
+        return {
+            notifications: data as Notification[],
+            unreadCount: count || 0
+        }
+    } catch (error) {
+        console.error('❌ [getNotifications] Unexpected error:', error)
         return { notifications: [], unreadCount: 0 }
-    }
-
-    // Get unread count
-    const { count } = await supabase
-        .from('notifications')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('is_read', false)
-
-    return {
-        notifications: data as Notification[],
-        unreadCount: count || 0
     }
 }
 

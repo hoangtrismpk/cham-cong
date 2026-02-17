@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 
 export async function POST(req: Request) {
     try {
-        const { shiftId, type } = await req.json()
+        const { shiftId, campaignId, type } = await req.json()
         const supabase = await createClient()
 
         const { data: { user } } = await supabase.auth.getUser()
@@ -11,18 +11,33 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        // Update the notification log
-        const { error } = await supabase
-            .from('notification_logs')
-            .update({ clicked_at: new Date().toISOString() })
-            .eq('user_id', user.id)
-            .eq('shift_id', shiftId)
-        // If we know the type (local/server_push), we could be more specific,
-        // but updating the most recent log for this shift is usually sufficient.
-        // Order by sent_at desc to get the latest one.
-        // NOTE: Supabase update logic applies to all matching rows unless limited.
-        // Since a user might have both local and server logs, we try to update both or specific if 'notification_type' was passed,
-        // but 'type' from payload is 'shift_reminder' or similar, not strict 'local'/'server_push'.
+        let error = null
+
+        if (campaignId) {
+            // Update Campaign Logs
+            const { error: logError } = await supabase
+                .from('notification_logs')
+                .update({ clicked_at: new Date().toISOString() })
+                .eq('user_id', user.id)
+                .eq('campaign_id', campaignId)
+
+            // Also update Notifications
+            const { error: notifError } = await supabase
+                .from('notifications')
+                .update({ is_read: true, clicked_at: new Date().toISOString() })
+                .eq('user_id', user.id)
+                .eq('campaign_id', campaignId)
+
+            if (logError || notifError) error = logError || notifError
+        } else if (shiftId) {
+            // Update Shift Logs
+            const { error: shiftError } = await supabase
+                .from('notification_logs')
+                .update({ clicked_at: new Date().toISOString() })
+                .eq('user_id', user.id)
+                .eq('shift_id', shiftId)
+            error = shiftError
+        }
 
         if (error) {
             console.error('Error tracking click:', error)

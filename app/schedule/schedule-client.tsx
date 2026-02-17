@@ -61,8 +61,8 @@ export function ScheduleClient({ user, departmentCount, workSettings }: Schedule
 
     const dateLocale = locale === 'vi' ? vi : undefined
 
-    // Shifts state
-    const [shifts, setShifts] = useState<Record<string, any>>({})
+    // Shifts state: Record<date, Event[]>
+    const [shifts, setShifts] = useState<Record<string, any[]>>({})
 
     // Calculate hours when times change
     useEffect(() => {
@@ -192,19 +192,24 @@ export function ScheduleClient({ user, departmentCount, workSettings }: Schedule
             toast.success('Đã gửi đơn thành công! Đang chờ duyệt.')
 
             // Add "Nghỉ" shift to calendar immediately
-            setShifts(prev => ({
-                ...prev,
-                [dateStr]: {
-                    id: 'temp-' + Date.now(),
-                    title: 'Nghỉ', // As requested
-                    time: t.schedule.fullDay,
-                    type: 'custom',
-                    status: 'pending',
-                    location: 'Remote/Home',
-                    members: departmentCount,
-                    colorClass: 'bg-amber-500 border-amber-500 text-amber-500' // Custom pending color
-                }
-            }))
+            const newLeave = {
+                id: 'temp-' + Date.now(),
+                work_date: dateStr,
+                title: 'Nghỉ (Chờ duyệt)',
+                time: `${leaveStartTime} - ${leaveEndTime}`,
+                type: 'leave',
+                status: 'pending',
+                source: 'leave',
+                location: 'Remote/Home',
+                members: 0,
+                colorClass: 'bg-rose-500 border-rose-500 text-rose-500',
+                is_leave: true
+            }
+
+            setShifts(prev => {
+                const currentEvents = prev[dateStr] || []
+                return { ...prev, [dateStr]: [...currentEvents, newLeave] }
+            })
 
             // Reset and Close
             setIsLeaveModalOpen(false)
@@ -222,25 +227,28 @@ export function ScheduleClient({ user, departmentCount, workSettings }: Schedule
 
 
     // Fetch shifts on mount and when viewDate changes
+    const viewMonthStr = format(viewDate, 'yyyy-MM')
+
     useEffect(() => {
         const fetchShifts = async () => {
-            const dateStr = format(viewDate, 'yyyy-MM')
-            const data = await getMonthlyShifts(dateStr)
+            const data = await getMonthlyShifts(viewMonthStr)
 
             // Need to map server data to UI format locally to ensure colorClass exists
-            const mappedShifts: Record<string, any> = {}
+            const mappedShifts: Record<string, any[]> = {}
             Object.keys(data).forEach(key => {
-                const s = data[key]
-                mappedShifts[key] = {
-                    ...s,
-                    colorClass: getShiftColor(s.shift_type), // Recalculate color
-                    members: s.members_count || departmentCount // Fallback
+                const dayEvents = data[key] // Array
+                if (Array.isArray(dayEvents)) {
+                    mappedShifts[key] = dayEvents.map(s => ({
+                        ...s,
+                        colorClass: s.colorClass || getShiftColor(s.type || s.shift_type),
+                        members: s.members_count || departmentCount
+                    }))
                 }
             })
             setShifts(mappedShifts)
         }
         fetchShifts()
-    }, [viewDate, departmentCount])
+    }, [viewMonthStr, departmentCount])
 
 
     // ... (rest of code)
@@ -299,13 +307,19 @@ export function ScheduleClient({ user, departmentCount, workSettings }: Schedule
                 time: `${savedShift.start_time} - ${savedShift.end_time}`,
                 colorClass: baseColor,
                 members: departmentCount,
-                status: 'pending' // Explicitly set pending for UI to pick up color
+                source: 'schedule',
+                status: 'pending'
             }
 
-            setShifts(prev => ({
-                ...prev,
-                [dateKey]: newShift
-            }))
+            setShifts(prev => {
+                const currentDayEvents = prev[dateKey] || []
+                // Keep leaves, replace other schedule
+                const otherEvents = currentDayEvents.filter(e => e.source === 'leave')
+                return {
+                    ...prev,
+                    [dateKey]: [...otherEvents, newShift]
+                }
+            })
 
             toast.success('Đã thêm ca làm việc thành công!')
             setIsModalOpen(false)
@@ -332,6 +346,26 @@ export function ScheduleClient({ user, departmentCount, workSettings }: Schedule
     const getStatusColor = (status: string, baseColor: string) => {
         if (status === 'pending') return 'bg-orange-500/20 border-orange-500 text-orange-500 border-dashed'
         return baseColor
+    }
+
+    // Helper to filter display events (Hide work shift if Full Day Leave exists)
+    const getDisplayEvents = (events: any[]) => {
+        if (!events || events.length === 0) return []
+
+        // Check if ANY leave covers the full work duration
+        // We compare start_time/end_time strings loosely (e.g. 08:30 vs 08:30:00)
+        // If leave starts <= work_start AND leave ends >= work_end => Full Day Leave
+        const hasFullDayLeave = events.some(e =>
+            e.source === 'leave' &&
+            ['approved', 'pending'].includes(e.status) &&
+            (e.time?.includes(workSettings.work_start_time) && e.time?.includes(workSettings.work_end_time))
+            // Note: Could be more robust by parsing time, but string check is safer for now given formatting
+        )
+
+        if (hasFullDayLeave) {
+            return events.filter(e => e.source === 'leave')
+        }
+        return events
     }
 
     // Calendar generation
@@ -365,6 +399,13 @@ export function ScheduleClient({ user, departmentCount, workSettings }: Schedule
     const openAddModal = (e: React.MouseEvent, day: Date) => {
         e.stopPropagation()
 
+        // Fulltime check
+        const isFulltime = user.contract_type === 'Permanent' || user.contract_type === 'Fulltime' || user?.contract_type?.toLowerCase().includes('full')
+        if (isFulltime) {
+            toast.info("Nhân viên Fulltime không được phép thay đổi lịch làm việc. Vui lòng đệ trình nghỉ phép nếu cần.")
+            return
+        }
+
         // Prevent past dates
         if (isBefore(day, startOfDay(new Date()))) {
             toast.error("Không thể đăng ký lịch cho ngày trong quá khứ")
@@ -374,28 +415,28 @@ export function ScheduleClient({ user, departmentCount, workSettings }: Schedule
         setModalDate(day)
 
         const dateKey = format(day, 'yyyy-MM-dd')
-        const existing = shifts[dateKey]
+        const dayEvents = shifts[dateKey] || []
+        // Find editable work shift (not leave)
+        const existing = dayEvents.find(s => s.source !== 'leave')
 
         if (existing) {
             // Edit Mode: Pre-fill
-            // Type mapping: 'full' -> 'full_day', 'custom' -> 'custom'
             let type = existing.type === 'full' ? 'full_day' : (existing.type || 'custom')
             if (['full_day', 'morning', 'afternoon'].includes(type) === false) type = 'custom';
 
             setShiftType(type)
 
-            // Time parsing 'HH:mm - HH:mm'
             if (existing.time && existing.time.includes(' - ')) {
                 const [s, e] = existing.time.split(' - ')
                 setStartTime(s || workSettings.work_start_time)
                 setEndTime(e || workSettings.work_end_time)
             } else {
-                setStartTime(workSettings.work_start_time)
-                setEndTime(workSettings.work_end_time)
+                setStartTime(existing.start_time || workSettings.work_start_time)
+                setEndTime(existing.end_time || workSettings.work_end_time)
             }
             setLocation(existing.location || workSettings.company_name)
         } else {
-            // New Mode: Reset form to defaults
+            // New Mode
             setShiftType('full_day')
             setStartTime(workSettings.work_start_time)
             setEndTime(workSettings.work_end_time)
@@ -406,25 +447,26 @@ export function ScheduleClient({ user, departmentCount, workSettings }: Schedule
     }
 
 
-    // Derived State for Sidebar
     const selectedDateKey = format(selectedDate, 'yyyy-MM-dd')
-    const selectedShift = shifts[selectedDateKey]
+    const selectedShifts = getDisplayEvents(shifts[selectedDateKey] || [])
 
     // Calculate Upcoming 7 Days
-    const upcomingShifts = []
+    const upcomingShifts: any[] = []
     const tomorrow = addDays(new Date(), 1)
     for (let i = 0; i < 7; i++) {
         const d = addDays(tomorrow, i)
         const k = format(d, 'yyyy-MM-dd')
-        if (shifts[k]) {
-            upcomingShifts.push({ date: d, ...shifts[k] })
-        }
+        const dayEvents = shifts[k] || []
+
+        dayEvents.forEach((event: any) => {
+            upcomingShifts.push({ ...event, date: d })
+        })
     }
     const totalUpcomingHours = upcomingShifts.reduce((acc, curr) => {
-        // Rough estimate calculator
-        if (curr.type === 'full_day') return acc + 8
+        if (curr.is_leave) return acc;
+        if (curr.type === 'full_day' || curr.type === 'full') return acc + 8
         if (curr.type === 'morning' || curr.type === 'afternoon') return acc + 4
-        return acc + 4 // Avg for custom
+        return acc + 8
     }, 0)
 
 
@@ -569,7 +611,8 @@ export function ScheduleClient({ user, departmentCount, workSettings }: Schedule
                                 const isSelected = isSameDay(day, selectedDate)
                                 const dateKey = format(day, 'yyyy-MM-dd')
                                 const shiftData = shifts[dateKey]
-                                const dayShifts = Array.isArray(shiftData) ? shiftData : (shiftData ? [shiftData] : []);
+                                const rawDayShifts = Array.isArray(shiftData) ? shiftData : (shiftData ? [shiftData] : []);
+                                const dayShifts = getDisplayEvents(rawDayShifts)
 
                                 return (
                                     <div
@@ -587,7 +630,7 @@ export function ScheduleClient({ user, departmentCount, workSettings }: Schedule
                                             {format(day, 'd')}
                                         </span>
 
-                                        {/* Shift Dots Indicator - Lower Position & Coloring */}
+                                        {/* Shift Dots Indicator - Ensure array handling */}
                                         <div className="flex gap-1 mt-1.5 absolute bottom-2">
                                             {dayShifts.map((s: any, i: number) => {
                                                 // Determine Dot Color Logic
@@ -629,79 +672,90 @@ export function ScheduleClient({ user, departmentCount, workSettings }: Schedule
                             Lịch trực ngày {format(selectedDate, 'dd/MM')}
                         </h3>
 
-                        {selectedShift ? (
+                        {selectedShifts.length > 0 ? (
                             <div className="space-y-4">
                                 <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest pl-1 mb-2">
                                     LỊCH TRỰC NGÀY {format(selectedDate, 'dd/MM')}
                                 </h3>
 
-                                <div
-                                    className="bg-[#16181b] rounded-[1.5rem] p-5 border border-white/5 relative overflow-hidden group active:bg-[#1c1f23] transition-colors"
-                                    onClick={(e) => openAddModal(e, selectedDate)}
-                                >
-                                    <div className="flex gap-5">
-                                        {/* TIME BOX */}
-                                        <div className="flex flex-col items-center justify-center bg-[#0d0e10] rounded-2xl border border-white/5 w-[5.5rem] h-[5.5rem] shrink-0 shadow-inner">
-                                            <span className="text-[9px] font-black text-cyan-500/50 uppercase tracking-widest mb-1">BẮT ĐẦU</span>
-                                            <span className="text-2xl font-black text-cyan-400 tracking-tighter">
-                                                {selectedShift.start_time || workSettings.work_start_time}
-                                            </span>
-                                        </div>
+                                {selectedShifts.map((selectedShift: any, idx: number) => {
+                                    const isLeave = selectedShift.source === 'leave'
+                                    return (
+                                        <div
+                                            key={idx}
+                                            className={`${isLeave ? 'bg-rose-500/10 border-rose-500/20' : 'bg-[#16181b] border-white/5'} rounded-[1.5rem] p-5 border relative overflow-hidden group active:bg-[#1c1f23] transition-colors`}
+                                            onClick={(e) => !isLeave && openAddModal(e, selectedDate)}
+                                        >
+                                            <div className="flex gap-5">
+                                                {/* TIME BOX */}
+                                                <div className={`flex flex-col items-center justify-center rounded-2xl border w-[5.5rem] h-[5.5rem] shrink-0 shadow-inner ${isLeave ? 'bg-rose-500/10 border-rose-500/20' : 'bg-[#0d0e10] border-white/5'}`}>
+                                                    <span className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isLeave ? 'text-rose-500/50' : 'text-cyan-500/50'}`}>{isLeave ? 'NGHỈ' : 'BẮT ĐẦU'}</span>
+                                                    <span className={`text-2xl font-black tracking-tighter ${isLeave ? 'text-rose-400' : 'text-cyan-400'}`}>
+                                                        {selectedShift.start_time || workSettings.work_start_time}
+                                                    </span>
+                                                </div>
 
-                                        {/* INFO COL */}
-                                        <div className="flex flex-col justify-center flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                {(() => {
-                                                    // Dynamic Status Logic
-                                                    const getStatusConfig = () => {
-                                                        if (selectedShift.status === 'pending')
-                                                            return { text: 'CHỜ DUYỆT', style: 'bg-amber-500/10 border-amber-500/20 text-amber-500' };
+                                                {/* INFO COL */}
+                                                <div className="flex flex-col justify-center flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        {(() => {
+                                                            // Dynamic Status Logic
+                                                            const getStatusConfig = () => {
+                                                                if (selectedShift.status === 'pending')
+                                                                    return { text: 'CHỜ DUYỆT', style: 'bg-amber-500/10 border-amber-500/20 text-amber-500' };
 
-                                                        const now = new Date();
-                                                        const [sH, sM] = (selectedShift.start_time || workSettings.work_start_time).split(':').map(Number);
-                                                        const startDt = new Date(selectedDate);
-                                                        startDt.setHours(sH, sM, 0, 0);
+                                                                if (selectedShift.is_leave)
+                                                                    return { text: 'NGHỈ PHÉP', style: 'bg-rose-500 text-black border-rose-500' }
 
-                                                        const [eH, eM] = (selectedShift.end_time || workSettings.work_end_time).split(':').map(Number);
-                                                        const endDt = new Date(selectedDate);
-                                                        endDt.setHours(eH, eM, 0, 0);
+                                                                const now = new Date();
+                                                                const [sH, sM] = (selectedShift.start_time || workSettings.work_start_time).split(':').map(Number);
+                                                                const startDt = new Date(selectedDate);
+                                                                startDt.setHours(sH, sM, 0, 0);
 
-                                                        if (now < startDt) return { text: 'SẮP DIỄN RA', style: 'bg-orange-500 text-black border-orange-500' };
-                                                        if (now > endDt) return { text: 'KẾT THÚC CA', style: 'bg-purple-500/20 text-purple-300 border-purple-500/50' };
+                                                                const [eH, eM] = (selectedShift.end_time || workSettings.work_end_time).split(':').map(Number);
+                                                                const endDt = new Date(selectedDate);
+                                                                endDt.setHours(eH, eM, 0, 0);
 
-                                                        return { text: 'ĐANG TRỰC', style: 'bg-cyan-500 text-black border-cyan-500' };
-                                                    };
+                                                                if (now < startDt) return { text: 'SẮP DIỄN RA', style: 'bg-orange-500 text-black border-orange-500' };
+                                                                if (now > endDt) return { text: 'KẾT THÚC CA', style: 'bg-purple-500/20 text-purple-300 border-purple-500/50' };
 
-                                                    const config = getStatusConfig();
+                                                                return { text: 'ĐANG TRỰC', style: 'bg-cyan-500 text-black border-cyan-500' };
+                                                            };
 
-                                                    return (
-                                                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider border ${config.style}`}>
-                                                            {config.text}
-                                                        </span>
-                                                    );
-                                                })()}
+                                                            const config = getStatusConfig();
+
+                                                            return (
+                                                                <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider border ${config.style}`}>
+                                                                    {config.text}
+                                                                </span>
+                                                            );
+                                                        })()}
+                                                    </div>
+                                                    <h4 className="text-xl font-bold text-white truncate mb-2">{selectedShift.title}</h4>
+
+                                                    <div className="flex items-center gap-1.5 text-slate-400 text-xs font-bold">
+                                                        <span className="material-symbols-outlined text-[16px] text-slate-500">location_on</span>
+                                                        <span className="truncate">{selectedShift.location}</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <h4 className="text-xl font-bold text-white truncate mb-2">{selectedShift.title}</h4>
 
-                                            <div className="flex items-center gap-1.5 text-slate-400 text-xs font-bold">
-                                                <span className="material-symbols-outlined text-[16px] text-slate-500">location_on</span>
-                                                <span className="truncate">{selectedShift.location}</span>
+                                            {/* FOOTER */}
+                                            <div className="mt-5 pt-4 border-t border-white/5 flex items-center justify-between">
+                                                <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wide">
+                                                    <span className="material-symbols-outlined text-[16px]">timer_off</span>
+                                                    <span className="italic">KẾT THÚC: <span className="text-slate-300">{selectedShift.end_time || workSettings.work_end_time}</span></span>
+                                                </div>
+                                                {!isLeave && (
+                                                    <div className="flex items-center gap-2 text-xs font-black text-cyan-400 uppercase tracking-widest">
+                                                        <span className="size-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.6)]"></span>
+                                                        TEAM: {selectedShift.members}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
-                                    </div>
-
-                                    {/* FOOTER */}
-                                    <div className="mt-5 pt-4 border-t border-white/5 flex items-center justify-between">
-                                        <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wide">
-                                            <span className="material-symbols-outlined text-[16px]">timer_off</span>
-                                            <span className="italic">KẾT THÚC: <span className="text-slate-300">{selectedShift.end_time || workSettings.work_end_time}</span></span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-xs font-black text-cyan-400 uppercase tracking-widest">
-                                            <span className="size-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.6)]"></span>
-                                            TEAM: {selectedShift.members}
-                                        </div>
-                                    </div>
-                                </div>
+                                    )
+                                })}
 
                                 <div className="space-y-3">
                                     <button
@@ -808,38 +862,25 @@ export function ScheduleClient({ user, departmentCount, workSettings }: Schedule
                                 ))}
                             </div>
 
-                            {/* Grid Days */}
                             <div className="grid grid-cols-7">
                                 {calendarDays.map((day, idx) => {
                                     const dateKey = format(day, 'yyyy-MM-dd')
-                                    const shift = shifts[dateKey]
+                                    const dayEvents = getDisplayEvents(shifts[dateKey] || [])
                                     const isSelected = isSameDay(day, selectedDate)
                                     const isCurrentMonth = isSameMonth(day, viewDate)
                                     const isTodayDate = isSameDay(day, new Date())
-
-                                    // Dynamic styling based on shift type/status
-                                    let shiftStyle = 'bg-slate-800/40 border-white/10 text-slate-400 hover:bg-slate-800'
-                                    if (shift) {
-                                        const baseColor = shift.colorClass;
-                                        if (shift.status === 'pending') {
-                                            shiftStyle = `bg-amber-500/10 border-amber-500/50 text-amber-500 border-dashed hover:bg-amber-500/20`
-                                        } else {
-                                            const colorName = shift.colorClass.split(' ')[0].replace('bg-', '')
-                                            shiftStyle = `bg-${colorName}/10 border-${colorName}/20 text-${colorName} hover:bg-${colorName}/20`
-                                        }
-                                    }
 
                                     return (
                                         <div
                                             key={idx}
                                             onClick={() => setSelectedDate(day)}
-                                            className={`h-36 p-3 border-r border-b border-border transition-all cursor-pointer group relative
+                                            className={`min-h-[9rem] p-2 border-r border-b border-border transition-all cursor-pointer group relative flex flex-col gap-1
                                                 ${!isCurrentMonth ? 'bg-slate-900/40 text-slate-700' : 'hover:bg-white/[0.02]'}
                                                 ${isSelected ? 'bg-primary/5 ring-1 ring-inset ring-primary/30 z-10' : ''}
                                                 ${idx % 7 === 6 ? 'border-r-0' : ''}
                                             `}
                                         >
-                                            <div className="flex justify-between items-start mb-2">
+                                            <div className="flex justify-between items-start mb-1">
                                                 <span className={`text-sm font-medium ${isTodayDate ? 'text-primary font-bold' : isCurrentMonth ? 'text-slate-400' : 'text-slate-600'
                                                     }`}>
                                                     {format(day, 'd')}
@@ -847,31 +888,36 @@ export function ScheduleClient({ user, departmentCount, workSettings }: Schedule
                                                 <div className="flex items-center gap-1">
                                                     <button
                                                         onClick={(e) => openAddModal(e, day)}
-                                                        className="size-6 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-primary/20"
+                                                        className="size-5 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-primary/20"
                                                     >
-                                                        <span className="material-symbols-outlined text-primary text-sm">add</span>
+                                                        <span className="material-symbols-outlined text-primary text-[10px]">add</span>
                                                     </button>
                                                     {isTodayDate && <span className="size-1.5 rounded-full bg-primary neon-glow"></span>}
                                                 </div>
                                             </div>
 
-                                            {shift && (
-                                                <div className={`p-2 rounded-xl border transition-all ${shiftStyle}`}>
-                                                    <p className={`text-[9px] font-black leading-tight uppercase`}>{shift.title}</p>
-                                                    <p className="text-[10px] font-bold mt-0.5">{shift.time}</p>
+                                            <div className="flex-1 flex flex-col gap-1 overflow-y-auto custom-scrollbar">
+                                                {dayEvents.map((shift: any, sIdx: number) => {
+                                                    let shiftStyle = 'bg-slate-800/40 border-white/10 text-slate-400'
+                                                    if (shift.status === 'pending') {
+                                                        shiftStyle = `bg-amber-500/10 border-amber-500/50 text-amber-500 border-dashed`
+                                                    } else if (shift.colorClass) {
+                                                        const colorName = shift.colorClass.split(' ')[0].replace('bg-', '')
+                                                        shiftStyle = `bg-${colorName}/10 border-${colorName}/20 text-${colorName}`
+                                                    }
 
-                                                    {shift.status === 'pending' && (
-                                                        <div className="flex items-center gap-1 mt-1 text-amber-500">
-                                                            <span className="material-symbols-outlined text-[10px]">hourglass_empty</span>
-                                                            <span className="text-[8px] font-bold uppercase tracking-wide">Pending</span>
+                                                    return (
+                                                        <div key={sIdx} className={`p-1.5 rounded-lg border transition-all ${shiftStyle} text-[9px]`}>
+                                                            <p className="font-black leading-tight truncate">{shift.title}</p>
+                                                            <p className="font-bold opacity-80 mt-0.5">{shift.time}</p>
                                                         </div>
-                                                    )}
-                                                </div>
-                                            )}
+                                                    )
+                                                })}
+                                            </div>
 
                                             {isSelected && (
-                                                <div className="absolute bottom-2 left-3">
-                                                    <span className="text-[8px] font-black text-primary/40 uppercase tracking-[0.2em]">{t.schedule.selected}</span>
+                                                <div className="absolute bottom-1 left-2 pointer-events-none">
+                                                    <span className="text-[6px] font-black text-primary/40 uppercase tracking-[0.2em]">{t.schedule.selected}</span>
                                                 </div>
                                             )}
                                         </div>
@@ -913,8 +959,6 @@ export function ScheduleClient({ user, departmentCount, workSettings }: Schedule
                         </h4>
 
                         <div className="p-6 bg-white/[0.03] border border-white/5 rounded-[2rem] relative overflow-hidden group shadow-lg">
-                            <div className={`absolute top-0 right-0 w-32 h-32 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl transition-all duration-700 ${selectedShift ? (selectedShift.type === 'morning' ? 'bg-sky-500/20' : selectedShift.type === 'afternoon' ? 'bg-purple-500/20' : 'bg-teal-500/20') : 'bg-slate-500/10'}`}></div>
-
                             <div className="flex items-center justify-between mb-5 relative z-10">
                                 <span className="text-[11px] font-black text-primary uppercase tracking-widest" suppressHydrationWarning>
                                     {format(selectedDate, 'MMM dd, yyyy')}
@@ -929,30 +973,44 @@ export function ScheduleClient({ user, departmentCount, workSettings }: Schedule
                                 )}
                             </div>
 
-                            {selectedShift ? (
-                                <>
-                                    <p className="text-white font-black text-xl mb-6 relative z-10">{selectedShift.title}</p>
-                                    <div className="space-y-4 pt-6 border-t border-white/5 relative z-10">
-                                        <div className="flex items-center gap-3 text-sm text-slate-400">
-                                            <div className="size-8 rounded-lg bg-slate-800/50 flex items-center justify-center border border-white/5 text-primary/60">
-                                                <span className="material-symbols-outlined text-lg">schedule</span>
+                            {selectedShifts.length > 0 ? (
+                                <div className="space-y-4 relative z-10  max-h-[300px] overflow-y-auto custom-scrollbar">
+                                    {selectedShifts.map((shift: any, idx: number) => (
+                                        <div key={idx} className="pb-4 border-b border-white/5 last:border-0 last:pb-0">
+                                            <p className="text-white font-black text-lg mb-2">{shift.title}</p>
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-3 text-sm text-slate-400">
+                                                    <div className="size-8 rounded-lg bg-slate-800/50 flex items-center justify-center border border-white/5 text-primary/60">
+                                                        <span className="material-symbols-outlined text-lg">schedule</span>
+                                                    </div>
+                                                    <span className="font-bold">{shift.time}</span>
+                                                </div>
+                                                {!shift.is_leave && (
+                                                    <div className="flex items-center gap-3 text-sm text-slate-400">
+                                                        <div className="size-8 rounded-lg bg-slate-800/50 flex items-center justify-center border border-white/5 text-primary/60">
+                                                            <span className="material-symbols-outlined text-lg">location_on</span>
+                                                        </div>
+                                                        <span className="font-bold">{shift.location}</span>
+                                                    </div>
+                                                )}
+                                                {!shift.is_leave && (
+                                                    <div className="flex items-center gap-3 text-sm text-slate-400">
+                                                        <div className="size-8 rounded-lg bg-slate-800/50 flex items-center justify-center border border-white/5 text-primary/60">
+                                                            <span className="material-symbols-outlined text-lg">group</span>
+                                                        </div>
+                                                        <span className="font-bold">{shift.members} {t.schedule.teamMembers}</span>
+                                                    </div>
+                                                )}
+                                                {shift.is_leave && (
+                                                    <div className="flex items-center gap-2 mt-1 px-3 py-1.5 rounded-lg bg-rose-500/20 text-rose-400 w-fit border border-rose-500/30">
+                                                        <span className="material-symbols-outlined text-sm">event_busy</span>
+                                                        <span className="text-[10px] font-bold uppercase">Nghỉ Phép</span>
+                                                    </div>
+                                                )}
                                             </div>
-                                            <span className="font-bold">{selectedShift.time}</span>
                                         </div>
-                                        <div className="flex items-center gap-3 text-sm text-slate-400">
-                                            <div className="size-8 rounded-lg bg-slate-800/50 flex items-center justify-center border border-white/5 text-primary/60">
-                                                <span className="material-symbols-outlined text-lg">location_on</span>
-                                            </div>
-                                            <span className="font-bold">{selectedShift.location}</span>
-                                        </div>
-                                        <div className="flex items-center gap-3 text-sm text-slate-400">
-                                            <div className="size-8 rounded-lg bg-slate-800/50 flex items-center justify-center border border-white/5 text-primary/60">
-                                                <span className="material-symbols-outlined text-lg">group</span>
-                                            </div>
-                                            <span className="font-bold">{selectedShift.members} {t.schedule.teamMembers}</span>
-                                        </div>
-                                    </div>
-                                </>
+                                    ))}
+                                </div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center py-8 opacity-50 relative z-10">
                                     <span className="material-symbols-outlined text-4xl mb-2">event_busy</span>

@@ -27,7 +27,7 @@ export function useAutoCheckOut(workSettings: any) {
 
                 const { data: profile } = await supabase
                     .from('profiles')
-                    .select('auto_checkout_enabled')
+                    .select('auto_checkout_enabled, clock_out_remind_mode, clock_out_remind_minutes')
                     .eq('id', user.id)
                     .single()
 
@@ -35,6 +35,9 @@ export function useAutoCheckOut(workSettings: any) {
                     console.log('🤖 Auto-CheckOut: Disabled by user.')
                     return
                 }
+
+                const remindMode = profile.clock_out_remind_mode ?? 'before'
+                const remindMinutes = profile.clock_out_remind_minutes ?? 5
 
                 // Get Today in VN Time (YYYY-MM-DD)
                 const today = new Intl.DateTimeFormat('en-CA', {
@@ -85,15 +88,25 @@ export function useAutoCheckOut(workSettings: any) {
                     const diffMs = now.getTime() - shiftEnd.getTime()
                     const diffMins = diffMs / 60000
 
-                    console.log(`🤖 Shift ${schedule.start_time}-${schedule.end_time}: diff from end = ${diffMins.toFixed(1)} mins`)
+                    console.log(`🤖 Shift ${schedule.start_time}-${schedule.end_time}: diff from end = ${diffMins.toFixed(1)} mins (mode: ${remindMode}, window: ${remindMinutes} mins)`)
 
-                    // Allow auto-checkout from 30 mins before end time to 8 hours after
-                    // diffMins > 0 means we're PAST the end time (good for checkout)
+                    // Time window check based on user's preference
+                    // diffMins > 0 means we're PAST the end time
                     // diffMins < 0 means we're BEFORE the end time
-                    if (diffMins >= -30 && diffMins <= 480) {
-                        shouldCheckOut = true
-                        console.log('🤖 Match found: Time to auto-checkout!', schedule.title, 'ended at', schedule.end_time)
-                        break
+                    if (remindMode === 'before') {
+                        // Allow from X minutes before end time to 8 hours after
+                        if (diffMins >= -remindMinutes && diffMins <= 480) {
+                            shouldCheckOut = true
+                            console.log(`🤖 Match (before mode): ${remindMinutes}min before shift end`, schedule.title)
+                            break
+                        }
+                    } else {
+                        // 'after' mode: Allow from shift end to X minutes after, or anytime up to 8 hours late
+                        if (diffMins >= 0 && diffMins <= Math.max(remindMinutes, 480)) {
+                            shouldCheckOut = true
+                            console.log(`🤖 Match (after mode): ${remindMinutes}min after shift end`, schedule.title)
+                            break
+                        }
                     }
                 }
 

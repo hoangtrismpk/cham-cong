@@ -7,6 +7,9 @@ import { getDepartmentMemberCount } from '@/app/actions/profile'
 
 import { getWorkSettings } from '@/app/actions/settings'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function SchedulePage() {
     const supabase = await createClient()
 

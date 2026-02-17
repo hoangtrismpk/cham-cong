@@ -51,17 +51,21 @@ export async function submitLeaveRequest(formData: FormData) {
     }
 
     // NOTIFICATION: Notify Admins
-    const { data: adminRole } = await supabase.from('roles').select('id').eq('name', 'admin').single()
-    if (adminRole) {
-        const { data: admins } = await supabase.from('profiles').select('id').eq('role_id', adminRole.id)
-        if (admins && admins.length > 0) {
-            const { createNotification } = await import('@/app/actions/notification') // Dynamic import to avoid circular dep issues if any
-            const adminIds = admins.map(a => a.id)
-            // Parallel send
-            await Promise.all(adminIds.map(id =>
-                createNotification(id, 'Đơn xin phép mới', `Nhân viên đã gửi một yêu cầu xin nghỉ phép mới.`, 'info')
-            ))
-        }
+    const { data: admins } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('role', 'admin') // Simplified role check
+
+    if (admins && admins.length > 0) {
+        const { sendNotification } = await import('@/app/actions/notification-system')
+        const adminIds = admins.map(a => a.id)
+
+        await sendNotification({
+            userIds: adminIds,
+            title: 'Đơn xin phép mới',
+            message: `${user.user_metadata?.full_name || user.email} đã gửi một yêu cầu xin nghỉ phép mới.`,
+            type: 'info'
+        })
     }
 
     return { data }
