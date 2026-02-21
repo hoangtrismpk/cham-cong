@@ -64,3 +64,14 @@ Thumbs.db
 Design/
 
 firebase-b64.txt
+docs/logs/
+
+# Agent/Internal (Antigravity/Tiger)
+.agent/
+GEMINI.md
+ERRORS.md
+
+# Supabase Local
+supabase/.temp/
+supabase/seed_hoang_tri_pattern*.sql
+

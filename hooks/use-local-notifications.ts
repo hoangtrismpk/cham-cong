@@ -48,6 +48,8 @@ export function useLocalNotifications() {
 
                 // Schedule local notifications for each shift
                 schedules.forEach((schedule) => {
+                    const [y, m, d] = schedule.work_date.split('-');
+                    const dateDisplay = `${d}/${m}/${y}`;
                     const shiftDateTime = new Date(`${schedule.work_date}T${schedule.start_time}`)
                     const reminderTime = new Date(shiftDateTime.getTime() - 10 * 60000) // 10 mins before
                     const now = new Date()
@@ -64,7 +66,7 @@ export function useLocalNotifications() {
                                     try {
                                         const registration = await navigator.serviceWorker.ready
                                         await registration.showNotification('⏰ Sắp đến giờ làm việc!', {
-                                            body: `Ca làm "${schedule.title || 'của bạn'}" bắt đầu lúc ${schedule.start_time}. Hãy vào app chấm công!`,
+                                            body: `Ca làm "${schedule.title || 'của bạn'}" ngày ${dateDisplay} bắt đầu lúc ${schedule.start_time}. Hãy vào app chấm công!`,
                                             icon: '/iconapp.png',
                                             badge: '/iconapp.png',
                                             tag: `shift-${schedule.id}`,
@@ -84,7 +86,7 @@ export function useLocalNotifications() {
                                     // Fallback for desktop browsers without SW
                                     try {
                                         new Notification('⏰ Sắp đến giờ làm việc!', {
-                                            body: `Ca làm "${schedule.title || 'của bạn'}" bắt đầu lúc ${schedule.start_time}. Hãy vào app chấm công!`,
+                                            body: `Ca làm "${schedule.title || 'của bạn'}" ngày ${dateDisplay} bắt đầu lúc ${schedule.start_time}. Hãy vào app chấm công!`,
                                             icon: '/iconapp.png',
                                             badge: '/iconapp.png',
                                             tag: `shift-${schedule.id}`,

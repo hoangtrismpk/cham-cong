@@ -37,6 +37,10 @@ import { messaging, VAPID_KEY, getToken } from '@/utils/firebase'
 import { useSidebar } from '@/contexts/sidebar-context'
 import { Badge } from '@/components/ui/badge'
 import { MobileHeader } from '@/components/mobile-header'
+import { QRCodeSVG } from 'qrcode.react'
+import { enrollMFA, challengeMFA, verifyMFA, unenrollMFA, getMFAFactors } from '@/app/actions/mfa'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 
 interface SettingsClientProps {
     user: any
@@ -66,6 +70,13 @@ export function SettingsClient({ user }: SettingsClientProps) {
     const [isSaving, setIsSaving] = useState(false)
     const [isUploading, setIsUploading] = useState(false)
 
+    // MFA State
+    const [mfaFactorId, setMfaFactorId] = useState<string | null>(null)
+    const [isMfaModalOpen, setIsMfaModalOpen] = useState(false)
+    const [mfaEnrollData, setMfaEnrollData] = useState<any>(null)
+    const [mfaCode, setMfaCode] = useState('')
+    const [verifyLoading, setVerifyLoading] = useState(false)
+
     // Refs for scrolling
     const generalRef = useRef<HTMLElement>(null)
     const securityRef = useRef<HTMLElement>(null)
@@ -85,11 +96,21 @@ export function SettingsClient({ user }: SettingsClientProps) {
                 setPushEnabled(false)
             }
         })
+
         getClockSettings().then(settings => {
             setClockInMinutes(settings.clockInRemindMinutes)
             setClockOutMode(settings.clockOutRemindMode)
             setClockOutMinutes(settings.clockOutRemindMinutes)
         })
+
+        // Fetch MFA Status
+        getMFAFactors().then(factors => {
+            const verifiedFactor = factors?.find((f: any) => f.factor_type === 'totp' && f.status === 'verified')
+            if (verifiedFactor) {
+                setMfaFactorId(verifiedFactor.id)
+            }
+        })
+
         loadMyProfile()
     }, [])
 
@@ -406,6 +427,51 @@ export function SettingsClient({ user }: SettingsClientProps) {
         }))
     }
 
+    const handleMfaToggle = async (checked: boolean) => {
+        if (checked) {
+            // Turning ON
+            try {
+                const data = await enrollMFA()
+                setMfaEnrollData(data)
+                setMfaCode('')
+                setIsMfaModalOpen(true)
+            } catch (error: any) {
+                toast.error(error.message || 'Không thể bắt đầu thiết lập 2FA')
+            }
+        } else {
+            // Turning OFF
+            if (!mfaFactorId) return
+            const confirmed = window.confirm('Bạn có chắc chắn muốn tắt xác thực 2 bước? Tài khoản của bạn sẽ giảm độ bảo mật.')
+            if (!confirmed) return
+
+            try {
+                await unenrollMFA(mfaFactorId)
+                setMfaFactorId(null)
+                toast.success('Đã tắt xác thực 2 bước')
+            } catch (error: any) {
+                toast.error(error.message || 'Không thể tắt 2FA')
+            }
+        }
+    }
+
+    const onVerifyMfa = async () => {
+        if (!mfaEnrollData || !mfaCode || mfaCode.length !== 6) return
+        setVerifyLoading(true)
+        try {
+            const { id: challengeId } = await challengeMFA(mfaEnrollData.id)
+            await verifyMFA(mfaEnrollData.id, challengeId, mfaCode)
+
+            setMfaFactorId(mfaEnrollData.id)
+            setIsMfaModalOpen(false)
+            setMfaEnrollData(null)
+            toast.success('Đã kích hoạt xác thực 2 bước thành công!')
+        } catch (error: any) {
+            toast.error(error.message || 'Mã xác thực không đúng')
+        } finally {
+            setVerifyLoading(false)
+        }
+    }
+
     if (!profile) return <div className="p-10 text-white text-center flex items-center justify-center h-screen"><span className="material-symbols-outlined animate-spin text-4xl text-primary">progress_activity</span></div>
 
     return (
@@ -602,7 +668,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
                                                     <p className="text-slate-500 text-[10px]">Tăng cường bảo mật</p>
                                                 </div>
                                             </div>
-                                            <Switch />
+                                            <Switch checked={!!mfaFactorId} onCheckedChange={handleMfaToggle} />
                                         </div>
                                     </div>
                                 </div>
@@ -842,7 +908,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
                                     <div className="text-purple-500 size-10 bg-purple-500/10 rounded-xl flex items-center justify-center"><span className="material-symbols-outlined">security_update_good</span></div>
                                     <div><p className="text-white font-bold text-sm">Xác thực 2 bước (2FA)</p></div>
                                 </div>
-                                <Switch />
+                                <Switch checked={!!mfaFactorId} onCheckedChange={handleMfaToggle} />
                             </div>
                         </div>
                     </section>
@@ -964,6 +1030,46 @@ export function SettingsClient({ user }: SettingsClientProps) {
                             </label>
                         </div>
                     </div>
+                </DialogContent>
+            </Dialog>
+            <Dialog open={isMfaModalOpen} onOpenChange={setIsMfaModalOpen}>
+                <DialogContent className="bg-slate-900 border-slate-700 text-white sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                            <span className="material-symbols-outlined text-purple-500">qr_code_scanner</span>
+                            Thiết lập 2FA
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    {mfaEnrollData && (
+                        <div className="flex flex-col items-center space-y-6 py-4">
+                            <div className="bg-white p-4 rounded-xl">
+                                <QRCodeSVG value={mfaEnrollData.totp.uri} size={180} />
+                            </div>
+
+                            <div className="space-y-2 text-center w-full">
+                                <p className="text-sm text-slate-400">1. Quét mã QR bằng ứng dụng <strong>Google Authenticator</strong> hoặc <strong>Authy</strong>.</p>
+                                <p className="text-sm text-slate-400">2. Nhập mã gồm 6 chữ số từ ứng dụng:</p>
+                            </div>
+
+                            <div className="flex flex-col gap-4 w-full max-w-[240px]">
+                                <Input
+                                    className="bg-slate-950 border-slate-700 text-center text-2xl tracking-[0.5em] font-mono h-14"
+                                    placeholder="000000"
+                                    maxLength={6}
+                                    value={mfaCode}
+                                    onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                />
+                                <Button
+                                    onClick={onVerifyMfa}
+                                    disabled={mfaCode.length !== 6 || verifyLoading}
+                                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold h-12"
+                                >
+                                    {verifyLoading ? <span className="material-symbols-outlined animate-spin">progress_activity</span> : 'Xác thực & Kích hoạt'}
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </DialogContent>
             </Dialog>
         </div>

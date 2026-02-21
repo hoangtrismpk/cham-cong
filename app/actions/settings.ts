@@ -130,8 +130,27 @@ export async function updateSettings(updates: { key: string; value: unknown }[])
         throw new Error('Unauthorized')
     }
 
+    // Get old values for audit
+    const keys = updates.map(u => u.key)
+    const { data: oldSettings } = await supabase
+        .from('system_settings')
+        .select('key, value')
+        .in('key', keys)
+
+    const oldValuesMap: Record<string, any> = {}
+    oldSettings?.forEach(setting => {
+        try {
+            oldValuesMap[setting.key] = JSON.parse(setting.value)
+        } catch {
+            oldValuesMap[setting.key] = setting.value
+        }
+    })
+
+    const newValuesMap: Record<string, any> = {}
+
     // Update each setting
     for (const { key, value } of updates) {
+        newValuesMap[key] = value
         const { error } = await supabase
             .from('system_settings')
             .update({
@@ -146,6 +165,15 @@ export async function updateSettings(updates: { key: string; value: unknown }[])
             throw new Error(`Failed to update setting: ${key}`)
         }
     }
+
+    // AuditLog
+    await createAuditLog({
+        action: 'UPDATE',
+        resourceType: 'setting',
+        description: `Cập nhật ${updates.length} cấu hình hệ thống`,
+        oldValues: oldValuesMap,
+        newValues: newValuesMap
+    })
 
     revalidatePath('/admin/settings')
     revalidatePath('/admin/employees')

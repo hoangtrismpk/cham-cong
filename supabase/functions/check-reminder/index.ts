@@ -66,6 +66,7 @@ Deno.serve(async (req) => {
         const windowEnd = new Date(now.getTime() + MAX_REMINDER_WINDOW_MINUTES * 60000);
         const windowEndTimeVN = timeFormatter.format(windowEnd);
         const todayStr = dateFormatter.format(now);
+        const viewDate = new Intl.DateTimeFormat('vi-VN', { timeZone: VN_TIMEZONE, day: '2-digit', month: '2-digit', year: 'numeric' }).format(now);
 
         log(`🕒 Time: ${currentTimeVN} -> ${windowEndTimeVN} | Date: ${todayStr} (DOW: ${dayOfWeek})`);
 
@@ -183,8 +184,8 @@ Deno.serve(async (req) => {
                 notification: {
                     title: isIn ? '⏰ Sắp đến giờ làm việc!' : '🏠 Hết giờ làm việc rồi!',
                     body: isIn
-                        ? `Ca "${target.title}" bắt đầu lúc ${target.time}. Đừng quên chấm công vào nhé!`
-                        : `Ca "${target.title}" kết thúc lúc ${target.time}. Đừng quên chấm công ra trước khi về nhé!`,
+                        ? `Ca "${target.title}" ngày ${viewDate} bắt đầu lúc ${target.time}. Đừng quên chấm công vào nhé!`
+                        : `Ca "${target.title}" ngày ${viewDate} kết thúc lúc ${target.time}. Đừng quên chấm công ra trước khi về nhé!`,
                 },
                 data: { url: '/', type: `shift_reminder_${target.type}` },
                 tokens: target.tokens,

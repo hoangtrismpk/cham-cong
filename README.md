@@ -32,8 +32,8 @@ Hệ thống quản lý chấm công hiện đại dành cho doanh nghiệp, tí
    ```
 
 ## 📖 Tài liệu nội bộ
-- [Kiến trúc Push Notification](./docs/PUSH_NOTIFICATION_TECH.md)
-- [Hướng dẫn kiểm thử Mobile](./MOBILE_TESTING.md)
+- [Kiến trúc Push Notification](./docs/tech/PUSH_NOTIFICATION_TECH.md)
+- [Hướng dẫn kiểm thử Mobile](./docs/plans/MOBILE_TESTING.md)
 
 ---
 Được xây dựng với ❤️ bởi Tiger Agent.

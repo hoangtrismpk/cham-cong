@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { addDays, parseISO, format } from 'date-fns'
+import { createAuditLog } from './audit-logs'
 
 export interface ActivityItem {
     id: string
@@ -267,8 +268,21 @@ export async function approveActivity(id: string, type: string): Promise<{ succe
                 if (error) throw error
 
                 userId = request.user_id
-                const dateStr = new Date(request.leave_date).toLocaleDateString('vi-VN')
-                notificationBody = `Đơn xin nghỉ phép ngày ${dateStr} của bạn đã được duyệt.`
+                const date = new Date(request.leave_date)
+                const dateStr = date.toLocaleDateString('vi-VN')
+                const dayName = getVietnameseDayName(date)
+
+                notificationBody = `Đơn nghỉ phép ngày ${dayName} - ${dateStr} của bạn đã được duyệt.`
+
+                // Audit Log
+                await createAuditLog({
+                    action: 'APPROVE',
+                    resourceType: 'leave_request',
+                    resourceId: id,
+                    description: `Duyệt đơn nghỉ phép ngày ${dateStr}`,
+                    oldValues: { status: 'pending' },
+                    newValues: { status: 'approved' }
+                })
             }
         }
         else if (type === 'attendance_edit' || type === 'profile_update') {
@@ -315,6 +329,16 @@ export async function approveActivity(id: string, type: string): Promise<{ succe
             // 3. Update Request Status
             const { error: updateError } = await supabase.from('change_requests').update({ status: 'approved' }).eq('id', id)
             if (updateError) throw updateError
+
+            // Audit Log
+            await createAuditLog({
+                action: 'APPROVE',
+                resourceType: 'attendance',
+                resourceId: id,
+                description: `Duyệt yêu cầu thay đổi ${request.type}`,
+                oldValues: { status: 'pending' },
+                newValues: { status: 'approved' }
+            })
         }
         else if (type === 'schedule_change') {
             const { data: schedule } = await supabase.from('work_schedules').select('user_id, work_date').eq('id', id).single()
@@ -326,6 +350,16 @@ export async function approveActivity(id: string, type: string): Promise<{ succe
                 userId = schedule.user_id
                 const dateStr = new Date(schedule.work_date).toLocaleDateString('vi-VN')
                 notificationBody = `Đề xuất đổi lịch làm việc ngày ${dateStr} đã được phê duyệt.`
+
+                // Audit Log
+                await createAuditLog({
+                    action: 'APPROVE',
+                    resourceType: 'schedule',
+                    resourceId: id,
+                    description: `Duyệt đổi lịch ngày ${dateStr}`,
+                    oldValues: { status: 'pending' },
+                    newValues: { status: 'active' }
+                })
             } else {
                 throw new Error('Không tìm thấy yêu cầu hợp lệ')
             }
@@ -374,6 +408,16 @@ export async function rejectActivity(id: string, type: string, note: string): Pr
                 userId = request.user_id
                 const dateStr = new Date(request.leave_date).toLocaleDateString('vi-VN')
                 notificationBody = `Đơn xin nghỉ phép ngày ${dateStr} của bạn đã bị từ chối. Lý do: ${note}`
+
+                // Audit Log
+                await createAuditLog({
+                    action: 'REJECT',
+                    resourceType: 'leave_request',
+                    resourceId: id,
+                    description: `Từ chối nghỉ phép ngày ${dateStr}. Lý do: ${note}`,
+                    oldValues: { status: 'pending' },
+                    newValues: { status: 'rejected', note }
+                })
             }
         } else if (type === 'attendance_edit' || type === 'profile_update') {
             const { data: request } = await supabase.from('change_requests').select('user_id, payload').eq('id', id).single()
@@ -390,6 +434,16 @@ export async function rejectActivity(id: string, type: string, note: string): Pr
                     const dateStr = new Date(request.payload.work_date).toLocaleDateString('vi-VN')
                     notificationBody = `Yêu cầu sửa công ngày ${dateStr} của bạn đã bị từ chối. Lý do: ${note}`
                 }
+
+                // Audit Log
+                await createAuditLog({
+                    action: 'REJECT',
+                    resourceType: 'attendance',
+                    resourceId: id,
+                    description: `Từ chối yêu cầu ${type}. Lý do: ${note}`,
+                    oldValues: { status: 'pending' },
+                    newValues: { status: 'rejected', note }
+                })
             }
         } else if (type === 'schedule_change') {
             const { data: schedule } = await supabase.from('work_schedules').select('user_id, work_date').eq('id', id).single()
@@ -401,6 +455,16 @@ export async function rejectActivity(id: string, type: string, note: string): Pr
                 userId = schedule.user_id
                 const dateStr = new Date(schedule.work_date).toLocaleDateString('vi-VN')
                 notificationBody = `Đề xuất đổi lịch làm việc ngày ${dateStr} đã bị từ chối. Lý do: ${note}`
+
+                // Audit Log
+                await createAuditLog({
+                    action: 'REJECT',
+                    resourceType: 'schedule',
+                    resourceId: id,
+                    description: `Từ chối đổi lịch ngày ${dateStr}. Lý do: ${note}`,
+                    oldValues: { status: 'pending' },
+                    newValues: { status: 'rejected', note }
+                })
             }
         }
 
@@ -417,7 +481,13 @@ export async function rejectActivity(id: string, type: string, note: string): Pr
 
         revalidatePath('/admin/approvals')
         return { success: true }
+
     } catch (error: any) {
         return { success: false, message: error.message }
     }
+}
+
+function getVietnameseDayName(date: Date) {
+    const days = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7']
+    return days[date.getDay()]
 }

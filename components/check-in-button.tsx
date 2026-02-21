@@ -58,7 +58,11 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
                         setError(result.error)
                         setLoading(false)
                     } else {
-                        setSuccess(isCheckedIn ? t.messages.checkOutSuccess : t.messages.checkInSuccess)
+                        // Add date time to success message
+                        const now = new Date()
+                        const dateStr = new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(now)
+                        const baseMsg = isCheckedIn ? t.messages.checkOutSuccess : t.messages.checkInSuccess
+                        setSuccess(`${baseMsg} (${dateStr})`)
                         setIsProcessing(true)
                         setTimeout(() => {
                             router.refresh()
@@ -84,7 +88,11 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
                         setError(result.error)
                         setLoading(false)
                     } else {
-                        setSuccess(isCheckedIn ? t.messages.checkOutSuccess : t.messages.checkInSuccess)
+                        // Add date time to success message
+                        const now = new Date()
+                        const dateStr = new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(now)
+                        const baseMsg = isCheckedIn ? t.messages.checkOutSuccess : t.messages.checkInSuccess
+                        setSuccess(`${baseMsg} (${dateStr})`)
                         setIsProcessing(true)
                         setTimeout(() => {
                             router.refresh()
