@@ -140,7 +140,7 @@ export async function getEmployees(filters: EmployeeFilters = {}) {
                 name,
                 display_name
             ),
-            manager:profiles!manager_id (
+            manager:manager_id (
                 id,
                 full_name
             )
@@ -240,7 +240,7 @@ export async function getEmployeeById(id: string | number) {
                 name,
                 display_name
             ),
-            manager:profiles!manager_id (
+            manager:manager_id (
                 id,
                 full_name
             )

@@ -70,14 +70,9 @@ export default function EmployeeDetailPage() {
 
             setEmployee(result.employee)
 
-            // Load attendance data for current month
-            const now = new Date()
-            const startDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
-            const endDate = format(now, 'yyyy-MM-dd')
-
-            const attendanceData = await getAttendanceLogsRange(startDate, endDate, 1, 20)
-            setAttendanceLogs(attendanceData.logs || [])
-            setAttendanceStats(attendanceData.stats || {})
+            // We delay loading attendance until the user opens the tab
+            setAttendanceLogs([])
+            setAttendanceStats({})
 
             // Load quick stats
             const statsResult = await getEmployeeQuickStats(result.employee.id)
@@ -100,7 +95,24 @@ export default function EmployeeDetailPage() {
             setLoading(false)
         }
         loadData()
+        loadData()
     }, [employeeId, router])
+
+    // Lazy load attendance tab
+    useEffect(() => {
+        if (activeTab === 'attendance' && employee && attendanceLogs.length === 0) {
+            async function loadAttendance() {
+                const now = new Date()
+                const startDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+                const endDate = format(now, 'yyyy-MM-dd')
+
+                const attendanceData = await getAttendanceLogsRange(startDate, endDate, 1, 20, employee!.id)
+                setAttendanceLogs(attendanceData.logs || [])
+                setAttendanceStats(attendanceData.stats || {})
+            }
+            loadAttendance()
+        }
+    }, [activeTab, employee])
 
     if (loading) {
         return (
@@ -281,7 +293,9 @@ export default function EmployeeDetailPage() {
                                             </div>
                                             <div>
                                                 <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">{t.admin.detail.labels.gender}</p>
-                                                <p className="text-white font-medium">{employee.gender || 'N/A'}</p>
+                                                <p className="text-white font-medium">
+                                                    {employee.gender === 'Male' ? t.common.male : employee.gender === 'Female' ? t.common.female : employee.gender === 'Other' ? t.common.other : employee.gender || 'N/A'}
+                                                </p>
                                             </div>
                                             <div>
                                                 <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">{t.admin.detail.labels.email}</p>
