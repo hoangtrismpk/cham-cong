@@ -1004,54 +1004,50 @@ export async function getAllAttendanceLogs() {
     )
 }
 
-// Get Quick Stats for Employee Profile Page
+// Get Quick Stats for Employee Profile Page (OPTIMIZED: parallel queries)
 export async function getEmployeeQuickStats(userId: string) {
     const supabase = await createClient()
     const now = new Date()
 
-    console.log('🔍 [Quick Stats] Fetching for user:', userId)
-
-    // Get current month date range
+    // Date ranges
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-
-    // Get last 3 months for punctuality calculation
     const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1)
+    const startStr = startOfMonth.toISOString().split('T')[0]
+    const endStr = endOfMonth.toISOString().split('T')[0]
+    const threeMonthsStr = threeMonthsAgo.toISOString().split('T')[0]
 
-    console.log('📅 Date ranges:', {
-        currentMonth: `${startOfMonth.toISOString().split('T')[0]} to ${endOfMonth.toISOString().split('T')[0]}`,
-        threeMonths: `${threeMonthsAgo.toISOString().split('T')[0]} onwards`
-    })
+    // Run ALL queries in parallel instead of sequential
+    const [monthResult, punctualityResult, leaveResult, overtimeResult] = await Promise.all([
+        // 1. Current month attendance
+        supabase
+            .from('attendance_logs')
+            .select('check_in_time, check_out_time, overtime_hours')
+            .eq('user_id', userId)
+            .gte('work_date', startStr)
+            .lte('work_date', endStr),
 
-    // Fetch attendance logs for current month
-    const { data: monthLogs, error: monthError } = await supabase
-        .from('attendance_logs')
-        .select('*')
-        .eq('user_id', userId)
-        .gte('work_date', startOfMonth.toISOString().split('T')[0])
-        .lte('work_date', endOfMonth.toISOString().split('T')[0])
+        // 2. Last 3 months punctuality
+        supabase
+            .from('attendance_logs')
+            .select('status')
+            .eq('user_id', userId)
+            .gte('work_date', threeMonthsStr),
 
-    console.log('📊 Month logs:', { count: monthLogs?.length || 0, error: monthError })
+        // 3. Leave balance
+        supabase
+            .from('leave_requests')
+            .select('status')
+            .eq('user_id', userId)
+            .in('status', ['approved', 'pending']),
 
-    // Fetch attendance logs for last 3 months (for punctuality)
-    const { data: punctualityLogs, error: punctualityError } = await supabase
-        .from('attendance_logs')
-        .select('status')
-        .eq('user_id', userId)
-        .gte('work_date', threeMonthsAgo.toISOString().split('T')[0])
+        // 4. Overtime via shared logic
+        getAttendanceLogsRange(startStr, endStr, 1, 1000, userId).catch(() => null)
+    ])
 
-    console.log('⏰ Punctuality logs:', { count: punctualityLogs?.length || 0, error: punctualityError })
-
-    // Fetch leave requests to calculate PTO balance
-    // Schema: id, user_id, leave_date, status
-    // Assumption: Each record is 1 day
-    const { data: leaveData, error: leaveError } = await supabase
-        .from('leave_requests')
-        .select('status')
-        .eq('user_id', userId)
-        .in('status', ['approved', 'pending'])
-
-    console.log('🏖️ Leave data:', { count: leaveData?.length || 0, error: leaveError })
+    const monthLogs = monthResult.data
+    const punctualityLogs = punctualityResult.data
+    const leaveData = leaveResult.data
 
     // Calculate Punctuality (% on-time in last 3 months)
     let punctualityRate = 0
@@ -1060,58 +1056,32 @@ export async function getEmployeeQuickStats(userId: string) {
         punctualityRate = Math.round((onTimeCount / punctualityLogs.length) * 100)
     }
 
+    // Calculate Overtime
     let overtimeHours = 0
-    // --- Reuse getAttendanceLogsRange for CONSISTENT Overtime Calculation ---
-    // This ensures Quick Stats matches the Monthly Chart exactly
-    try {
-        const statsData = await getAttendanceLogsRange(
-            startOfMonth.toISOString().split('T')[0],
-            endOfMonth.toISOString().split('T')[0],
-            1, 1000, // Get all logs for the month
-            userId // PASS THE TARGET USER ID!
-        )
-
-        // Use the calculated overtime from the shared logic
-        if (statsData.stats && typeof statsData.stats.totalOvertimeHours === 'number') {
-            overtimeHours = statsData.stats.totalOvertimeHours
-            console.log('⏱️ Overtime (Synced):', overtimeHours)
-        } else if (monthLogs && monthLogs.length > 0) {
-            // Fallback (old simple logic) if sync fails
-            overtimeHours = monthLogs.reduce((total, log) => {
-                // ... (fallback logic) ...
-                const explicitOT = log.overtime_hours ? parseFloat(log.overtime_hours.toString()) : 0
-                if (explicitOT > 0) return total + explicitOT
-                // Simple diff fallback
-                if (log.check_in_time && log.check_out_time) {
-                    const diff = new Date(log.check_out_time).getTime() - new Date(log.check_in_time).getTime()
-                    const hours = diff / 3600000
-                    if (hours > 9) return total + (hours - 9)
-                }
-                return total
-            }, 0)
-        }
-    } catch (err) {
-        console.error('Error syncing overtime logic:', err)
+    if (overtimeResult && (overtimeResult as any).stats?.totalOvertimeHours) {
+        overtimeHours = (overtimeResult as any).stats.totalOvertimeHours
+    } else if (monthLogs && monthLogs.length > 0) {
+        overtimeHours = monthLogs.reduce((total: number, log: any) => {
+            const explicitOT = log.overtime_hours ? parseFloat(log.overtime_hours.toString()) : 0
+            if (explicitOT > 0) return total + explicitOT
+            if (log.check_in_time && log.check_out_time) {
+                const diff = new Date(log.check_out_time).getTime() - new Date(log.check_in_time).getTime()
+                const hours = diff / 3600000
+                if (hours > 9) return total + (hours - 9)
+            }
+            return total
+        }, 0)
     }
 
-    // Calculate PTO Balance (assume 12 days per year, minus used days)
-    const annualPTO = 12 // Standard PTO days per year
-    // Each record in leave_requests is 1 day
+    // Calculate PTO Balance
+    const annualPTO = 12
     const usedPTO = leaveData?.length || 0
     const ptoBalance = Math.max(0, annualPTO - usedPTO)
 
-    console.log('📈 Final stats:', { punctualityRate, overtimeHours, ptoBalance, usedPTO })
-
     return {
-        punctuality: punctualityRate, // Percentage (0-100)
-        ptoBalance: ptoBalance.toFixed(1), // Days remaining
-        overtime: overtimeHours.toFixed(1), // Hours this month
-        error: monthError || punctualityError || leaveError,
-        // Debug info (cleaned up)
-        _debug: {
-            userId,
-            syncMethod: 'getAttendanceLogsRange',
-            overtime: overtimeHours
-        }
+        punctuality: punctualityRate,
+        ptoBalance: ptoBalance.toFixed(1),
+        overtime: overtimeHours.toFixed(1),
+        error: monthResult.error || punctualityResult.error || leaveResult.error,
     }
 }
