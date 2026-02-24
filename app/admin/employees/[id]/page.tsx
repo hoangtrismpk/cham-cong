@@ -37,6 +37,8 @@ import {
     XCircle,
     AlertCircle,
     Activity,
+    ChevronLeft,
+    ChevronRight,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import Link from 'next/link'
@@ -56,6 +58,10 @@ export default function EmployeeDetailPage() {
     const [loading, setLoading] = useState(true)
     const [nextShift, setNextShift] = useState<any>(null)
     const [activeTab, setActiveTab] = useState('personal')
+    const [attendanceLoading, setAttendanceLoading] = useState(false)
+    const [attendancePage, setAttendancePage] = useState(1)
+    const [attendanceTotal, setAttendanceTotal] = useState(0)
+    const ATTENDANCE_PAGE_SIZE = 10
 
     // Load employee data (fast: show profile first)
     useEffect(() => {
@@ -85,19 +91,22 @@ export default function EmployeeDetailPage() {
 
     // Lazy load attendance tab
     useEffect(() => {
-        if (activeTab === 'attendance' && employee && attendanceLogs.length === 0) {
+        if (activeTab === 'attendance' && employee) {
             async function loadAttendance() {
+                setAttendanceLoading(true)
                 const now = new Date()
                 const startDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
                 const endDate = format(now, 'yyyy-MM-dd')
 
-                const attendanceData = await getAttendanceLogsRange(startDate, endDate, 1, 20, employee!.id)
+                const attendanceData = await getAttendanceLogsRange(startDate, endDate, attendancePage, ATTENDANCE_PAGE_SIZE, employee!.id)
                 setAttendanceLogs(attendanceData.logs || [])
                 setAttendanceStats(attendanceData.stats || {})
+                setAttendanceTotal(attendanceData.totalCount || 0)
+                setAttendanceLoading(false)
             }
             loadAttendance()
         }
-    }, [activeTab, employee])
+    }, [activeTab, employee, attendancePage])
 
     if (loading) {
         return (
@@ -484,25 +493,25 @@ export default function EmployeeDetailPage() {
                             <Card className="bg-[#161b22] border-slate-800">
                                 <CardContent className="pt-6">
                                     <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">{t.admin.detail.attendance.monthlyRate}</p>
-                                    <p className="text-3xl font-black text-emerald-500">94%</p>
+                                    <p className="text-3xl font-black text-emerald-500">{attendanceStats?.punctuality || 0}%</p>
                                 </CardContent>
                             </Card>
                             <Card className="bg-[#161b22] border-slate-800">
                                 <CardContent className="pt-6">
                                     <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">{t.admin.detail.attendance.onTime}</p>
-                                    <p className="text-3xl font-black text-cyan-500">{attendanceStats?.daysPresent || 0}</p>
+                                    <p className="text-3xl font-black text-cyan-500">{(attendanceStats?.daysPresent || 0) - (attendanceStats?.lateCount || 0)}</p>
                                 </CardContent>
                             </Card>
                             <Card className="bg-[#161b22] border-slate-800">
                                 <CardContent className="pt-6">
                                     <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">{t.admin.detail.attendance.late}</p>
-                                    <p className="text-3xl font-black text-amber-500">2</p>
+                                    <p className="text-3xl font-black text-amber-500">{attendanceStats?.lateCount || 0}</p>
                                 </CardContent>
                             </Card>
                             <Card className="bg-[#161b22] border-slate-800">
                                 <CardContent className="pt-6">
                                     <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">{t.admin.detail.attendance.absent}</p>
-                                    <p className="text-3xl font-black text-rose-500">1</p>
+                                    <p className="text-3xl font-black text-rose-500">{attendanceStats?.absentCount || 0}</p>
                                 </CardContent>
                             </Card>
                         </div>
@@ -531,9 +540,16 @@ export default function EmployeeDetailPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {attendanceLogs.length > 0 ? (
+                                        {attendanceLoading ? (
+                                            <TableRow>
+                                                <TableCell colSpan={5} className="py-20 text-center">
+                                                    <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                                                    <p className="text-sm text-slate-500">{t.common.loading}</p>
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : attendanceLogs.length > 0 ? (
                                             attendanceLogs.map((log) => (
-                                                <TableRow key={log.id} className="border-slate-800 hover:bg-slate-800/40">
+                                                <TableRow key={log.id || `${log.work_date}-${log.user_id}`} className="border-slate-800 hover:bg-slate-800/40">
                                                     <TableCell className="font-medium">
                                                         {format(new Date(log.work_date), 'MMM dd, yyyy')}
                                                     </TableCell>
@@ -576,6 +592,36 @@ export default function EmployeeDetailPage() {
                                         )}
                                     </TableBody>
                                 </Table>
+
+                                {attendanceTotal > ATTENDANCE_PAGE_SIZE && (
+                                    <div className="flex items-center justify-between mt-6 px-2">
+                                        <p className="text-xs text-slate-500">
+                                            {t.timesheets.showingEntries.replace('{count}', attendanceLogs.length.toString())} ({t.admin.employeeManagement.pagination.of} {attendanceTotal})
+                                        </p>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="bg-slate-800 border-slate-700 h-8 font-bold"
+                                                onClick={() => setAttendancePage(prev => Math.max(1, prev - 1))}
+                                                disabled={attendancePage === 1}
+                                            >
+                                                <ChevronLeft className="h-4 w-4 mr-1" />
+                                                {t.timesheets.prev}
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="bg-slate-800 border-slate-700 h-8 font-bold"
+                                                onClick={() => setAttendancePage(prev => prev + 1)}
+                                                disabled={attendancePage * ATTENDANCE_PAGE_SIZE >= attendanceTotal}
+                                            >
+                                                {t.timesheets.next}
+                                                <ChevronRight className="h-4 w-4 ml-1" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </TabsContent>

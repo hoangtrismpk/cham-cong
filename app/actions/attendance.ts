@@ -860,6 +860,7 @@ function calculateStats(logs: any[], startDate: Date, endDate: Date, settings: a
         tempDate.setDate(tempDate.getDate() + 1)
     }
 
+    let lateCount = 0
     logs.forEach(log => {
         if (log.check_in_time && log.check_out_time) {
             // ... (Same logic as processLogs but aggregating totals)
@@ -912,11 +913,15 @@ function calculateStats(logs: any[], startDate: Date, endDate: Date, settings: a
             totalOTMinutes += otMinutes
         }
 
-        if (log.status === 'late' && log.late_minutes > 0) {
-            totalLateMinutes += log.late_minutes
+        if (log.status === 'late') {
+            lateCount++
+            if (log.late_minutes > 0) {
+                totalLateMinutes += log.late_minutes
+            }
         }
-
     })
+
+    const punctuality = totalWorkdays > 0 ? Math.round(((daysPresent - lateCount) / totalWorkdays) * 100) : 100
 
     return {
         totalHours: Math.round(((totalStandardMinutes + totalOTMinutes) / 60) * 10) / 10,
@@ -925,7 +930,10 @@ function calculateStats(logs: any[], startDate: Date, endDate: Date, settings: a
         totalWorkdays,
         totalDaysInRange,
         lateMinutes: totalLateMinutes,
-        lateHours: Math.round((totalLateMinutes / 60) * 10) / 10
+        lateHours: Math.round((totalLateMinutes / 60) * 10) / 10,
+        lateCount,
+        punctuality: Math.max(0, Math.min(100, punctuality)),
+        absentCount: Math.max(0, totalWorkdays - daysPresent)
     }
 }
 
