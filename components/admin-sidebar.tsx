@@ -83,6 +83,7 @@ export function AdminSidebar({ className, mobile, onLinkClick, preloadedPermissi
         { href: '/admin/attendance', label: t.admin.attendance, icon: 'schedule', permission: 'attendance.view' },
         { href: '/admin/reports', label: t.admin.reports, icon: 'analytics', permission: 'reports.view' },
         { href: '/admin/audit-logs', label: t.admin.auditLogs, icon: 'history', permission: 'settings.view' },
+        { href: '/admin/email-templates', label: 'Email Templates', icon: 'mail', permission: 'settings.view' },
         { href: '/admin/settings', label: t.admin.settings, icon: 'settings', permission: 'settings.view' },
     ]
 

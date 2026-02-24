@@ -143,9 +143,9 @@ export default function OrganizationSettingsClient({
     return (
         <div className="space-y-8 max-w-5xl mx-auto p-6 pb-24">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
+                <div className="space-y-1.5">
                     <h2 className="text-2xl font-bold tracking-tight text-white">{t.adminSettings.organization.title}</h2>
-                    <p className="text-slate-400 mt-1">{t.adminSettings.organization.description}</p>
+                    <p className="text-slate-400 leading-relaxed">{t.adminSettings.organization.description}</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <AlertDialog>
@@ -201,9 +201,9 @@ export default function OrganizationSettingsClient({
                             <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
                                 <Building2 className="w-5 h-5" />
                             </div>
-                            <div>
+                            <div className="space-y-1">
                                 <CardTitle>{t.adminSettings.organization.departments.title}</CardTitle>
-                                <CardDescription className="text-slate-500">{t.adminSettings.organization.departments.description}</CardDescription>
+                                <CardDescription className="text-slate-500 leading-snug">{t.adminSettings.organization.departments.description}</CardDescription>
                             </div>
                         </div>
                     </CardHeader>
@@ -283,9 +283,9 @@ export default function OrganizationSettingsClient({
                             <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500">
                                 <Briefcase className="w-5 h-5" />
                             </div>
-                            <div>
+                            <div className="space-y-1">
                                 <CardTitle>{t.adminSettings.organization.jobTitles.title}</CardTitle>
-                                <CardDescription className="text-slate-500">{t.adminSettings.organization.jobTitles.description}</CardDescription>
+                                <CardDescription className="text-slate-500 leading-snug">{t.adminSettings.organization.jobTitles.description}</CardDescription>
                             </div>
                         </div>
                     </CardHeader>

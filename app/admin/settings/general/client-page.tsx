@@ -39,6 +39,8 @@ interface GeneralSettings {
     company_wifi_ip: string
     require_gps_and_wifi: boolean
     work_off_days: number[]
+    allow_grace_period: boolean
+    grace_period_minutes: number
 }
 
 const defaultSettings: GeneralSettings = {
@@ -57,7 +59,9 @@ const defaultSettings: GeneralSettings = {
     max_distance_meters: 100,
     company_wifi_ip: '14.161.22.181',
     require_gps_and_wifi: false,
-    work_off_days: [6, 0] // Default: Sat, Sun
+    work_off_days: [6, 0], // Default: Sat, Sun
+    allow_grace_period: false,
+    grace_period_minutes: 5
 }
 
 export default function GeneralSettingsClientPage() {
@@ -89,7 +93,9 @@ export default function GeneralSettingsClientPage() {
                     max_distance_meters: (data.max_distance_meters as number) || 100,
                     company_wifi_ip: (data.company_wifi_ip as string) || '14.161.22.181',
                     require_gps_and_wifi: (data.require_gps_and_wifi as boolean) || false,
-                    work_off_days: (data.work_off_days as number[]) || [6, 0]
+                    work_off_days: (data.work_off_days as number[]) || [6, 0],
+                    allow_grace_period: (data.allow_grace_period as boolean) || false,
+                    grace_period_minutes: (data.grace_period_minutes as number) || 5
                 })
             } catch (error) {
                 console.error('Failed to load settings:', error)
@@ -163,9 +169,9 @@ export default function GeneralSettingsClientPage() {
         <div className="p-6 max-w-4xl mx-auto">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
-                <div>
+                <div className="space-y-1.5">
                     <h1 className="text-2xl font-bold text-white uppercase tracking-wider">{t.adminSettings.generalSettings.title}</h1>
-                    <p className="text-slate-400 mt-1">
+                    <p className="text-slate-400 leading-relaxed">
                         {t.adminSettings.generalSettings.description}
                     </p>
                 </div>
@@ -276,6 +282,40 @@ export default function GeneralSettingsClientPage() {
                                 />
                             </div>
                         </div>
+                        <Separator className="bg-slate-700" />
+                        <div className="space-y-4 pt-2">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-1.5">
+                                    <Label className="text-white">{t.adminSettings.generalSettings.gracePeriod.enable}</Label>
+                                    <p className="text-xs text-slate-500">
+                                        {t.adminSettings.generalSettings.gracePeriod.description}
+                                    </p>
+                                </div>
+                                <Switch
+                                    checked={settings.allow_grace_period}
+                                    onCheckedChange={(checked) => handleChange('allow_grace_period', checked)}
+                                />
+                            </div>
+
+                            {settings.allow_grace_period && (
+                                <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                                    <div className="flex items-center justify-between">
+                                        <Label>{t.adminSettings.generalSettings.gracePeriod.minutes}</Label>
+                                        <span className="text-green-400 font-bold">
+                                            {settings.grace_period_minutes} phút
+                                        </span>
+                                    </div>
+                                    <Slider
+                                        value={[settings.grace_period_minutes]}
+                                        onValueChange={(value) => handleChange('grace_period_minutes', value[0])}
+                                        max={60}
+                                        min={1}
+                                        step={1}
+                                        className="w-full"
+                                    />
+                                </div>
+                            )}
+                        </div>
                     </CardContent>
                 </Card>
 
@@ -380,7 +420,7 @@ export default function GeneralSettingsClientPage() {
                         </div>
                         <Separator className="bg-slate-700" />
                         <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
+                            <div className="space-y-1.5">
                                 <Label>{t.adminSettings.generalSettings.wifiRules.requireBoth}</Label>
                                 <p className="text-xs text-slate-500">
                                     {t.adminSettings.generalSettings.wifiRules.requireBothNote}

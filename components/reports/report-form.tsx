@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Calendar as CalendarIcon, X, Send, FileText, UserCheck, Search, Check, CheckCircle2 } from 'lucide-react'
+import { Calendar as CalendarIcon, X, Send, FileText, UserCheck, Search, Check, CheckCircle2, Lock } from 'lucide-react'
 import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
@@ -13,6 +13,7 @@ import { toast } from 'sonner'
 import { submitReport, updateReportContent, WorkReport } from '@/app/actions/work-reports'
 import { MediaPicker } from '@/components/wordpress/media-picker'
 import { createClient } from '@/utils/supabase/client'
+import { getSettings } from '@/app/actions/settings'
 
 // Placeholder text based on report type
 const PLACEHOLDERS = {
@@ -41,6 +42,7 @@ interface Manager {
     avatar_url: string | null
     role_display: string
     job_title?: string
+    isLocked?: boolean
 }
 
 interface ReportFormProps {
@@ -100,7 +102,43 @@ export default function ReportForm({ initialDate, initialType = 'daily', onSucce
             try {
                 const supabase = createClient()
 
-                // Get all users with their roles
+                const { data: { user } } = await supabase.auth.getUser()
+                if (!user) return
+
+                // 1. Fetch settings
+                const settingsData = await getSettings('reports') as any
+                const requireDirectManager = settingsData.reports_require_direct_manager ?? true
+                const defaultRecipients = settingsData.reports_default_recipients || []
+
+                // 2. Build list of IDs we need
+                const userIdsToFetch: string[] = [...defaultRecipients]
+
+                // Get current user's profile to find manager
+                const { data: myProfile, error: profileErr } = await supabase
+                    .from('profiles')
+                    .select('manager_id')
+                    .eq('id', user.id)
+                    .single()
+
+                if (profileErr) {
+                    console.error('Error fetching my profile:', profileErr)
+                }
+
+                let myManagerId: string | null = null;
+                if (requireDirectManager && myProfile?.manager_id) {
+                    myManagerId = myProfile.manager_id
+                    if (!userIdsToFetch.includes(myProfile.manager_id)) {
+                        userIdsToFetch.push(myProfile.manager_id)
+                    }
+                }
+
+                if (userIdsToFetch.length === 0) {
+                    setManagers([])
+                    setIsLoadingManagers(false)
+                    return
+                }
+
+                // Get profiles for all these users
                 const { data, error } = await supabase
                     .from('profiles')
                     .select(`
@@ -116,55 +154,29 @@ export default function ReportForm({ initialDate, initialType = 'daily', onSucce
                             permissions
                         )
                     `)
-                    .not('role_id', 'is', null)
-                    .order('full_name')
+                    .in('id', userIdsToFetch)
 
-                if (error) {
-                    console.error('Error loading managers:', error)
-                    throw error
-                }
-
-                if (!data || data.length === 0) {
-                    console.log('No users found with roles')
+                if (error || !data) {
+                    console.error('Error loading recipients:', error)
                     setManagers([])
                     return
                 }
 
-                // Filter users who can receive reports (admin or have reports.view permission)
-                const managersList = data
-                    .filter((profile: any) => {
-                        const role = profile.roles
-                        if (!role) return false
+                const managersList: Manager[] = data.map(u => ({
+                    id: u.id,
+                    full_name: u.full_name,
+                    email: u.email,
+                    avatar_url: u.avatar_url,
+                    role_display: Array.isArray(u.roles) ? (u.roles as any[])[0]?.display_name || 'N/A' : (u.roles as any)?.display_name || 'N/A',
+                    job_title: u.job_title,
+                    isLocked: true // These settings-driven users are permanently selected
+                }))
 
-                        const permissions = role.permissions || []
-                        const roleName = role.name?.toLowerCase()
-
-                        // Admin has all permissions
-                        if (permissions.includes('*')) return true
-
-                        // Has reports.view permission
-                        if (permissions.includes('reports.view')) return true
-                        if (permissions.includes('reports.*')) return true
-
-                        // Or is admin/accountant role
-                        if (roleName === 'admin' || roleName === 'accountant') return true
-
-                        return false
-                    })
-                    .map((profile: any) => ({
-                        id: profile.id,
-                        full_name: profile.full_name,
-                        email: profile.email,
-                        avatar_url: profile.avatar_url,
-                        role_display: profile.roles?.display_name || 'N/A',
-                        job_title: profile.job_title
-                    }))
-
-                console.log('Managers found:', managersList.length)
                 setManagers(managersList)
+                setSelectedManagers(managersList.map(m => m.id))
             } catch (error) {
                 console.error('Error loading managers:', error)
-                toast.error('Không thể tải danh sách quản lý')
+                toast.error('Không thể tải danh sách người nhận báo cáo')
             } finally {
                 setIsLoadingManagers(false)
             }
@@ -405,9 +417,12 @@ export default function ReportForm({ initialDate, initialType = 'daily', onSucce
                                 return (
                                     <div
                                         key={manager.id}
-                                        onClick={() => toggleManager(manager.id)}
+                                        onClick={() => {
+                                            if (!manager.isLocked) toggleManager(manager.id)
+                                        }}
                                         className={cn(
-                                            "relative group flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all border duration-300",
+                                            "relative group flex items-center gap-3 p-3 rounded-2xl transition-all border duration-300",
+                                            manager.isLocked ? "cursor-not-allowed opacity-90" : "cursor-pointer",
                                             isSelected
                                                 ? "bg-cyan-500/10 border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.1)]"
                                                 : "bg-[#0d131a] border-slate-800 hover:border-slate-700 hover:bg-slate-800/30"
@@ -428,7 +443,11 @@ export default function ReportForm({ initialDate, initialType = 'daily', onSucce
                                             </div>
                                             {isSelected && (
                                                 <div className="absolute -top-1 -right-1 h-4 w-4 bg-cyan-500 rounded-full flex items-center justify-center border-2 border-[#161b22] shadow-sm animate-in zoom-in duration-200">
-                                                    <Check className="h-2.5 w-2.5 text-black stroke-[3px]" />
+                                                    {manager.isLocked ? (
+                                                        <Lock className="h-2.5 w-2.5 text-black stroke-[3px]" />
+                                                    ) : (
+                                                        <Check className="h-2.5 w-2.5 text-black stroke-[3px]" />
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
@@ -445,7 +464,7 @@ export default function ReportForm({ initialDate, initialType = 'daily', onSucce
                                                     "text-[9px] font-bold uppercase tracking-widest transition-colors",
                                                     isSelected ? "text-cyan-500/80" : "text-slate-500 group-hover:text-slate-400"
                                                 )}>
-                                                    {(manager as any).role_display || 'Quản lý'}
+                                                    {manager.job_title || 'Chưa cập nhật chức danh'}
                                                 </span>
                                             </div>
                                         </div>

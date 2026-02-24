@@ -24,6 +24,7 @@ export type ResourceType =
     | 'attendance'
     | 'schedule'
     | 'shift'
+    | 'overtime'
 
 export interface AuditLogEntry {
     id: string

@@ -1,11 +1,13 @@
 'use client'
 
 import { format } from 'date-fns'
+import { vi } from 'date-fns/locale'
 import { useState, useEffect } from 'react'
 import { DashboardSidebar } from './dashboard-sidebar'
 import { LanguageSwitcher } from './language-switcher'
 import { NotificationBell } from './notification-bell'
 import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context'
+import { useI18n } from '@/contexts/i18n-context'
 
 interface DashboardLayoutProps {
     user: any
@@ -14,12 +16,19 @@ interface DashboardLayoutProps {
 
 function DashboardLayoutContent({ user, children }: DashboardLayoutProps) {
     const { isOpen, setIsOpen } = useSidebar()
+    const { locale } = useI18n()
     const [dateStr, setDateStr] = useState('')
     const [isDesktop, setIsDesktop] = useState(false)
 
     useEffect(() => {
-        setDateStr(format(new Date(), 'EEEE, MMM d, yyyy'))
-    }, [])
+        if (locale === 'vi') {
+            const formatted = format(new Date(), 'EEEE, dd/MM/yyyy', { locale: vi })
+            // Capitalize the first letter (thứ ba -> Thứ ba)
+            setDateStr(formatted.charAt(0).toUpperCase() + formatted.slice(1))
+        } else {
+            setDateStr(format(new Date(), 'EEEE, MMM d, yyyy'))
+        }
+    }, [locale])
 
     useEffect(() => {
         const checkDesktop = () => {

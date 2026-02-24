@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { MobileHeader } from '@/components/mobile-header'
 import { NotificationBell } from '@/components/notification-bell'
+import { OvertimeRequestModal } from '@/components/overtime-request-modal'
 
 interface TimesheetsClientProps {
     user: any
@@ -38,6 +39,7 @@ export function TimesheetsClient({ user, initialData, workSettings }: Timesheets
     const [customRange, setCustomRange] = useState({ start: '', end: '' })
     const [showFilterDropdown, setShowFilterDropdown] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
+    const [isOTModalOpen, setIsOTModalOpen] = useState(false)
 
     // Report Issue State
     const [isReportModalOpen, setIsReportModalOpen] = useState(false)
@@ -384,7 +386,13 @@ export function TimesheetsClient({ user, initialData, workSettings }: Timesheets
                             </button>
                         </div>
                     )}
-
+                    <Button
+                        onClick={() => setIsOTModalOpen(true)}
+                        className="bg-purple-600 hover:bg-purple-500 text-white rounded-xl gap-2 font-bold text-xs cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(147,51,234,0.3)] hover:shadow-[0_0_20px_rgba(147,51,234,0.5)] border border-purple-400/30"
+                    >
+                        <span className="material-symbols-outlined text-sm">bolt</span>
+                        {locale === 'vi' ? 'ĐĂNG KÝ TĂNG CA' : 'REGISTER OT'}
+                    </Button>
                 </div>
             </header>
 
@@ -406,11 +414,16 @@ export function TimesheetsClient({ user, initialData, workSettings }: Timesheets
                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{t.timesheets.daysPresent}</p>
                         <p className="text-2xl font-black text-white">{data.stats.daysPresent}<span className="text-[10px] text-slate-600 block">/ {data.stats.totalWorkdays} NGÀY</span></p>
                     </div>
+                    <div className="min-w-[140px] p-5 bg-card/40 rounded-3xl border border-white/5 relative overflow-hidden shrink-0">
+                        <div className="absolute top-0 right-0 size-12 bg-rose-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-xl"></div>
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{t.timesheets.lateHours}</p>
+                        <p className="text-2xl font-black text-white">{data.stats.lateHours || 0}<span className="text-[10px] text-slate-600 block">{locale === 'vi' ? 'GIỜ' : 'HOURS'}</span></p>
+                    </div>
                 </div>
 
                 <div className="max-w-7xl mx-auto md:space-y-8">
                     {/* --- DESKTOP STATS CARDS --- */}
-                    <div className="hidden md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                    <div className="hidden md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {/* Hours */}
                         <div className="bg-card rounded-[2rem] border border-border p-6 relative overflow-hidden group">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:bg-primary/20 transition-all duration-700"></div>
@@ -459,34 +472,18 @@ export function TimesheetsClient({ user, initialData, workSettings }: Timesheets
                                 </div>
                             </div>
                         </div>
-                        {/* Monthly Leave */}
+                        {/* Late Hours */}
                         <div className="bg-card rounded-[2rem] border border-border p-6 relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:bg-emerald-500/20 transition-all duration-700"></div>
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:bg-rose-500/20 transition-all duration-700"></div>
                             <div className="flex flex-col gap-6 relative z-10">
-                                <div className="size-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-emerald-400 text-xl">calendar_view_month</span>
+                                <div className="size-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-rose-400 text-xl">schedule</span>
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{t.timesheets.paidLeaveMonth}</p>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{t.timesheets.lateHours}</p>
                                     <div className="flex items-baseline gap-2">
-                                        <span className="text-3xl font-black text-white">{data.stats.usedLeaveMonth}</span>
-                                        <span className="text-xs font-bold text-slate-600 uppercase">/ {data.stats.remainingLeaveMonth}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {/* Yearly Leave */}
-                        <div className="bg-card rounded-[2rem] border border-border p-6 relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-sky-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:bg-sky-500/20 transition-all duration-700"></div>
-                            <div className="flex flex-col gap-6 relative z-10">
-                                <div className="size-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-sky-400 text-xl">event_available</span>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{t.timesheets.paidLeaveYear}</p>
-                                    <div className="flex items-baseline gap-2">
-                                        <span className="text-3xl font-black text-white">{data.stats.usedLeaveYear}</span>
-                                        <span className="text-xs font-bold text-slate-600 uppercase">/ {data.stats.remainingLeaveYear}</span>
+                                        <span className="text-3xl font-black text-white">{data.stats.lateHours || 0}</span>
+                                        <span className="text-xs font-bold text-slate-600 uppercase">{t.timesheets.unitHours || ''}</span>
                                     </div>
                                 </div>
                             </div>
@@ -709,7 +706,42 @@ export function TimesheetsClient({ user, initialData, workSettings }: Timesheets
                             </div>
                         )
                     }
+
+                    {/* --- LEAVE MANAGEMENT SECTION --- */}
+                    <div className="px-6 md:px-0 mt-4 overflow-hidden">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-sm font-bold text-white uppercase tracking-widest">{locale === 'vi' ? 'QUẢN LÝ NGHỈ PHÉP' : 'LEAVE MANAGEMENT'}</h3>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-6">
+                            {/* Monthly Leave */}
+                            <div className="bg-card/80 md:rounded-[2rem] rounded-3xl border border-border p-6 relative overflow-hidden group flex flex-col items-center justify-center text-center shadow-lg">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:bg-emerald-500/20 transition-all duration-700"></div>
+                                <div className="size-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-4">
+                                    <span className="material-symbols-outlined text-emerald-400 text-xl">calendar_view_month</span>
+                                </div>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">{t.timesheets.paidLeaveMonth}</p>
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-3xl font-black text-white">{data.stats.usedLeaveMonth}</span>
+                                    <span className="text-xs font-bold text-slate-600 uppercase">/ {data.stats.monthlyLimit || 1}</span>
+                                </div>
+                            </div>
+
+                            {/* Yearly Leave */}
+                            <div className="bg-card/80 md:rounded-[2rem] rounded-3xl border border-border p-6 relative overflow-hidden group flex flex-col items-center justify-center text-center shadow-lg">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-sky-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:bg-sky-500/20 transition-all duration-700"></div>
+                                <div className="size-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center mb-4">
+                                    <span className="material-symbols-outlined text-sky-400 text-xl">event_available</span>
+                                </div>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">{t.timesheets.paidLeaveYear}</p>
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-3xl font-black text-white">{data.stats.usedLeaveYear}</span>
+                                    <span className="text-xs font-bold text-slate-600 uppercase">/ {data.stats.annualLimit || 12}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div >
+
             </main >
 
             {/* --- FILTER MODAL (Overlay) --- */}
@@ -856,6 +888,15 @@ export function TimesheetsClient({ user, initialData, workSettings }: Timesheets
                 </DialogContent>
             </Dialog>
 
+            <OvertimeRequestModal
+                isOpen={isOTModalOpen}
+                onClose={() => setIsOTModalOpen(false)}
+                userId={user.id}
+                onSuccess={() => {
+                    // Refresh data after successful OT request
+                    handleFilterSelect(filterRange)
+                }}
+            />
         </div>
     )
 }

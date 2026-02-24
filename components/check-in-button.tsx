@@ -3,37 +3,52 @@
 import { useState, useEffect, useRef } from 'react'
 import { calculateDistance } from '@/utils/geo'
 import { checkIn, checkOut } from '@/app/actions/attendance'
+import { createOvertimeRequest } from '@/app/actions/overtime'
 import { useRouter } from 'next/navigation'
 import { useI18n } from '@/contexts/i18n-context'
+import { toast } from 'sonner'
+import { Fingerprint, Loader2 } from 'lucide-react'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface CheckInButtonProps {
     isCheckedIn: boolean
     isCheckedOut: boolean
     userName: string
-    workSettings: {
-        office_latitude: string
-        office_longitude: string
-        max_distance_meters: number
-    }
+    workSettings: any
+    todayShift: any
 }
 
-export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSettings }: CheckInButtonProps) {
+export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSettings, todayShift }: CheckInButtonProps) {
     const { t } = useI18n()
     const [loading, setLoading] = useState(false)
     const [isProcessing, setIsProcessing] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState<string | null>(null)
+    const [showOTDialog, setShowOTDialog] = useState(false)
+    const [suggestedOTMinutes, setSuggestedOTMinutes] = useState(0)
+    const [isSubmittingOT, setIsSubmittingOT] = useState(false)
+
     const router = useRouter()
     const autoCheckedRef = useRef(false)
 
     const isComplete = isCheckedIn && isCheckedOut
 
     const handleAction = () => {
-        // Multi-session mode: Never disable button based on isComplete
-
+        // Prevent double actions
+        if (loading || isProcessing) return
 
         setLoading(true)
         setError(null)
+
         setSuccess(null)
 
         if (!navigator.geolocation) {
@@ -58,17 +73,25 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
                         setError(result.error)
                         setLoading(false)
                     } else {
+                        // After successful checkout, check for late clock-out (> 30 mins)
+                        if (isCheckedIn) {
+                            checkLateClockOut()
+                        }
+
                         // Add date time to success message
                         const now = new Date()
                         const dateStr = new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(now)
                         const baseMsg = isCheckedIn ? t.messages.checkOutSuccess : t.messages.checkInSuccess
                         setSuccess(`${baseMsg} (${dateStr})`)
                         setIsProcessing(true)
+                        router.refresh()
                         setTimeout(() => {
-                            router.refresh()
-                        }, 1500)
+                            setSuccess(null)
+                            setIsProcessing(false)
+                        }, 5000)
                     }
                 } catch (e) {
+
                     console.error('❌ [CheckInButton] Action error:', e)
                     setError(t.common.error)
                     setLoading(false)
@@ -88,17 +111,25 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
                         setError(result.error)
                         setLoading(false)
                     } else {
+                        // After successful checkout, check for late clock-out (> 30 mins)
+                        if (isCheckedIn) {
+                            checkLateClockOut()
+                        }
+
                         // Add date time to success message
                         const now = new Date()
                         const dateStr = new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(now)
                         const baseMsg = isCheckedIn ? t.messages.checkOutSuccess : t.messages.checkInSuccess
                         setSuccess(`${baseMsg} (${dateStr})`)
                         setIsProcessing(true)
+                        router.refresh()
                         setTimeout(() => {
-                            router.refresh()
-                        }, 1500)
+                            setSuccess(null)
+                            setIsProcessing(false)
+                        }, 5000)
                     }
                 } catch (e) {
+
                     console.error('❌ [CheckInButton] IP Fallback error:', e)
                     setError(t.common.error)
                     setLoading(false)
@@ -110,6 +141,50 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
                 maximumAge: 0
             }
         )
+    }
+
+    // Logic to detect if user clocks out late (> 30 mins)
+    const checkLateClockOut = () => {
+        if (!todayShift || !todayShift[0]) return
+
+        const shift = todayShift[0]
+        const [h, m] = shift.end_time.split(':').map(Number)
+
+        const now = new Date()
+        const scheduledEnd = new Date()
+        scheduledEnd.setHours(h, m, 0, 0)
+
+        // If current time is more than 30 mins past scheduled end
+        const diffMs = now.getTime() - scheduledEnd.getTime()
+        const diffMins = Math.floor(diffMs / (1000 * 60))
+
+        if (diffMins >= 30) {
+            setSuggestedOTMinutes(diffMins)
+            setShowOTDialog(true)
+        }
+    }
+
+    const handleConfirmOvertime = async () => {
+        setIsSubmittingOT(true)
+        try {
+            const hours = Math.round((suggestedOTMinutes / 60) * 10) / 10
+            const res = await createOvertimeRequest({
+                requestDate: new Date().toISOString().split('T')[0],
+                plannedHours: hours,
+                reason: `Tăng ca tự động xác nhận sau khi clock-out trễ ${suggestedOTMinutes} phút.`
+            })
+
+            if (res.error) {
+                toast.error(res.error)
+            } else {
+                toast.success('Đã tự động gửi yêu cầu tăng ca!')
+            }
+        } catch (e) {
+            console.error('OT Suggestion Error:', e)
+        } finally {
+            setIsSubmittingOT(false)
+            setShowOTDialog(false)
+        }
     }
 
     // Auto Clock-in Logic (Keep simple, mostly for GPS area)
@@ -162,7 +237,7 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
 
     // Neon Circular Button Design
     return (
-        <div className="flex flex-col items-center space-y-6">
+        <div className="flex flex-col items-center space-y-6 w-full md:w-[500px] mx-auto md:mr-0">
             <button
                 onClick={handleAction}
                 disabled={loading || isProcessing}
@@ -185,27 +260,32 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
                 <div className="flex flex-col items-center gap-2 relative z-10">
                     {loading ? (
                         <>
-                            <span className="material-symbols-outlined text-5xl text-slate-400 mb-2 animate-pulse">location_searching</span>
-                            <span className="text-white text-lg font-bold tracking-wider">{t.dashboard.locating}</span>
+                            <div className="relative overflow-hidden inline-flex mb-1 p-2">
+                                <Fingerprint strokeWidth={1.2} className={`w-[72px] h-[72px] ${isCheckedIn ? 'text-amber-500/50' : 'text-primary/50'}`} />
+                                <div className={`absolute left-0 right-0 h-[3px] animate-scan ${isCheckedIn ? 'bg-amber-400 shadow-[0_0_12px_#fbbf24]' : 'bg-[#00f2ff] shadow-[0_0_12px_#00f2ff]'}`}></div>
+                            </div>
+                            <span className="text-white text-base font-bold tracking-wider uppercase">{t.dashboard.locating}</span>
                         </>
                     ) : isCheckedIn ? (
                         <>
-                            <span className="material-symbols-outlined text-5xl text-amber-500 mb-2">logout</span>
-                            <span className="text-white text-xl font-bold tracking-widest">{t.dashboard.checkOut}</span>
+                            <Fingerprint strokeWidth={1.2} className="w-[72px] h-[72px] text-amber-500 mb-1 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                            <span className="text-white text-lg font-bold tracking-widest">{t.dashboard.checkOut}</span>
                         </>
                     ) : (
                         <>
-                            <span className="material-symbols-outlined text-5xl text-primary mb-2">fingerprint</span>
-                            <span className="text-white text-xl font-bold tracking-widest">{t.dashboard.checkIn}</span>
+                            <Fingerprint strokeWidth={1.2} className="w-[72px] h-[72px] text-primary mb-1 drop-shadow-[0_0_8px_rgba(0,242,255,0.5)]" />
+                            <span className="text-white text-lg font-bold tracking-widest">{t.dashboard.checkIn}</span>
+
                         </>
                     )}
                 </div>
             </button>
 
             {/* Helper Text */}
-            <p className={`text-sm italic font-medium ${isCheckedIn ? 'text-green-400' : 'text-slate-500'}`}>
+            <p className={`text-sm italic font-medium text-center ${isCheckedIn ? 'text-green-400' : 'text-slate-500'}`}>
                 {isCheckedIn ? t.dashboard.checkedInMessage : t.dashboard.readyToStart.replace('{{name}}', userName)}
             </p>
+
 
             {/* Errors / Success Messages */}
             {error && (
@@ -218,6 +298,39 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
                     {success}
                 </div>
             )}
+
+            {/* OT Suggestion Dialog */}
+            <AlertDialog open={showOTDialog} onOpenChange={setShowOTDialog}>
+                <AlertDialogContent className="bg-slate-900 border-slate-800 text-white">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="text-xl font-bold flex items-center gap-2">
+                            <span className="material-symbols-outlined text-amber-400">bolt</span>
+                            Xác nhận Tăng ca (OT)
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-slate-400">
+                            Bạn vừa kết thúc ca làm việc trễ {suggestedOTMinutes} phút.
+                            Bạn có muốn gửi yêu cầu tăng ca (~{Math.round((suggestedOTMinutes / 60) * 10) / 10}h) cho Admin phê duyệt không?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel className="bg-transparent border-slate-700 hover:bg-white/5 text-slate-300">Để sau</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault()
+                                handleConfirmOvertime()
+                            }}
+                            className="bg-primary text-black font-bold hover:bg-primary/90"
+                            disabled={isSubmittingOT}
+                        >
+                            {isSubmittingOT ? (
+                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang gửi...</>
+                            ) : (
+                                'Đồng ý, gửi yêu cầu'
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }

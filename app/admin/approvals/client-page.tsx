@@ -162,6 +162,12 @@ export default function ApprovalsClientPage() {
                     badge: 'bg-cyan-500/10 text-cyan-500 border border-cyan-500/20',
                     icon: <CalendarClock className="w-4 h-4" />
                 }
+            case 'overtime_request':
+                return {
+                    label: 'Tăng ca',
+                    badge: 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20',
+                    icon: <Activity className="w-4 h-4" />
+                }
             default:
                 return {
                     label: t.admin.approvalsPage.tabs.other,
@@ -174,7 +180,7 @@ export default function ApprovalsClientPage() {
     const filteredActivities = (tab: string) => {
         if (tab === 'all') return activities
         // Also exclude profile_update and schedule_change from 'other'
-        return activities.filter(a => a.type === tab || (tab === 'other' && !['leave_request', 'attendance_edit', 'profile_update', 'schedule_change'].includes(a.type)))
+        return activities.filter(a => a.type === tab || (tab === 'other' && !['leave_request', 'attendance_edit', 'profile_update', 'schedule_change', 'overtime_request'].includes(a.type)))
     }
 
     return (
@@ -208,10 +214,11 @@ export default function ApprovalsClientPage() {
                     <TabsTrigger value="leave_request" className="px-4 py-2 data-[state=active]:bg-slate-800 data-[state=active]:text-white text-slate-400 whitespace-nowrap">{t.admin.approvalsPage.tabs.leave_request}</TabsTrigger>
                     <TabsTrigger value="schedule_change" className="px-4 py-2 data-[state=active]:bg-slate-800 data-[state=active]:text-white text-slate-400 whitespace-nowrap">{t.admin.approvalsPage.tabs.schedule_change}</TabsTrigger>
                     <TabsTrigger value="attendance_edit" className="px-4 py-2 data-[state=active]:bg-slate-800 data-[state=active]:text-white text-slate-400 whitespace-nowrap">{t.admin.approvalsPage.tabs.attendance_edit}</TabsTrigger>
+                    <TabsTrigger value="overtime_request" className="px-4 py-2 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-500 text-slate-400 whitespace-nowrap">Tăng ca (OT)</TabsTrigger>
                     <TabsTrigger value="profile_update" className="px-4 py-2 data-[state=active]:bg-slate-800 data-[state=active]:text-white text-slate-400 whitespace-nowrap">{t.admin.approvalsPage.tabs.profile_update}</TabsTrigger>
                 </TabsList>
 
-                {['all', 'leave_request', 'schedule_change', 'attendance_edit', 'profile_update'].map(tab => (
+                {['all', 'leave_request', 'schedule_change', 'attendance_edit', 'overtime_request', 'profile_update'].map(tab => (
                     <TabsContent key={tab} value={tab} className="mt-0">
                         {loading ? (
                             <div className="space-y-4">
@@ -492,6 +499,24 @@ export default function ApprovalsClientPage() {
                                         {selectedItem.payload.start_time} - {selectedItem.payload.end_time}
                                     </p>
                                     <p className="text-[10px] text-slate-300 mt-1 uppercase tracking-wider">{selectedItem.payload.shift_type}</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {selectedItem?.type === 'overtime_request' && selectedItem.payload && (
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div className="p-3 bg-slate-900 rounded-lg border border-slate-800">
+                                    <p className="text-xs text-slate-500 mb-1">Ngày tăng ca</p>
+                                    <p className="text-sm font-bold text-white">{format(new Date(selectedItem.payload.request_date), 'dd/MM/yyyy')}</p>
+                                </div>
+                                <div className="p-3 bg-slate-900 rounded-lg border border-slate-800">
+                                    <p className="text-xs text-slate-500 mb-1">Số giờ dự kiến</p>
+                                    <p className="text-lg font-mono font-bold text-amber-400">
+                                        {selectedItem.payload.planned_hours} giờ
+                                    </p>
+                                    {selectedItem.payload.actual_hours && (
+                                        <p className="text-[10px] text-emerald-400 mt-1 uppercase tracking-wider">Thực tế: {selectedItem.payload.actual_hours}h</p>
+                                    )}
                                 </div>
                             </div>
                         )}

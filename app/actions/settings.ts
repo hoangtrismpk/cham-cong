@@ -212,6 +212,8 @@ export async function getWorkSettings(): Promise<{
     company_wifi_ip: string
     require_gps_and_wifi: boolean
     work_off_days: number[]
+    allow_grace_period: boolean
+    grace_period_minutes: number
 }> {
     const supabase = await createClient()
 
@@ -229,7 +231,9 @@ export async function getWorkSettings(): Promise<{
             'company_name',
             'company_wifi_ip',
             'require_gps_and_wifi',
-            'work_off_days'
+            'work_off_days',
+            'allow_grace_period',
+            'grace_period_minutes'
         ])
 
     if (error) {
@@ -246,7 +250,9 @@ export async function getWorkSettings(): Promise<{
             company_name: 'FHB Vietnam',
             company_wifi_ip: '14.161.22.181',
             require_gps_and_wifi: false,
-            work_off_days: [6, 0]
+            work_off_days: [6, 0],
+            allow_grace_period: false,
+            grace_period_minutes: 5
         }
     }
 
@@ -271,7 +277,9 @@ export async function getWorkSettings(): Promise<{
         company_name: (settings.company_name as string) || 'FHB Vietnam',
         company_wifi_ip: (settings.company_wifi_ip as string) || '14.161.22.181',
         require_gps_and_wifi: (settings.require_gps_and_wifi as boolean) || false,
-        work_off_days: (settings.work_off_days as number[]) || [6, 0]
+        work_off_days: (settings.work_off_days as number[]) || [6, 0],
+        allow_grace_period: (settings.allow_grace_period as boolean) || false,
+        grace_period_minutes: (settings.grace_period_minutes as number) || 5
     }
 }
 

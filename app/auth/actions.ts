@@ -32,6 +32,13 @@ export async function login(previousState: any, formData: FormData) {
         return { error: error.message }
     }
 
+    // Check if MFA is required
+    const { data: mfaData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+    if (mfaData && mfaData.nextLevel === 'aal2' && mfaData.currentLevel === 'aal1') {
+        const query = nextPath !== '/' ? `?next=${encodeURIComponent(nextPath)}` : ''
+        redirect(`/login/mfa${query}`)
+    }
+
     // Smart Redirect Logic
     if (user) {
         // If there's a specific 'next' path (like /admin), use it

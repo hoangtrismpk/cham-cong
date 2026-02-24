@@ -166,13 +166,15 @@ export async function checkIn(latitude?: number, longitude?: number, notes?: str
         }
     }
 
-    // Helper to get date in Vietnam time (UTC+7)
+    // Use Server Time to ensure users cannot manipulate device time
+    // This is executed on the server, so new Date() is the server's hardware time
+    const serverNow = new Date()
     const today = new Intl.DateTimeFormat('en-CA', {
         timeZone: 'Asia/Ho_Chi_Minh',
         year: 'numeric',
         month: '2-digit',
         day: '2-digit'
-    }).format(new Date())
+    }).format(serverNow)
 
     // Get the LATEST attendance log for today
     const { data: latestLog } = await supabase
@@ -187,9 +189,10 @@ export async function checkIn(latitude?: number, longitude?: number, notes?: str
 
     // If there is a log and it has NO check_out_time, it means user is currently checked in
     if (latestLog && latestLog.check_in_time && !latestLog.check_out_time) {
-        console.log('[checkIn] Blocked! Found active session:', latestLog)
-        return { error: 'Bạn đang trong ca làm việc. Vui lòng Chấm ra trước khi Chấm vào mới.' }
+        console.log('[checkIn] Already has an active session. Skipping duplicate insert.')
+        return { success: true }
     }
+
 
     // Insert check-in record
     // ... (rest of insert logic)
@@ -225,8 +228,8 @@ export async function checkIn(latitude?: number, longitude?: number, notes?: str
 
     const startTimeStr = schedule?.start_time || settings.work_start_time
 
-    // 2. Get Current Time in VN (HH:mm)
-    const nowVN = new Date()
+    // 2. Get Current Time in VN (HH:mm) from Server
+    const nowVN = serverNow // Use the same server time
     const nowHHMM = new Intl.DateTimeFormat('en-GB', {
         hour: '2-digit',
         minute: '2-digit',
@@ -245,12 +248,20 @@ export async function checkIn(latitude?: number, longitude?: number, notes?: str
         const [hTarget, mTarget] = targetTime.split(':').map(Number)
 
         lateMinutes = (hNow * 60 + mNow) - (hTarget * 60 + mTarget)
-        console.log(`[checkIn] User Late: ${lateMinutes} minutes (${nowHHMM} vs ${targetTime})`)
+
+        // Grace period logic
+        if (settings.allow_grace_period && lateMinutes <= (settings.grace_period_minutes || 5)) {
+            status = 'present'
+            lateMinutes = 0
+            console.log(`[checkIn] User On-time (within ${settings.grace_period_minutes}m limit): ${nowHHMM} vs ${targetTime}`)
+        } else {
+            console.log(`[checkIn] User Late: ${lateMinutes} minutes (${nowHHMM} vs ${targetTime})`)
+        }
     }
 
     const { error } = await supabase.from('attendance_logs').insert({
         user_id: user.id,
-        check_in_time: new Date().toISOString(),
+        check_in_time: serverNow.toISOString(),
         check_in_location: latitude !== undefined && longitude !== undefined ? `(${latitude},${longitude})` : null,
         check_in_note: notes || (verificationMethod === 'office_wifi' ? 'Verified by Office Wifi' : ''),
         work_date: today,
@@ -333,12 +344,13 @@ export async function checkOut(latitude?: number, longitude?: number, notes?: st
         }
     }
 
+    const serverNow = new Date()
     const today = new Intl.DateTimeFormat('en-CA', {
         timeZone: 'Asia/Ho_Chi_Minh',
         year: 'numeric',
         month: '2-digit',
         day: '2-digit'
-    }).format(new Date())
+    }).format(serverNow)
 
     // --- TÌM PHIÊN CHẤM CÔNG CHƯA ĐÓNG ---
     // Tìm phiên mới nhất chưa đóng trong vòng 24h qua
@@ -357,10 +369,11 @@ export async function checkOut(latitude?: number, longitude?: number, notes?: st
         return { error: 'Không tìm thấy phiên chấm công đang mở nào. Vui lòng chấm công trước.' }
     }
 
+
     const { data, error, count } = await supabase
         .from('attendance_logs')
         .update({
-            check_out_time: new Date().toISOString(),
+            check_out_time: serverNow.toISOString(),
             check_out_location: latitude !== undefined && longitude !== undefined ? `(${latitude},${longitude})` : null,
             check_out_note: notes || (verificationMethod === 'office_wifi' ? 'Verified by Office Wifi' : ''),
         })
@@ -375,6 +388,14 @@ export async function checkOut(latitude?: number, longitude?: number, notes?: st
     if (!data || data.length === 0) {
         console.error('Check-out failed: 0 rows affected. This is likely an RLS Policy issue.')
         return { error: 'Lỗi hệ thống: Cập nhật thất bại. Vui lòng liên hệ quản trị viên (Lỗi RLS).' }
+    }
+
+    // Recalculate overtime for this log (Eager write for performance)
+    try {
+        const { recalcOvertimeForLog } = await import('./overtime')
+        await recalcOvertimeForLog(log.id)
+    } catch (otError) {
+        console.error('[checkOut] OT recalc error (non-blocking):', otError)
     }
 
     revalidatePath('/')
@@ -485,81 +506,147 @@ export async function getAttendanceStats(view: 'week' | 'month' = 'week') {
     let totalLateCount = 0
     let totalLateMinutes = 0
 
+    const todayStr = new Date().toISOString().split('T')[0]
+
+    // Group logs by work_date for accurate per-day processing
+    const logsByDate = new Map<string, typeof logs>()
     logs.forEach(log => {
-        if (log.check_in_time && log.check_out_time) {
-            // Use original UTC times
-            const inTime = new Date(log.check_in_time)
-            const outTime = new Date(log.check_out_time)
-
-            const inMs = inTime.getTime()
-            const outMs = outTime.getTime()
-
-            // Helper to set UTC time relative to the log's date
-            const getUTCTime = (date: Date, h: number, m: number) => {
-                const d = new Date(date)
-                // Settings are in VN Time (UTC+7). Convert to UTC (-7)
-                // Handle day wrap if needed (simple -7 is fine for typical work hours)
-                let utcH = h - 7
-                if (utcH < 0) utcH += 24
-
-                d.setUTCHours(utcH, m, 0, 0)
-                return d.getTime()
-            }
-
-            // Standards (Using Settings - VN Time converted to UTC)
-            const morningStart = getUTCTime(inTime, ...parseTime(settings.work_start_time))
-            const morningEnd = getUTCTime(inTime, ...parseTime(settings.lunch_start_time))
-            const afternoonStart = getUTCTime(inTime, ...parseTime(settings.lunch_end_time))
-            const afternoonEnd = getUTCTime(inTime, ...parseTime(settings.work_end_time))
-
-            // Standard Morning
-            const mWorkStart = Math.max(inMs, morningStart)
-            const mWorkEnd = Math.min(outMs, morningEnd)
-            const mMinutes = Math.max(0, (mWorkEnd - mWorkStart) / (1000 * 60))
-
-            // Standard Afternoon
-            const aWorkStart = Math.max(inMs, afternoonStart)
-            const aWorkEnd = Math.min(outMs, afternoonEnd)
-            const aMinutes = Math.max(0, (aWorkEnd - aWorkStart) / (1000 * 60))
-
-            const standardMinutes = mMinutes + aMinutes
-
-            // Overtime: Total duration minus standard duration
-            const totalDurationMinutes = (outMs - inMs) / (1000 * 60)
-            let actualWorkMinutes = totalDurationMinutes
-
-            // Break (Using Settings)
-            const lunchStart = getUTCTime(inTime, ...parseTime(settings.lunch_start_time))
-            const lunchEnd = getUTCTime(inTime, ...parseTime(settings.lunch_end_time))
-
-            const lunchOverlapStart = Math.max(inMs, lunchStart)
-            const lunchOverlapEnd = Math.min(outMs, lunchEnd)
-            const lunchOverlapMinutes = Math.max(0, (lunchOverlapEnd - lunchOverlapStart) / (1000 * 60))
-
-            actualWorkMinutes -= lunchOverlapMinutes
-
-            const otMinutes = Math.max(0, actualWorkMinutes - standardMinutes)
-
-            totalStandardMinutes += standardMinutes
-            totalOTMinutes += otMinutes
-
-            const dateKey = log.work_date
-            const dayStats = statsMap.get(dateKey) || { standard: 0, ot: 0, lateMinutes: 0 }
-            dayStats.standard += (standardMinutes / 60)
-            dayStats.ot += (otMinutes / 60)
-            statsMap.set(dateKey, dayStats)
-        }
-
-        // Aggregate late stats per day
-        if (log.status === 'late' && log.late_minutes > 0) {
-            const dateKey = log.work_date
-            const dayStats = statsMap.get(dateKey) || { standard: 0, ot: 0, lateMinutes: 0 }
-            dayStats.lateMinutes += (log.late_minutes || 0)
-            statsMap.set(dateKey, dayStats)
-            totalLateCount++
-            totalLateMinutes += (log.late_minutes || 0)
-        }
+        const dateKey = log.work_date
+        if (!logsByDate.has(dateKey)) logsByDate.set(dateKey, [])
+        logsByDate.get(dateKey)!.push(log)
     })
+
+    // Batch fetch schedule info for OT cap decisions
+    // For each unique date, we need to know if OT is allowed
+    const { getEffectiveSchedule, hasApprovedOvertimeRequest } = await import('./overtime')
+
+    for (const [dateKey, dayLogs] of logsByDate) {
+        // Sort by check_in_time ascending to identify the first arrival
+        dayLogs.sort((a, b) => new Date(a.check_in_time).getTime() - new Date(b.check_in_time).getTime())
+
+        const dayStats = statsMap.get(dateKey) || { standard: 0, ot: 0, lateMinutes: 0 }
+
+        // Check if OT is allowed for this day (schedule flag OR approved request)
+        let allowOT = false
+        if (dayLogs.length > 0) {
+            const userId = dayLogs[0].user_id
+            try {
+                const schedule = await getEffectiveSchedule(userId, dateKey)
+                const otApproved = await hasApprovedOvertimeRequest(userId, dateKey)
+                allowOT = schedule.allowOvertime || otApproved
+            } catch (e) {
+                // Fallback: don't cap if schedule lookup fails
+                allowOT = true
+            }
+        }
+
+        // Process hours for ALL logs in the day
+        dayLogs.forEach(log => {
+            const hasCheckIn = !!log.check_in_time
+            const hasCheckOut = !!log.check_out_time
+            const isActiveSession = hasCheckIn && !hasCheckOut && log.work_date === todayStr
+
+            if (hasCheckIn && (hasCheckOut || isActiveSession)) {
+                const inTime = new Date(log.check_in_time)
+                const outTime = hasCheckOut ? new Date(log.check_out_time) : new Date()
+
+                const inMs = inTime.getTime()
+                let outMs = outTime.getTime()
+
+                const getUTCTime = (date: Date, h: number, m: number) => {
+                    const d = new Date(date)
+                    let utcH = h - 7
+                    if (utcH < 0) utcH += 24
+                    d.setUTCHours(utcH, m, 0, 0)
+                    return d.getTime()
+                }
+
+                // Cap checkout at scheduled end time if OT not allowed
+                const scheduledEndMs = getUTCTime(inTime, ...parseTime(settings.work_end_time))
+                if (!allowOT && outMs > scheduledEndMs) {
+                    outMs = scheduledEndMs
+                }
+
+                const morningStart = getUTCTime(inTime, ...parseTime(settings.work_start_time))
+                const morningEnd = getUTCTime(inTime, ...parseTime(settings.lunch_start_time))
+                const afternoonStart = getUTCTime(inTime, ...parseTime(settings.lunch_end_time))
+                const afternoonEnd = getUTCTime(inTime, ...parseTime(settings.work_end_time))
+
+                const mWorkStart = Math.max(inMs, morningStart)
+                const mWorkEnd = Math.min(outMs, morningEnd)
+                const mMinutes = Math.max(0, (mWorkEnd - mWorkStart) / (1000 * 60))
+
+                const aWorkStart = Math.max(inMs, afternoonStart)
+                const aWorkEnd = Math.min(outMs, afternoonEnd)
+                const aMinutes = Math.max(0, (aWorkEnd - aWorkStart) / (1000 * 60))
+
+                const standardMinutes = mMinutes + aMinutes
+
+                const totalDurationMinutes = (outMs - inMs) / (1000 * 60)
+                let actualWorkMinutes = totalDurationMinutes
+
+                const lunchStart = getUTCTime(inTime, ...parseTime(settings.lunch_start_time))
+                const lunchEnd = getUTCTime(inTime, ...parseTime(settings.lunch_end_time))
+                const lunchOverlapStart = Math.max(inMs, lunchStart)
+                const lunchOverlapEnd = Math.min(outMs, lunchEnd)
+                const lunchOverlapMinutes = Math.max(0, (lunchOverlapEnd - lunchOverlapStart) / (1000 * 60))
+
+                actualWorkMinutes -= lunchOverlapMinutes
+
+                // OT: only count if allowed
+                let otMinutes = 0
+                if (allowOT) {
+                    // For completed logs, prefer pre-computed overtime_hours from DB
+                    if (hasCheckOut && log.overtime_hours !== undefined && log.overtime_hours !== null) {
+                        otMinutes = log.overtime_hours * 60
+                    } else {
+                        otMinutes = Math.max(0, actualWorkMinutes - standardMinutes)
+                    }
+                }
+
+                totalStandardMinutes += standardMinutes
+                totalOTMinutes += otMinutes
+
+                dayStats.standard += (standardMinutes / 60)
+                dayStats.ot += (otMinutes / 60)
+            }
+        })
+
+        // Late: only count from the FIRST check-in of the day (the official arrival)
+        const firstLog = dayLogs[0]
+        if (firstLog && firstLog.status === 'late' && firstLog.late_minutes > 0) {
+            dayStats.lateMinutes = firstLog.late_minutes
+            totalLateCount++
+            totalLateMinutes += firstLog.late_minutes
+        }
+
+        statsMap.set(dateKey, dayStats)
+    }
+
+    // --- INTEGRATE APPROVED OVERTIME REQUESTS ---
+    // Fetch approved OT requests in the same date range
+    const { data: otRequests } = await supabase
+        .from('overtime_requests')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'approved')
+        .gte('request_date', startDate.toISOString().split('T')[0])
+        .lte('request_date', endDate.toISOString().split('T')[0])
+
+    if (otRequests) {
+        otRequests.forEach(req => {
+            const dateKey = req.request_date
+            const dayStats = statsMap.get(dateKey) || { standard: 0, ot: 0, lateMinutes: 0 }
+
+            // If the system calculated actual OT from logs, prefer actual_hours tracked.
+            // But if there's no calculated OT, we show the approved planned OT on the chart.
+            if (dayStats.ot === 0 && req.planned_hours > 0) {
+                dayStats.ot = req.planned_hours
+            }
+            statsMap.set(dateKey, dayStats)
+        })
+    }
+    // --------------------------------------------
 
     const dailyStats = Array.from(statsMap.entries()).map(([date, stats]) => {
         const d = new Date(date)
@@ -597,10 +684,17 @@ export async function getAttendanceStats(view: 'week' | 'month' = 'week') {
             }
         )
     }
+    // Sum up the final adjusted hours from the stats map to include manually approved OT
+    let finalTotalStandard = 0
+    let finalTotalOT = 0
+    statsMap.forEach(stats => {
+        finalTotalStandard += stats.standard
+        finalTotalOT += stats.ot
+    })
 
     return {
-        totalHours: Math.round((totalStandardMinutes / 60) * 10) / 10,
-        totalOT: Math.round((totalOTMinutes / 60) * 10) / 10,
+        totalHours: Math.round(finalTotalStandard * 10) / 10,
+        totalOT: Math.round(finalTotalOT * 10) / 10,
         totalLateCount,
         totalLateMinutes,
         dailyStats: finalStats
@@ -746,6 +840,7 @@ function processLogs(logs: any[], settings: any) {
 function calculateStats(logs: any[], startDate: Date, endDate: Date, settings: any) {
     let totalStandardMinutes = 0
     let totalOTMinutes = 0
+    let totalLateMinutes = 0
     const daysPresent = new Set(logs.map(l => l.work_date)).size
 
     // Calculate total business days in range
@@ -816,6 +911,11 @@ function calculateStats(logs: any[], startDate: Date, endDate: Date, settings: a
             totalStandardMinutes += standardMinutes
             totalOTMinutes += otMinutes
         }
+
+        if (log.status === 'late' && log.late_minutes > 0) {
+            totalLateMinutes += log.late_minutes
+        }
+
     })
 
     return {
@@ -823,9 +923,12 @@ function calculateStats(logs: any[], startDate: Date, endDate: Date, settings: a
         overtime: Math.round((totalOTMinutes / 60) * 10) / 10,
         daysPresent,
         totalWorkdays,
-        totalDaysInRange
+        totalDaysInRange,
+        lateMinutes: totalLateMinutes,
+        lateHours: Math.round((totalLateMinutes / 60) * 10) / 10
     }
 }
+
 
 async function enhanceStatsWithLeave(supabase: any, userId: string, stats: any, allLogs: any[]) {
     // If no logs found in range, check if there's ANY log for this user ever (to distinguish new user vs filtered range)

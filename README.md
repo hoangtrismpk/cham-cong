@@ -9,18 +9,25 @@
 
 ---
 
+| **20** Bộ Kỹ năng (Modules) | **18** Agent Chuyên gia | **21** Quy trình (Workflows) | **17** Luật Hệ thống (Rules) |
+| :---: | :---: | :---: | :---: |
+
+---
+
 ## ✨ Tính năng nổi bật
 
 ### 👤 Dành cho Nhân viên
 - 📍 **Chấm công Thông minh**: Hỗ trợ chấm công qua tọa độ GPS (bán kính cho phép) hoặc định danh địa chỉ IP Wifi văn phòng.
 - 📅 **Quản lý Nghỉ phép**: Gửi yêu cầu nghỉ phép (cả ngày, nửa ngày hoặc theo giờ) kèm minh chứng ảnh. Theo dõi trạng thái duyệt thời gian thực.
+- ⏳ **Đăng ký Tăng ca (OT)**: Tính toán tự động số giờ được phép OT dựa trên ranh giới ca làm việc, hiển thị trần OT an toàn, ngăn chặn lặp giờ qua ngày.
 - 🔔 **Thông báo Nhắc nhở**: Tự động nhận thông báo (Push Notification) nhắc nhở check-in/check-out trước ca làm việc.
 - 📱 **Trải nghiệm PWA**: Cài đặt ứng dụng trực tiếp lên màn hình điện thoại, hoạt động như một App native.
 
 ### 🛡️ Dành cho Quản lý & HR
 - 📊 **Dashboard Tổng quan**: Theo dõi danh sách nhân viên đi làm, đi muộn, hoặc đang nghỉ phép trong ngày.
 - ⚙️ **Cài đặt Linh hoạt**: Cấu hình tọa độ công ty, danh sách IP Wifi văn phòng, và các quy tắc chấm công (giờ vào, giờ ra) ngay trên UI.
-- 🧾 **Duyệt Nghỉ phép**: Quy trình duyệt nhiều cấp, cho phép Quản lý hoặc HR phản hồi nhanh chóng.
+- 📁 **Cấu hình Báo cáo**: Tùy chỉnh danh sách người nhận báo cáo mặc định (Global Observers) và bắt buộc có quản lý trực tiếp hay không.
+- 🧾 **Duyệt Nghỉ phép & Tăng ca**: Quy trình duyệt nhiều cấp các yêu cầu nghỉ phép, sửa công và tăng ca (OT). Linh hoạt hiển thị và gộp giờ OT thẳng vào biểu đồ tổng mà không cần chờ logs thực tế.
 - 📈 **Báo cáo Tự động**: Hệ thống tự động tổng hợp dữ liệu làm việc (Daily Summary) mỗi ngày để phục vụ tính lương.
 
 ### 🔒 Bảo mật & Hệ thống
@@ -88,6 +95,7 @@ Hệ thống được xây dựng trên một schema tối ưu cho việc tính 
 - `profiles`: Lưu thông tin nhân sự và loại hợp đồng (Full-time, Part-time, Intern).
 - `attendance_logs`: Ghi lại mỗi lần check-in/out kèm vị trí/IP.
 - `leave_requests`: Quản lý các loại nghỉ phép.
+- `overtime_requests`: Quản lý, phê duyệt số giờ tăng ca (OT) của nhân viên. Dữ liệu này được kết xuất qua `attendance_logs`.
 - `daily_work_summary`: Bảng tổng hợp được hệ thống tự động tính toán số giờ làm việc thực tế, giờ nghỉ và giờ được trả lương hàng ngày.
 
 ---

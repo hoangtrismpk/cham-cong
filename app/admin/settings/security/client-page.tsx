@@ -173,9 +173,9 @@ export default function SecuritySettingsClientPage() {
 
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
-                <div>
+                <div className="space-y-1.5">
                     <h1 className="text-2xl font-bold text-white">{t.adminSettings.securitySettings.title}</h1>
-                    <p className="text-slate-400 mt-1">
+                    <p className="text-slate-400 leading-relaxed">
                         {t.adminSettings.securitySettings.description}
                     </p>
                 </div>
@@ -215,7 +215,7 @@ export default function SecuritySettingsClientPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="flex items-center justify-between p-4 bg-[#0d1117] rounded-lg border border-slate-700">
-                            <div className="space-y-0.5">
+                            <div className="space-y-1.5">
                                 <Label className="text-base">{t.adminSettings.securitySettings.recaptcha.toggle}</Label>
                                 <p className="text-sm text-slate-500">
                                     {t.adminSettings.securitySettings.recaptcha.toggleDescription}
@@ -316,7 +316,7 @@ export default function SecuritySettingsClientPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="flex items-center justify-between p-4 bg-[#0d1117] rounded-lg border border-slate-700">
-                            <div className="space-y-0.5">
+                            <div className="space-y-1.5">
                                 <Label className="text-base">{t.adminSettings.securitySettings.twoFactor.toggle}</Label>
                                 <p className="text-sm text-slate-500">{t.adminSettings.securitySettings.twoFactor.toggleDescription}</p>
                             </div>
@@ -337,7 +337,7 @@ export default function SecuritySettingsClientPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="flex items-center justify-between p-4 bg-[#0d1117] rounded-lg border border-slate-700">
-                            <div className="space-y-0.5">
+                            <div className="space-y-1.5">
                                 <Label className="text-base">{t.adminSettings.securitySettings.advancedSecurity.accountLockout}</Label>
                                 <p className="text-sm text-slate-500">{t.adminSettings.securitySettings.advancedSecurity.accountLockoutDescription}</p>
                             </div>

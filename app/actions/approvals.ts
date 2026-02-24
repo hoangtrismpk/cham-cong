@@ -7,7 +7,7 @@ import { createAuditLog } from './audit-logs'
 
 export interface ActivityItem {
     id: string
-    type: 'leave_request' | 'attendance_edit' | 'profile_update' | 'schedule_change' | 'other'
+    type: 'leave_request' | 'attendance_edit' | 'profile_update' | 'schedule_change' | 'overtime_request' | 'other'
     title: string
     description: string
     reason: string
@@ -43,11 +43,17 @@ export async function getPendingStats() {
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending')
 
+    const { count: overtimeCount } = await supabase
+        .from('overtime_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending')
+
     return {
         leaves: leaveCount || 0,
         changes: changeCount || 0,
         schedules: scheduleCount || 0,
-        total: (leaveCount || 0) + (changeCount || 0) + (scheduleCount || 0)
+        overtime: overtimeCount || 0,
+        total: (leaveCount || 0) + (changeCount || 0) + (scheduleCount || 0) + (overtimeCount || 0)
     }
 }
 
@@ -109,33 +115,53 @@ export async function getActivities(
         `)
         .order('created_at', { ascending: false })
 
+    let overtimeQuery = supabase
+        .from('overtime_requests')
+        .select(`
+            id,
+            request_date,
+            planned_hours,
+            actual_hours,
+            reason,
+            status,
+            created_at,
+            user_id,
+            profiles:user_id (id, full_name, email, avatar_url, department, role)
+        `)
+        .order('created_at', { ascending: false })
+
 
     if (statusFilter === 'pending') {
         leaveQuery = leaveQuery.eq('status', 'pending')
         changeQuery = changeQuery.eq('status', 'pending')
         scheduleQuery = scheduleQuery.eq('status', 'pending')
+        overtimeQuery = overtimeQuery.eq('status', 'pending')
     } else {
         // History includes approved and rejected
         leaveQuery = leaveQuery.in('status', ['approved', 'rejected'])
         changeQuery = changeQuery.in('status', ['approved', 'rejected'])
         // For schedules, only show rejected in history to avoid flooding with all active shifts
         scheduleQuery = scheduleQuery.eq('status', 'rejected')
+        overtimeQuery = overtimeQuery.in('status', ['approved', 'rejected'])
     }
 
     // Execute queries
     const [
         { data: leaves, error: leaveError },
         { data: changes, error: changeError },
-        { data: schedules, error: scheduleError }
+        { data: schedules, error: scheduleError },
+        { data: overtimeReqs, error: overtimeError }
     ] = await Promise.all([
         leaveQuery,
         changeQuery,
-        scheduleQuery
+        scheduleQuery,
+        overtimeQuery
     ])
 
     if (leaveError) console.error('Leave Error:', leaveError)
     if (changeError) console.error('Change Error:', changeError)
     if (scheduleError) console.error('Schedule Error:', scheduleError)
+    if (overtimeError) console.error('Overtime Error:', overtimeError)
 
     // 3. Normalize & Merge
     const activities: ActivityItem[] = []
@@ -234,6 +260,37 @@ export async function getActivities(
                 end_time: schedule.end_time,
                 schedule_id: schedule.id,
                 shift_type: schedule.shift_type
+            }
+        })
+    })
+
+    // Map Overtime Requests
+    overtimeReqs?.forEach((ot: any) => {
+        const profileData = Array.isArray(ot.profiles) ? ot.profiles[0] : ot.profiles
+        const user = profileData || { id: ot.user_id, full_name: 'Unknown', email: '', avatar_url: null, department: 'N/A', role: 'Employee' }
+
+        const dateStr = new Date(ot.request_date).toLocaleDateString('vi-VN')
+
+        activities.push({
+            id: ot.id,
+            type: 'overtime_request',
+            title: `Tăng ca: ${dateStr}`,
+            description: `Yêu cầu tăng ca ${ot.planned_hours}h`,
+            reason: ot.reason || 'Tăng ca theo yêu cầu công việc',
+            status: ot.status,
+            created_at: ot.created_at,
+            user: {
+                id: user.id,
+                full_name: user.full_name || 'No Name',
+                email: user.email || '',
+                avatar_url: user.avatar_url,
+                department: user.department || 'Chưa cập nhật',
+                role: user.role || 'Nhân viên'
+            },
+            payload: {
+                request_date: ot.request_date,
+                planned_hours: ot.planned_hours,
+                actual_hours: ot.actual_hours
             }
         })
     })
@@ -364,6 +421,65 @@ export async function approveActivity(id: string, type: string): Promise<{ succe
                 throw new Error('Không tìm thấy yêu cầu hợp lệ')
             }
         }
+        else if (type === 'overtime_request') {
+            // 1. Fetch OT Request
+            const { data: otRequest } = await supabase
+                .from('overtime_requests')
+                .select('user_id, request_date, planned_hours')
+                .eq('id', id)
+                .single()
+
+            if (!otRequest) throw new Error('Không tìm thấy yêu cầu tăng ca')
+
+            // 2. Get current admin user
+            const { data: { user: adminUser } } = await supabase.auth.getUser()
+
+            // 3. Update OT request status
+            const { error: otError } = await supabase
+                .from('overtime_requests')
+                .update({
+                    status: 'approved',
+                    approved_by: adminUser?.id,
+                    approved_at: new Date().toISOString()
+                })
+                .eq('id', id)
+            if (otError) throw otError
+
+            // 4. Upsert work_schedule override with allow_overtime = true
+            const { error: schedError } = await supabase
+                .from('work_schedules')
+                .upsert({
+                    user_id: otRequest.user_id,
+                    work_date: otRequest.request_date,
+                    shift_type: 'full_day',
+                    allow_overtime: true,
+                    status: 'active',
+                    title: 'Tăng ca (Đã duyệt)',
+                    start_time: '08:30',
+                    end_time: '18:00'
+                }, { onConflict: 'user_id, work_date' })
+            if (schedError) {
+                console.error('[OT Approve] Schedule upsert error:', schedError)
+            }
+
+            // 5. Retroactive recalculation — the KEY step!
+            const { recalcOvertimeForUserDate } = await import('./overtime')
+            await recalcOvertimeForUserDate(otRequest.user_id, otRequest.request_date)
+
+            userId = otRequest.user_id
+            const dateStr = new Date(otRequest.request_date).toLocaleDateString('vi-VN')
+            notificationBody = `Yêu cầu tăng ca ngày ${dateStr} (${otRequest.planned_hours}h) đã được phê duyệt.`
+
+            // Audit Log
+            await createAuditLog({
+                action: 'APPROVE',
+                resourceType: 'overtime',
+                resourceId: id,
+                description: `Duyệt tăng ca ngày ${dateStr} - ${otRequest.planned_hours}h`,
+                oldValues: { status: 'pending' },
+                newValues: { status: 'approved' }
+            })
+        }
 
         if (userId) {
             const { sendNotification } = await import('@/app/actions/notification-system')
@@ -462,6 +578,45 @@ export async function rejectActivity(id: string, type: string, note: string): Pr
                     resourceType: 'schedule',
                     resourceId: id,
                     description: `Từ chối đổi lịch ngày ${dateStr}. Lý do: ${note}`,
+                    oldValues: { status: 'pending' },
+                    newValues: { status: 'rejected', note }
+                })
+            }
+        } else if (type === 'overtime_request') {
+            const { data: otRequest } = await supabase
+                .from('overtime_requests')
+                .select('user_id, request_date')
+                .eq('id', id)
+                .single()
+
+            const { error: otError } = await supabase
+                .from('overtime_requests')
+                .update({ status: 'rejected', admin_note: note })
+                .eq('id', id)
+            if (otError) throw otError
+
+            if (otRequest) {
+                // Remove allow_overtime flag if it was set
+                await supabase
+                    .from('work_schedules')
+                    .update({ allow_overtime: false })
+                    .eq('user_id', otRequest.user_id)
+                    .eq('work_date', otRequest.request_date)
+
+                // Retroactive recalculation — reset OT to 0
+                const { recalcOvertimeForUserDate } = await import('./overtime')
+                await recalcOvertimeForUserDate(otRequest.user_id, otRequest.request_date)
+
+                userId = otRequest.user_id
+                const dateStr = new Date(otRequest.request_date).toLocaleDateString('vi-VN')
+                notificationBody = `Yêu cầu tăng ca ngày ${dateStr} đã bị từ chối. Lý do: ${note}`
+
+                // Audit Log
+                await createAuditLog({
+                    action: 'REJECT',
+                    resourceType: 'overtime',
+                    resourceId: id,
+                    description: `Từ chối tăng ca ngày ${dateStr}. Lý do: ${note}`,
                     oldValues: { status: 'pending' },
                     newValues: { status: 'rejected', note }
                 })

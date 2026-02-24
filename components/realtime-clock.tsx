@@ -4,16 +4,29 @@ import { useEffect, useState } from 'react'
 
 export function RealtimeClock() {
     const [time, setTime] = useState<Date | null>(null)
+    const [offset, setOffset] = useState<number>(0)
 
     useEffect(() => {
-        // Initial set to match client time immediately
-        setTime(new Date())
+        // Fetch server time to calculate offset
+        fetch('/api/time')
+            .then(res => res.json())
+            .then(data => {
+                const serverTime = new Date(data.serverTime).getTime()
+                const localTime = new Date().getTime()
+                setOffset(serverTime - localTime)
+            })
+            .catch(err => console.error('Error fetching server time:', err))
+    }, [])
+
+    useEffect(() => {
+        // Initialize immediately using offset (which might be 0 initially)
+        setTime(new Date(Date.now() + offset))
 
         const timer = setInterval(() => {
-            setTime(new Date())
+            setTime(new Date(Date.now() + offset))
         }, 1000)
         return () => clearInterval(timer)
-    }, [])
+    }, [offset])
 
     if (!time) return null // Hydration mismatch prevention
 

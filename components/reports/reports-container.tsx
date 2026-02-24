@@ -24,6 +24,7 @@ export default function ReportsContainer({ initialReports, userId }: Props) {
     const [refreshKey, setRefreshKey] = useState(0)
     const [excludedDates, setExcludedDates] = useState<Set<string>>(new Set())
     const [viewingReport, setViewingReport] = useState<WorkReport | null>(null)
+    const [mobileTab, setMobileTab] = useState<'form' | 'history'>('form')
 
     // Handle initial selection from URL params (e.g. from notification)
     useEffect(() => {
@@ -36,6 +37,7 @@ export default function ReportsContainer({ initialReports, userId }: Props) {
                 // Delay slightly to ensure UI is ready
                 setTimeout(() => {
                     handleSelectReport(report)
+                    setMobileTab('form')
                 }, 100)
             }
         }
@@ -45,6 +47,7 @@ export default function ReportsContainer({ initialReports, userId }: Props) {
         setSelectedDate(date)
         setSelectedType('makeup')
         setViewingReport(null) // Reset viewing report
+        setMobileTab('form')
 
         // Scroll to top of form smoothly
         const formElement = document.getElementById('report-form-container')
@@ -58,6 +61,7 @@ export default function ReportsContainer({ initialReports, userId }: Props) {
         // Also update selected date/type for consistency
         setSelectedDate(new Date(report.report_date))
         setSelectedType(report.report_type)
+        setMobileTab('form')
 
         // Scroll to top
         const formElement = document.getElementById('report-form-container')
@@ -67,9 +71,27 @@ export default function ReportsContainer({ initialReports, userId }: Props) {
     }
 
     return (
-        <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+        <div className="flex flex-col lg:flex-row h-full overflow-hidden">
+            {/* Mobile Tab Switcher */}
+            <div className="flex lg:hidden border-b border-slate-800 bg-[#0d131a] shrink-0 p-2 gap-2">
+                <button
+                    onClick={() => setMobileTab('form')}
+                    className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${mobileTab === 'form' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'text-slate-400 border border-transparent hover:bg-slate-800'
+                        }`}
+                >
+                    Viết báo cáo
+                </button>
+                <button
+                    onClick={() => setMobileTab('history')}
+                    className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors flex justify-center items-center gap-2 ${mobileTab === 'history' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'text-slate-400 border border-transparent hover:bg-slate-800'
+                        }`}
+                >
+                    Lịch sử & Chưa nộp
+                </button>
+            </div>
+
             {/* Main Content - Report Form */}
-            <div className="flex-1 p-4 lg:p-8 overflow-y-auto custom-scrollbar" id="report-main-scroll">
+            <div className={`flex-1 p-4 lg:p-8 overflow-y-auto custom-scrollbar ${mobileTab === 'form' ? 'block' : 'hidden lg:block'}`} id="report-main-scroll">
                 <div className="max-w-4xl mx-auto pb-20" id="report-form-container">
                     <ReportForm
                         initialDate={selectedDate}
@@ -93,7 +115,7 @@ export default function ReportsContainer({ initialReports, userId }: Props) {
             </div>
 
             {/* Right Sidebar - Report History & Missing Reports */}
-            <aside className="w-[400px] bg-[#0d131a] border-l border-slate-800 p-6 hidden lg:flex flex-col h-full shrink-0">
+            <aside className={`w-full lg:w-[400px] bg-[#0d131a] lg:border-l border-slate-800 p-6 flex-col h-full shrink-0 ${mobileTab === 'history' ? 'flex' : 'hidden lg:flex'}`}>
 
                 {/* Section: Missing Reports (Action Items) */}
                 <div className="mb-6">

@@ -262,11 +262,11 @@ export function RoleManager({ roles, permissions }: RoleManagerProps) {
                         <>
                             <div className="p-6 border-b border-slate-700 bg-slate-800/30 flex items-start justify-between">
                                 <div>
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-3 pb-1">
                                         <h2 className="text-2xl font-bold text-white">{(t.adminSettings.roleSettings as any).roleLabels?.[selectedRole.name] || selectedRole.display_name}</h2>
                                         {selectedRole.is_system_role && <Badge variant="outline" className="border-primary/20 text-primary bg-primary/10">{t.adminSettings.roleSettings.defaultRole}</Badge>}
                                     </div>
-                                    <p className="text-slate-400 mt-1 max-w-2xl">
+                                    <p className="text-slate-400 mt-1 max-w-2xl leading-relaxed">
                                         {(t.adminSettings.roleSettings as any).roleDescriptions?.[selectedRole.name] || selectedRole.description || t.adminSettings.roleSettings.defaultRole}
                                     </p>
                                     <div className="text-xs text-slate-500 font-mono mt-2 flex items-center gap-2">
@@ -312,14 +312,14 @@ export function RoleManager({ roles, permissions }: RoleManagerProps) {
                                                                 onCheckedChange={() => togglePermission(perm.id)}
                                                                 className="data-[state=checked]:bg-primary data-[state=checked]:text-black border-slate-600 mt-0.5"
                                                             />
-                                                            <div className="grid gap-1.5 leading-none">
+                                                            <div className="grid gap-1 leading-snug pt-0.5">
                                                                 <label
                                                                     htmlFor={perm.id}
-                                                                    className="text-sm font-medium leading-none text-slate-200 cursor-pointer hover:text-primary transition-colors"
+                                                                    className="text-sm font-medium text-slate-200 cursor-pointer hover:text-primary transition-colors"
                                                                 >
                                                                     {(t.adminSettings.roleSettings as any).permissionLabels?.[perm.id] || perm.display_name}
                                                                 </label>
-                                                                <p className="text-[11px] text-slate-500 font-mono">{perm.id}</p>
+                                                                <p className="text-[11px] text-slate-500 font-mono mt-0.5">{perm.id}</p>
                                                             </div>
                                                         </div>
                                                     ))}

@@ -66,12 +66,25 @@ Design/
 firebase-b64.txt
 docs/logs/
 
-# Agent/Internal (Antigravity/Tiger)
-.agent/
-GEMINI.md
-ERRORS.md
-
 # Supabase Local
 supabase/.temp/
+supabase/seed_hoang_tri_pattern*.sql
+
+
+# Temp scripts
+*.js
+!next.config.js
+!postcss.config.js
+!tailwind.config.js
+!*.sql
+replace_*.js
+seed_*.js
+implementation_plan.md
+GEMINI*.md
+.agent/
+ERRORS.md
+docs/
+
+
 supabase/seed_hoang_tri_pattern*.sql
 

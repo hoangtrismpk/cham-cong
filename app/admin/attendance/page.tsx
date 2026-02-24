@@ -45,19 +45,40 @@ export default async function AttendancePage() {
 
     // 4. Merge Data for Table
     const employees = profiles?.map(profile => {
-        const log = attendanceLogs?.find(l => l.user_id === profile.id)
+        const userLogs = attendanceLogs?.filter(l => l.user_id === profile.id) || []
         const isLeave = leaveUserIds.has(profile.id)
 
         let status = 'absent'
-        if (isLeave) status = 'on_leave'
-        else if (log) {
-            if (log.check_out_time) status = 'clocked_out'
-            else status = 'clocked_in'
+        let checkIn = null
+        let checkOut = null
+        let totalHours = 0
+        let isLate = false
+        let activeSessionStartTime = null
 
-            // Override visibility if late? Or just add a badge? 
-            // The design shows "LATE" as a status badge. 
-            // But logic-wise, 'late' is a property of 'clocked_in'.
-            // I'll pass 'late' boolean.
+        if (isLeave) {
+            status = 'on_leave'
+        } else if (userLogs.length > 0) {
+            userLogs.sort((a, b) => new Date(a.check_in_time).getTime() - new Date(b.check_in_time).getTime())
+            checkIn = userLogs[0].check_in_time
+            isLate = userLogs[0].status === 'late'
+
+            const activeLog = userLogs.find(l => !l.check_out_time)
+            if (activeLog) {
+                status = 'clocked_in'
+                checkOut = null
+                activeSessionStartTime = activeLog.check_in_time
+            } else {
+                status = 'clocked_out'
+                checkOut = userLogs[userLogs.length - 1].check_out_time
+            }
+
+            userLogs.forEach(log => {
+                if (log.check_in_time && log.check_out_time) {
+                    const inTime = new Date(log.check_in_time).getTime()
+                    const outTime = new Date(log.check_out_time).getTime()
+                    totalHours += (outTime - inTime) / (1000 * 60 * 60)
+                }
+            })
         }
 
         return {
@@ -68,10 +89,11 @@ export default async function AttendancePage() {
             avatar: profile.avatar_url,
             department: profile.department || 'Unassigned',
             status,
-            isLate: log?.status === 'late',
-            checkIn: log?.check_in_time,
-            checkOut: log?.check_out_time,
-            totalHours: log?.total_hours
+            isLate,
+            checkIn,
+            checkOut,
+            totalHours,
+            activeSessionStartTime
         }
     }) || []
 

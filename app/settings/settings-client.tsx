@@ -206,8 +206,8 @@ export function SettingsClient({ user }: SettingsClientProps) {
 
     const handleSave = async () => {
         if (password) {
-            if (password.length < 6) { return toast.error('Mật khẩu phải có ít nhất 6 ký tự') }
-            if (password !== confirmPassword) { return toast.error('Mật khẩu xác nhận không khớp') }
+            if (password.length < 6) { return toast.error(t.settings?.messages?.passwordLength || 'Mật khẩu phải có ít nhất 6 ký tự') }
+            if (password !== confirmPassword) { return toast.error(t.settings?.messages?.passwordMismatch || 'Mật khẩu xác nhận không khớp') }
         }
 
         setIsSaving(true)
@@ -218,7 +218,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
                 if (error) throw error
                 setPassword('')
                 setConfirmPassword('')
-                toast.success('Đã cập nhật mật khẩu')
+                toast.success(t.settings?.messages?.passwordUpdated || 'Đã cập nhật mật khẩu')
             }
 
             if (profile) {
@@ -244,11 +244,11 @@ export function SettingsClient({ user }: SettingsClientProps) {
 
                 const res = await updateMyProfile(updatePayload)
                 if (res.error) throw new Error(res.error)
-                toast.success('Đã lưu thông tin hồ sơ!')
+                toast.success(t.settings?.messages?.profileSaved || 'Đã lưu thông tin hồ sơ!')
             }
         } catch (error: any) {
             console.error(error)
-            toast.error(error.message || 'Lưu thất bại')
+            toast.error(error.message || t.settings?.messages?.saveFailed || 'Lưu thất bại')
         } finally {
             setIsSaving(false)
         }
@@ -258,14 +258,14 @@ export function SettingsClient({ user }: SettingsClientProps) {
         if (checked) {
             // Step 1: Check browser support
             if (!('Notification' in window)) {
-                toast.error('Trình duyệt không hỗ trợ thông báo đẩy')
+                toast.error(t.settings?.messages?.browserNotSupported || 'Trình duyệt không hỗ trợ thông báo đẩy')
                 return
             }
 
             // Step 2: Request browser permission
             let permission = Notification.permission
             if (permission === 'denied') {
-                toast.error('Quyền thông báo đã bị chặn. Vui lòng nhấn vào biểu tượng ổ khóa trên thanh địa chỉ để bật lại.', {
+                toast.error(t.settings?.messages?.notificationBlocked || 'Quyền thông báo đã被 chặn. Vui lòng nhấn vào biểu tượng ổ khóa trên thanh địa chỉ để bật lại.', {
                     duration: 8000
                 })
                 return
@@ -276,7 +276,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
             }
 
             if (permission !== 'granted') {
-                toast.error('Bạn cần cho phép thông báo để bật tính năng này')
+                toast.error(t.settings?.messages?.needPermission || 'Bạn cần cho phép thông báo để bật tính năng này')
                 return
             }
 
@@ -311,19 +311,19 @@ export function SettingsClient({ user }: SettingsClientProps) {
             // Step 4: Save to database
             setPushEnabled(true)
             updatePushNotificationSetting(true).then(() => {
-                toast.success('Đã bật thông báo đẩy')
+                toast.success(t.settings?.messages?.pushEnabled || 'Đã bật thông báo đẩy')
             }).catch(() => {
                 setPushEnabled(false)
-                toast.error('Không thể lưu cài đặt')
+                toast.error(t.settings?.messages?.cannotSaveGeneral || 'Không thể lưu cài đặt')
             })
         } else {
             // Turning OFF: Remove tokens and update database
             setPushEnabled(false)
             updatePushNotificationSetting(false).then(() => {
-                toast.success('Đã tắt thông báo đẩy')
+                toast.success(t.settings?.messages?.pushDisabled || 'Đã tắt thông báo đẩy')
             }).catch(() => {
                 setPushEnabled(true)
-                toast.error('Không thể lưu cài đặt')
+                toast.error(t.settings?.messages?.cannotSaveGeneral || 'Không thể lưu cài đặt')
             })
         }
     }
@@ -340,20 +340,20 @@ export function SettingsClient({ user }: SettingsClientProps) {
         setClockInMinutes(value)
         if (clockInSaveTimer.current) clearTimeout(clockInSaveTimer.current)
         clockInSaveTimer.current = setTimeout(() => {
-            updateClockInSettings(value).catch(() => toast.error('Không thể lưu cài đặt'))
+            updateClockInSettings(value).catch(() => toast.error(t.settings?.messages?.cannotSaveGeneral || 'Không thể lưu cài đặt'))
         }, 600)
     }
 
     const handleClockOutModeChange = (mode: 'before' | 'after') => {
         setClockOutMode(mode)
-        updateClockOutSettings(mode, clockOutMinutes).catch(() => toast.error('Không thể lưu cài đặt'))
+        updateClockOutSettings(mode, clockOutMinutes).catch(() => toast.error(t.settings?.messages?.cannotSaveGeneral || 'Không thể lưu cài đặt'))
     }
 
     const handleClockOutMinutesChange = (value: number) => {
         setClockOutMinutes(value)
         if (clockOutSaveTimer.current) clearTimeout(clockOutSaveTimer.current)
         clockOutSaveTimer.current = setTimeout(() => {
-            updateClockOutSettings(clockOutMode, value).catch(() => toast.error('Không thể lưu cài đặt'))
+            updateClockOutSettings(clockOutMode, value).catch(() => toast.error(t.settings?.messages?.cannotSaveGeneral || 'Không thể lưu cài đặt'))
         }, 600)
     }
 
@@ -376,13 +376,13 @@ export function SettingsClient({ user }: SettingsClientProps) {
 
         // Validate file type
         if (!file.type.startsWith('image/')) {
-            toast.error('Vui lòng chọn file ảnh')
+            toast.error(t.settings?.messages?.selectImage || 'Vui lòng chọn file ảnh')
             return
         }
 
         // Validate file size (max 5MB)
         if (file.size > 5 * 1024 * 1024) {
-            toast.error('Ảnh quá lớn! Tối đa 5MB')
+            toast.error(t.settings?.messages?.imageTooLarge || 'Ảnh quá lớn! Tối đa 5MB')
             return
         }
 
@@ -401,9 +401,9 @@ export function SettingsClient({ user }: SettingsClientProps) {
 
             if (!response.ok) {
                 if (data.code === 'NO_CONFIG') {
-                    toast.error('WordPress chưa được cấu hình. Vui lòng liên hệ Admin.')
+                    toast.error(t.settings?.messages?.wpNotConfigured || 'WordPress chưa được cấu hình. Vui lòng liên hệ Admin.')
                 } else {
-                    throw new Error(data.error || 'Upload thất bại')
+                    throw new Error(data.error || t.settings?.messages?.uploadFailed || 'Upload thất bại')
                 }
                 return
             }
@@ -411,7 +411,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
             await handleAvatarSelect(data.url)
         } catch (error: any) {
             console.error('Avatar upload error:', error)
-            toast.error(error.message || 'Upload thất bại')
+            toast.error(error.message || t.settings?.messages?.uploadFailed || 'Upload thất bại')
         } finally {
             setIsUploading(false)
         }
@@ -436,20 +436,20 @@ export function SettingsClient({ user }: SettingsClientProps) {
                 setMfaCode('')
                 setIsMfaModalOpen(true)
             } catch (error: any) {
-                toast.error(error.message || 'Không thể bắt đầu thiết lập 2FA')
+                toast.error(error.message || t.settings?.messages?.cannotStart2FA || t.settings?.messages?.cannotStart2FA || 'Không thể bắt đầu thiết lập 2FA')
             }
         } else {
             // Turning OFF
             if (!mfaFactorId) return
-            const confirmed = window.confirm('Bạn có chắc chắn muốn tắt xác thực 2 bước? Tài khoản của bạn sẽ giảm độ bảo mật.')
+            const confirmed = window.confirm(t.settings?.messages?.confirmTurnOff2FA || t.settings?.messages?.confirmTurnOff2FA || 'Bạn có chắc chắn muốn tắt xác thực 2 bước? Tài khoản của bạn sẽ giảm độ bảo mật.')
             if (!confirmed) return
 
             try {
                 await unenrollMFA(mfaFactorId)
                 setMfaFactorId(null)
-                toast.success('Đã tắt xác thực 2 bước')
+                toast.success(t.settings?.messages?.twoFADisabled || 'Đã tắt xác thực 2 bước')
             } catch (error: any) {
-                toast.error(error.message || 'Không thể tắt 2FA')
+                toast.error(error.message || t.settings?.messages?.cannotTurnOff2FA || t.settings?.messages?.cannotTurnOff2FA || 'Không thể tắt 2FA')
             }
         }
     }
@@ -464,9 +464,9 @@ export function SettingsClient({ user }: SettingsClientProps) {
             setMfaFactorId(mfaEnrollData.id)
             setIsMfaModalOpen(false)
             setMfaEnrollData(null)
-            toast.success('Đã kích hoạt xác thực 2 bước thành công!')
+            toast.success(t.settings?.messages?.twoFAActivated || 'Đã kích hoạt xác thực 2 bước thành công!')
         } catch (error: any) {
-            toast.error(error.message || 'Mã xác thực không đúng')
+            toast.error(error.message || t.settings?.messages?.invalidCode || 'Mã xác thực không đúng')
         } finally {
             setVerifyLoading(false)
         }
@@ -499,7 +499,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
                                 <p className="text-slate-500 text-xs">{user?.email}</p>
                                 <div className="mt-1">
                                     <Badge variant="outline" className={`border-${profile?.status === 'active' ? 'emerald' : 'rose'}-500/20 text-${profile?.status === 'active' ? 'emerald' : 'rose'}-500 bg-${profile?.status === 'active' ? 'emerald' : 'rose'}-500/10 uppercase text-[10px] tracking-wider`}>
-                                        {profile?.status === 'active' ? 'Đang hoạt động' : 'Tạm khóa'}
+                                        {profile?.status === 'active' ? (t.settings?.activeRole || 'Đang hoạt động') : (t.settings?.lockedRole || 'Tạm khóa')}
                                     </Badge>
                                 </div>
                             </div>
@@ -508,34 +508,34 @@ export function SettingsClient({ user }: SettingsClientProps) {
 
                     {/* Group 1: Account Settings */}
                     <div className="px-6 pb-2 pt-6">
-                        <h2 className="text-xs font-black uppercase tracking-widest text-slate-500">Tài khoản</h2>
+                        <h2 className="text-xs font-black uppercase tracking-widest text-slate-500">{t.nav?.account || 'Tài khoản'}</h2>
                     </div>
                     <div className="mx-4 bg-slate-800/20 rounded-2xl overflow-hidden border border-white/5">
                         <div onClick={() => setActiveTabMobile('general-mobile')} className="flex items-center gap-4 px-4 py-4 active:bg-white/5 cursor-pointer hover:bg-white/5 transition-colors border-b border-white/5 last:border-0">
                             <div className="text-primary flex items-center justify-center rounded-lg bg-primary/10 shrink-0 size-9"><span className="material-symbols-outlined text-lg">person</span></div>
-                            <p className="text-sm font-bold text-slate-200 flex-1">Hồ sơ cá nhân</p>
+                            <p className="text-sm font-bold text-slate-200 flex-1">{t.settings?.tabs?.general || 'Hồ sơ cá nhân'}</p>
                             <span className="material-symbols-outlined text-slate-500 text-lg">chevron_right</span>
                         </div>
                         <div onClick={() => setActiveTabMobile('security-mobile')} className="flex items-center gap-4 px-4 py-4 active:bg-white/5 cursor-pointer hover:bg-white/5 transition-colors border-b border-white/5 last:border-0">
                             <div className="text-purple-500 flex items-center justify-center rounded-lg bg-purple-500/10 shrink-0 size-9"><span className="material-symbols-outlined text-lg">shield</span></div>
-                            <p className="text-sm font-bold text-slate-200 flex-1">Bảo mật & Đăng nhập</p>
+                            <p className="text-sm font-bold text-slate-200 flex-1">{t.settings?.tabs?.security || 'Bảo mật'}</p>
                             <span className="material-symbols-outlined text-slate-500 text-lg">chevron_right</span>
                         </div>
                     </div>
 
                     {/* Group 2: App Settings */}
                     <div className="px-6 pb-2 pt-6">
-                        <h2 className="text-xs font-black uppercase tracking-widest text-slate-500">Ứng dụng</h2>
+                        <h2 className="text-xs font-black uppercase tracking-widest text-slate-500">App</h2>
                     </div>
                     <div className="mx-4 bg-slate-800/20 rounded-2xl overflow-hidden border border-white/5">
                         <div onClick={() => setActiveTabMobile('notifications-mobile')} className="flex items-center gap-4 px-4 py-4 active:bg-white/5 cursor-pointer hover:bg-white/5 transition-colors border-b border-white/5 last:border-0">
                             <div className="text-blue-500 flex items-center justify-center rounded-lg bg-blue-500/10 shrink-0 size-9"><span className="material-symbols-outlined text-lg">notifications</span></div>
-                            <p className="text-sm font-bold text-slate-200 flex-1">Thông báo</p>
+                            <p className="text-sm font-bold text-slate-200 flex-1">{t.settings?.tabs?.notifications || 'Thông báo'}</p>
                             <span className="material-symbols-outlined text-slate-500 text-lg">chevron_right</span>
                         </div>
                         <div onClick={() => setActiveTabMobile('preferences-mobile')} className="flex items-center gap-4 px-4 py-4 active:bg-white/5 cursor-pointer hover:bg-white/5 transition-colors border-b border-white/5 last:border-0">
                             <div className="text-orange-500 flex items-center justify-center rounded-lg bg-orange-500/10 shrink-0 size-9"><span className="material-symbols-outlined text-lg">tune</span></div>
-                            <p className="text-sm font-bold text-slate-200 flex-1">Cài đặt chung</p>
+                            <p className="text-sm font-bold text-slate-200 flex-1">{t.settings?.tabs?.preferences || 'Cài đặt chung'}</p>
                             <span className="material-symbols-outlined text-slate-500 text-lg">chevron_right</span>
                         </div>
                     </div>
@@ -558,7 +558,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
                                 <span className="material-symbols-outlined text-white">arrow_back</span>
                             </button>
                             <h2 className="text-lg font-bold text-white flex-1 truncate">
-                                {activeTabMobile === 'general-mobile' && 'Hồ sơ cá nhân'}
+                                {activeTabMobile === 'general-mobile' && t.settings?.tabs?.general || 'Hồ sơ cá nhân'}
                                 {activeTabMobile === 'security-mobile' && 'Bảo mật'}
                                 {activeTabMobile === 'notifications-mobile' && 'Cài đặt thông báo'}
                                 {activeTabMobile === 'preferences-mobile' && 'Cài đặt chung'}
@@ -604,9 +604,9 @@ export function SettingsClient({ user }: SettingsClientProps) {
                                                     <Select value={profile?.gender || 'male'} onValueChange={(val) => updateProfile('gender', val)}>
                                                         <SelectTrigger className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-bold text-sm h-auto border-input"><SelectValue placeholder="Chọn" /></SelectTrigger>
                                                         <SelectContent className="bg-slate-900 border-slate-700 text-white z-[70]">
-                                                            <SelectItem value="male">Nam</SelectItem>
-                                                            <SelectItem value="female">Nữ</SelectItem>
-                                                            <SelectItem value="other">Khác</SelectItem>
+                                                            <SelectItem value="male">{t.settings?.genderOptions?.male || 'Nam'}</SelectItem>
+                                                            <SelectItem value="female">{t.settings?.genderOptions?.female || 'Nữ'}</SelectItem>
+                                                            <SelectItem value="other">{t.settings?.genderOptions?.other || 'Khác'}</SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
@@ -637,8 +637,8 @@ export function SettingsClient({ user }: SettingsClientProps) {
                                             <h3 className="text-xs font-black uppercase tracking-widest text-rose-400 mb-2 flex items-center gap-1"><span className="material-symbols-outlined text-sm">sos</span> Liên hệ khẩn cấp</h3>
                                             <div className="grid grid-cols-1 gap-3">
                                                 <input className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white" placeholder="Tên người thân" value={profile?.emergency_contact?.name || ''} onChange={(e) => updateEmergency('name', e.target.value)} />
-                                                <input className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white" placeholder="SĐT liên hệ" value={profile?.emergency_contact?.phone || ''} onChange={(e) => updateEmergency('phone', e.target.value)} type="tel" />
-                                                <input className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white" placeholder="Mối quan hệ (Vd: Bố, Mẹ...)" value={profile?.emergency_contact?.relationship || ''} onChange={(e) => updateEmergency('relationship', e.target.value)} />
+                                                <input className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white" placeholder={t.settings?.emePhone || 'SĐT liên hệ'} value={profile?.emergency_contact?.phone || ''} onChange={(e) => updateEmergency('phone', e.target.value)} type="tel" />
+                                                <input className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white" placeholder={t.settings?.emeRel || 'Mối quan hệ (Vd: Bố, Mẹ...)'} value={profile?.emergency_contact?.relationship || ''} onChange={(e) => updateEmergency('relationship', e.target.value)} />
                                             </div>
                                         </div>
                                     </div>
@@ -664,8 +664,8 @@ export function SettingsClient({ user }: SettingsClientProps) {
                                             <div className="flex items-center gap-3">
                                                 <div className="text-purple-500 size-8 bg-purple-500/10 rounded-lg flex items-center justify-center"><span className="material-symbols-outlined text-lg">security_update_good</span></div>
                                                 <div>
-                                                    <p className="text-white font-bold text-sm">Xác thực 2 bước (2FA)</p>
-                                                    <p className="text-slate-500 text-[10px]">Tăng cường bảo mật</p>
+                                                    <p className="text-white font-bold text-sm">{t.settings?.twoFA || 'Xác thực 2 bước (2FA)'}</p>
+                                                    <p className="text-slate-500 text-[10px]">{t.settings?.enhanceSec || 'Tăng cường bảo mật'}</p>
                                                 </div>
                                             </div>
                                             <Switch checked={!!mfaFactorId} onCheckedChange={handleMfaToggle} />
@@ -682,7 +682,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
                                                 <div className="text-blue-500 size-8 bg-blue-500/10 rounded-lg flex items-center justify-center"><span className="material-symbols-outlined text-lg">notifications_active</span></div>
                                                 <div className="flex-1">
                                                     <p className="text-sm font-bold text-slate-200">Push Notification</p>
-                                                    <p className="text-[10px] text-slate-500">Thông báo trên thiết bị</p>
+                                                    <p className="text-[10px] text-slate-500">{t.settings?.pushDesc || 'Thông báo trên thiết bị'}</p>
                                                 </div>
                                             </div>
                                             <Switch checked={pushEnabled} onCheckedChange={handlePushToggle} />
@@ -700,7 +700,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
                                                 <div className="text-emerald-500 size-8 bg-emerald-500/10 rounded-lg flex items-center justify-center"><span className="material-symbols-outlined text-lg">timer_play</span></div>
                                                 <div className="flex-1">
                                                     <p className="text-sm font-bold text-slate-200">Auto Clock In</p>
-                                                    <p className="text-[10px] text-slate-500">Tự động khi đến công ty</p>
+                                                    <p className="text-[10px] text-slate-500">{t.settings?.autoClockInDesc || 'Tự động khi đến công ty'}</p>
                                                 </div>
                                             </div>
                                             <Switch checked={autoCheckInEnabled} onCheckedChange={handleAutoCheckInToggle} />
@@ -708,14 +708,14 @@ export function SettingsClient({ user }: SettingsClientProps) {
                                         {autoCheckInEnabled && (
                                             <div className="ml-11 p-3 bg-emerald-500/5 rounded-xl border border-emerald-500/10 space-y-3 animate-in slide-in-from-top-2 duration-200">
                                                 <div className="flex items-center justify-between">
-                                                    <p className="text-xs text-slate-400">Nhắc trước</p>
-                                                    <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">{clockInMinutes} phút</span>
+                                                    <p className="text-xs text-slate-400">{t.settings?.remindBefore || 'Nhắc trước'}</p>
+                                                    <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">{clockInMinutes} {t.settings?.minutes || 'phút'}</span>
                                                 </div>
                                                 <input type="range" min={1} max={30} step={1} value={clockInMinutes} onChange={(e) => handleClockInMinutesChange(Number(e.target.value))} className="w-full h-1.5 bg-slate-700 rounded-full appearance-none cursor-pointer accent-emerald-500" />
                                                 <div className="flex justify-between text-[10px] text-slate-600">
-                                                    <span>1 phút</span>
-                                                    <span>15 phút</span>
-                                                    <span>30 phút</span>
+                                                    <span>1 {t.settings?.minutes || 'phút'}</span>
+                                                    <span>15 {t.settings?.minutes || 'phút'}</span>
+                                                    <span>30 {t.settings?.minutes || 'phút'}</span>
                                                 </div>
                                             </div>
                                         )}
@@ -728,7 +728,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
                                                 <div className="text-orange-500 size-8 bg-orange-500/10 rounded-lg flex items-center justify-center"><span className="material-symbols-outlined text-lg">timer_off</span></div>
                                                 <div className="flex-1">
                                                     <p className="text-sm font-bold text-slate-200">Auto Clock Out</p>
-                                                    <p className="text-[10px] text-slate-500">Tự động khi rời công ty</p>
+                                                    <p className="text-[10px] text-slate-500">{t.settings?.autoClockOutDesc || 'Tự động khi rời công ty'}</p>
                                                 </div>
                                             </div>
                                             <Switch checked={autoCheckOutSetting} onCheckedChange={handleAutoCheckOutToggle} />
@@ -736,18 +736,18 @@ export function SettingsClient({ user }: SettingsClientProps) {
                                         {autoCheckOutSetting && (
                                             <div className="ml-11 p-3 bg-orange-500/5 rounded-xl border border-orange-500/10 space-y-3 animate-in slide-in-from-top-2 duration-200">
                                                 <div className="flex gap-2">
-                                                    <button onClick={() => handleClockOutModeChange('before')} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${clockOutMode === 'before' ? 'bg-orange-500 text-black' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>Trước giờ tan</button>
-                                                    <button onClick={() => handleClockOutModeChange('after')} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${clockOutMode === 'after' ? 'bg-orange-500 text-black' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>Sau giờ tan</button>
+                                                    <button onClick={() => handleClockOutModeChange('before')} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${clockOutMode === 'before' ? 'bg-orange-500 text-black' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>{t.settings?.beforeEnd || 'Trước giờ tan'}</button>
+                                                    <button onClick={() => handleClockOutModeChange('after')} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${clockOutMode === 'after' ? 'bg-orange-500 text-black' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>{t.settings?.afterEnd || 'Sau giờ tan'}</button>
                                                 </div>
                                                 <div className="flex items-center justify-between">
                                                     <p className="text-xs text-slate-400">{clockOutMode === 'before' ? 'Nhắc trước' : 'Nhắc sau'}</p>
-                                                    <span className="text-xs font-bold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full">{clockOutMinutes} phút</span>
+                                                    <span className="text-xs font-bold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full">{clockOutMinutes} {t.settings?.minutes || 'phút'}</span>
                                                 </div>
                                                 <input type="range" min={1} max={10} step={1} value={clockOutMinutes} onChange={(e) => handleClockOutMinutesChange(Number(e.target.value))} className="w-full h-1.5 bg-slate-700 rounded-full appearance-none cursor-pointer accent-orange-500" />
                                                 <div className="flex justify-between text-[10px] text-slate-600">
-                                                    <span>1 phút</span>
-                                                    <span>5 phút</span>
-                                                    <span>10 phút</span>
+                                                    <span>1 {t.settings?.minutes || 'phút'}</span>
+                                                    <span>5 {t.settings?.minutes || 'phút'}</span>
+                                                    <span>10 {t.settings?.minutes || 'phút'}</span>
                                                 </div>
                                             </div>
                                         )}
@@ -803,9 +803,9 @@ export function SettingsClient({ user }: SettingsClientProps) {
                     {/* General */}
                     <section ref={generalRef} data-section="general" className="bg-card rounded-2xl border border-border shadow-2xl overflow-hidden scroll-mt-24">
                         <div className="p-6 border-b border-border flex items-center justify-between">
-                            <h3 className="text-xl font-bold text-white">Hồ sơ cá nhân</h3>
+                            <h3 className="text-xl font-bold text-white">{t.settings?.tabs?.general || 'Hồ sơ cá nhân'}</h3>
                             <Badge variant="outline" className="border-emerald-500/20 text-emerald-500 bg-emerald-500/10 uppercase text-[10px] tracking-wider">
-                                {profile?.status === 'active' ? 'Đang hoạt động' : 'Tạm khóa'}
+                                {profile?.status === 'active' ? (t.settings?.activeRole || 'Đang hoạt động') : (t.settings?.lockedRole || 'Tạm khóa')}
                             </Badge>
                         </div>
                         <div className="p-8 space-y-8">
@@ -816,44 +816,44 @@ export function SettingsClient({ user }: SettingsClientProps) {
                                 </div>
                                 <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1">
-                                        <label className="text-[10px] items-center flex gap-1 font-bold uppercase tracking-widest text-slate-500"><span className="material-symbols-outlined text-[12px]">badge</span> Mã NV</label>
+                                        <label className="text-[10px] items-center flex gap-1 font-bold uppercase tracking-widest text-slate-500"><span className="material-symbols-outlined text-[12px]">badge</span> {t.settings?.empCode || 'Mã NV'}</label>
                                         <div className="text-white font-mono bg-slate-900 border border-slate-700 px-3 py-2 rounded-lg inline-block w-full">{profile?.employee_code || '---'}</div>
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-[10px] items-center flex gap-1 font-bold uppercase tracking-widest text-slate-500"><span className="material-symbols-outlined text-[12px]">work</span> Chức danh</label>
-                                        <div className="text-white bg-slate-900 border border-slate-700 px-3 py-2 rounded-lg inline-block w-full font-bold">{profile?.job_title || 'Thành viên'}</div>
+                                        <label className="text-[10px] items-center flex gap-1 font-bold uppercase tracking-widest text-slate-500"><span className="material-symbols-outlined text-[12px]">work</span> {t.settings?.profile?.jobTitle || 'Chức danh'}</label>
+                                        <div className="text-white bg-slate-900 border border-slate-700 px-3 py-2 rounded-lg inline-block w-full font-bold">{profile?.job_title || t.settings?.profile?.userFallback || 'Thành viên'}</div>
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-[10px] items-center flex gap-1 font-bold uppercase tracking-widest text-slate-500"><span className="material-symbols-outlined text-[12px]">apartment</span> Phòng ban</label>
+                                        <label className="text-[10px] items-center flex gap-1 font-bold uppercase tracking-widest text-slate-500"><span className="material-symbols-outlined text-[12px]">apartment</span> {t.settings?.profile?.department || 'Phòng ban'}</label>
                                         <div className="text-white bg-slate-900 border border-slate-700 px-3 py-2 rounded-lg inline-block w-full">{profile?.department || '---'}</div>
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-[10px] items-center flex gap-1 font-bold uppercase tracking-widest text-slate-500"><span className="material-symbols-outlined text-[12px]">verified_user</span> Quyền</label>
+                                        <label className="text-[10px] items-center flex gap-1 font-bold uppercase tracking-widest text-slate-500"><span className="material-symbols-outlined text-[12px]">verified_user</span> {t.settings?.profile?.role || 'Quyền'}</label>
                                         <div className="text-white bg-slate-900 border border-slate-700 px-3 py-2 rounded-lg inline-block w-full">{profile?.role_name || 'Member'}</div>
                                     </div>
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-400">Họ đệm</label>
+                                    <label className="text-xs font-bold text-slate-400">{t.settings?.lastName || 'Họ đệm'}</label>
                                     <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold" value={profile?.first_name || ''} onChange={(e) => updateProfile('first_name', e.target.value)} />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-400">Tên</label>
+                                    <label className="text-xs font-bold text-slate-400">{t.settings?.firstName || 'Tên'}</label>
                                     <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold" value={profile?.last_name || ''} onChange={(e) => updateProfile('last_name', e.target.value)} />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-400">Ngày sinh</label>
+                                    <label className="text-xs font-bold text-slate-400">{t.settings?.dob || 'Ngày sinh'}</label>
                                     <input type="date" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold" value={profile?.dob || ''} onChange={(e) => updateProfile('dob', e.target.value)} />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-400">Giới tính</label>
+                                    <label className="text-xs font-bold text-slate-400">{t.settings?.gender || 'Giới tính'}</label>
                                     <Select value={profile?.gender || 'male'} onValueChange={(val) => updateProfile('gender', val)}>
                                         <SelectTrigger className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold h-auto border-input"><SelectValue placeholder="Chọn" /></SelectTrigger>
                                         <SelectContent className="bg-slate-900 border-slate-700 text-white">
-                                            <SelectItem value="male">Nam</SelectItem>
-                                            <SelectItem value="female">Nữ</SelectItem>
-                                            <SelectItem value="other">Khác</SelectItem>
+                                            <SelectItem value="male">{t.settings?.genderOptions?.male || 'Nam'}</SelectItem>
+                                            <SelectItem value="female">{t.settings?.genderOptions?.female || 'Nữ'}</SelectItem>
+                                            <SelectItem value="other">{t.settings?.genderOptions?.other || 'Khác'}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -862,7 +862,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
                                     <input className="w-full bg-slate-900/50 border border-slate-800 rounded-xl px-4 py-3 text-slate-500 font-bold" value={profile?.email || ''} readOnly />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-400">SĐT</label>
+                                    <label className="text-xs font-bold text-slate-400">{t.settings?.phone || 'SĐT'}</label>
                                     <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold" value={profile?.phone || ''} onChange={(e) => updateProfile('phone', e.target.value)} />
                                 </div>
                                 <div className="space-y-2 col-span-2">
@@ -872,15 +872,15 @@ export function SettingsClient({ user }: SettingsClientProps) {
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
                                 <div className="space-y-4 p-5 bg-rose-500/5 border border-rose-500/20 rounded-2xl">
-                                    <h4 className="flex items-center gap-2 text-rose-400 font-bold uppercase text-xs tracking-widest"><span className="material-symbols-outlined text-sm">sos</span> Liên hệ khẩn cấp</h4>
+                                    <h4 className="flex items-center gap-2 text-rose-400 font-bold uppercase text-xs tracking-widest"><span className="material-symbols-outlined text-sm">sos</span> {t.settings?.emergency || 'Liên hệ khẩn cấp'}</h4>
                                     <div className="space-y-3">
-                                        <input className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" placeholder="Tên liên hệ" value={profile?.emergency_contact?.name || ''} onChange={(e) => updateEmergency('name', e.target.value)} />
-                                        <input className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" placeholder="SĐT liên hệ" value={profile?.emergency_contact?.phone || ''} onChange={(e) => updateEmergency('phone', e.target.value)} />
-                                        <input className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" placeholder="Mối quan hệ (Vd: Bố, Mẹ...)" value={profile?.emergency_contact?.relationship || ''} onChange={(e) => updateEmergency('relationship', e.target.value)} />
+                                        <input className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" placeholder={t.settings?.emeName || 'Tên liên hệ'} value={profile?.emergency_contact?.name || ''} onChange={(e) => updateEmergency('name', e.target.value)} />
+                                        <input className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" placeholder={t.settings?.emePhone || 'SĐT liên hệ'} value={profile?.emergency_contact?.phone || ''} onChange={(e) => updateEmergency('phone', e.target.value)} />
+                                        <input className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" placeholder={t.settings?.emeRel || 'Mối quan hệ (Vd: Bố, Mẹ...)'} value={profile?.emergency_contact?.relationship || ''} onChange={(e) => updateEmergency('relationship', e.target.value)} />
                                     </div>
                                 </div>
                                 <div className="space-y-4">
-                                    <h4 className="flex items-center gap-2 text-slate-400 font-bold uppercase text-xs tracking-widest"><span className="material-symbols-outlined text-sm">school</span> Kỹ năng</h4>
+                                    <h4 className="flex items-center gap-2 text-slate-400 font-bold uppercase text-xs tracking-widest"><span className="material-symbols-outlined text-sm">school</span> {t.settings?.skills || 'Kỹ năng'}</h4>
                                     <textarea className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm min-h-[120px]" value={skillsInput} onChange={(e) => setSkillsInput(e.target.value)} />
                                 </div>
                             </div>
@@ -890,23 +890,23 @@ export function SettingsClient({ user }: SettingsClientProps) {
                     {/* Security */}
                     <section ref={securityRef} data-section="security" className="bg-card rounded-2xl border border-border shadow-2xl overflow-hidden scroll-mt-24">
                         <div className="p-6 border-b border-border">
-                            <h3 className="text-xl font-bold text-white uppercase tracking-wider">Bảo mật</h3>
+                            <h3 className="text-xl font-bold text-white uppercase tracking-wider">{t.settings?.tabs?.security || 'Bảo mật'}</h3>
                         </div>
                         <div className="p-8 space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <label className="text-xs font-black uppercase tracking-widest text-slate-500">Mật khẩu mới</label>
+                                    <label className="text-xs font-black uppercase tracking-widest text-slate-500">{t.settings?.newPassword || 'Mật khẩu mới'}</label>
                                     <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm font-bold" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-black uppercase tracking-widest text-slate-500">Xác nhận</label>
+                                    <label className="text-xs font-black uppercase tracking-widest text-slate-500">{t.settings?.confirmPassword || 'Xác nhận'}</label>
                                     <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm font-bold" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
                                 </div>
                             </div>
                             <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-800">
                                 <div className="flex items-center gap-4">
                                     <div className="text-purple-500 size-10 bg-purple-500/10 rounded-xl flex items-center justify-center"><span className="material-symbols-outlined">security_update_good</span></div>
-                                    <div><p className="text-white font-bold text-sm">Xác thực 2 bước (2FA)</p></div>
+                                    <div><p className="text-white font-bold text-sm">{t.settings?.twoFA || 'Xác thực 2 bước (2FA)'}</p></div>
                                 </div>
                                 <Switch checked={!!mfaFactorId} onCheckedChange={handleMfaToggle} />
                             </div>
@@ -916,15 +916,15 @@ export function SettingsClient({ user }: SettingsClientProps) {
                     {/* Notifications */}
                     <section ref={notificationsRef} data-section="notifications" className="bg-card rounded-2xl border border-border shadow-2xl overflow-hidden scroll-mt-24">
                         <div className="p-6 border-b border-border">
-                            <h3 className="text-xl font-bold text-white uppercase tracking-wider">Thông báo</h3>
+                            <h3 className="text-xl font-bold text-white uppercase tracking-wider">{t.settings?.tabs?.notifications || 'Thông báo'}</h3>
                         </div>
                         <div className="p-8 space-y-8">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-4">
                                     <div className="text-blue-500 size-10 bg-blue-500/10 rounded-xl flex items-center justify-center"><span className="material-symbols-outlined">notifications_active</span></div>
                                     <div>
-                                        <p className="text-white font-bold text-sm">Thông báo đẩy</p>
-                                        <p className="text-slate-500 text-xs text-left">Nhận thông báo chấm công</p>
+                                        <p className="text-white font-bold text-sm">{t.settings?.pushDesc || 'Thông báo đẩy'}</p>
+                                        <p className="text-slate-500 text-xs text-left">{t.settings?.notifications?.checkInReminders || 'Nhận thông báo chấm công'}</p>
                                     </div>
                                 </div>
                                 <Switch checked={pushEnabled} onCheckedChange={handlePushToggle} />
@@ -935,7 +935,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
                     {/* Preferences */}
                     <section ref={preferencesRef} data-section="preferences" className="bg-card rounded-2xl border border-border shadow-2xl overflow-hidden scroll-mt-24">
                         <div className="p-6 border-b border-border">
-                            <h3 className="text-xl font-bold text-white uppercase tracking-wider">Cài đặt chung</h3>
+                            <h3 className="text-xl font-bold text-white uppercase tracking-wider">{t.settings?.tabs?.preferences || 'Cài đặt chung'}</h3>
                         </div>
                         <div className="p-8 space-y-6">
                             {/* Clock In */}
@@ -945,7 +945,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
                                         <div className="text-emerald-500 size-10 bg-emerald-500/10 rounded-xl flex items-center justify-center"><span className="material-symbols-outlined">timer_play</span></div>
                                         <div>
                                             <p className="text-white font-bold text-sm">Auto Clock In</p>
-                                            <p className="text-slate-500 text-xs">Tự động chấm công khi đến văn phòng</p>
+                                            <p className="text-slate-500 text-xs">{t.settings?.autoClockInDesc || 'Tự động chấm công khi đến văn phòng'}</p>
                                         </div>
                                     </div>
                                     <Switch checked={autoCheckInEnabled} onCheckedChange={handleAutoCheckInToggle} />
@@ -953,14 +953,14 @@ export function SettingsClient({ user }: SettingsClientProps) {
                                 {autoCheckInEnabled && (
                                     <div className="ml-14 p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/10 space-y-3 animate-in slide-in-from-top-2 duration-200">
                                         <div className="flex items-center justify-between">
-                                            <p className="text-sm text-slate-300">Nhắc trước giờ vào ca</p>
-                                            <span className="text-sm font-black text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full min-w-[72px] text-center">{clockInMinutes} phút</span>
+                                            <p className="text-sm text-slate-300">{t.settings?.remindBefore || 'Nhắc trước giờ vào ca'}</p>
+                                            <span className="text-sm font-black text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full min-w-[72px] text-center">{clockInMinutes} {t.settings?.minutes || 'phút'}</span>
                                         </div>
                                         <input type="range" min={1} max={30} step={1} value={clockInMinutes} onChange={(e) => handleClockInMinutesChange(Number(e.target.value))} className="w-full h-2 bg-slate-700 rounded-full appearance-none cursor-pointer accent-emerald-500" />
                                         <div className="flex justify-between text-[10px] text-slate-600 font-bold">
-                                            <span>1 phút</span>
-                                            <span>15 phút</span>
-                                            <span>30 phút</span>
+                                            <span>1 {t.settings?.minutes || 'phút'}</span>
+                                            <span>15 {t.settings?.minutes || 'phút'}</span>
+                                            <span>30 {t.settings?.minutes || 'phút'}</span>
                                         </div>
                                     </div>
                                 )}
@@ -975,7 +975,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
                                         <div className="text-orange-500 size-10 bg-orange-500/10 rounded-xl flex items-center justify-center"><span className="material-symbols-outlined">timer_off</span></div>
                                         <div>
                                             <p className="text-white font-bold text-sm">Auto Clock Out</p>
-                                            <p className="text-slate-500 text-xs">Tự động chấm công khi hết giờ làm</p>
+                                            <p className="text-slate-500 text-xs">{t.settings?.autoClockOutDesc || 'Tự động chấm công khi hết giờ làm'}</p>
                                         </div>
                                     </div>
                                     <Switch checked={autoCheckOutSetting} onCheckedChange={handleAutoCheckOutToggle} />
@@ -983,22 +983,22 @@ export function SettingsClient({ user }: SettingsClientProps) {
                                 {autoCheckOutSetting && (
                                     <div className="ml-14 p-4 bg-orange-500/5 rounded-xl border border-orange-500/10 space-y-4 animate-in slide-in-from-top-2 duration-200">
                                         <div>
-                                            <p className="text-xs text-slate-400 mb-2 font-bold uppercase tracking-wider">Thời điểm nhắc</p>
+                                            <p className="text-xs text-slate-400 mb-2 font-bold uppercase tracking-wider">{t.settings?.remindTime || 'Thời điểm nhắc'}</p>
                                             <div className="flex gap-2">
-                                                <button onClick={() => handleClockOutModeChange('before')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${clockOutMode === 'before' ? 'bg-orange-500 text-black shadow-lg shadow-orange-500/20' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>⏰ Trước giờ tan</button>
-                                                <button onClick={() => handleClockOutModeChange('after')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${clockOutMode === 'after' ? 'bg-orange-500 text-black shadow-lg shadow-orange-500/20' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>🔔 Sau giờ tan</button>
+                                                <button onClick={() => handleClockOutModeChange('before')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${clockOutMode === 'before' ? 'bg-orange-500 text-black shadow-lg shadow-orange-500/20' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>⏰ {t.settings?.beforeEnd || 'Trước giờ tan'}</button>
+                                                <button onClick={() => handleClockOutModeChange('after')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${clockOutMode === 'after' ? 'bg-orange-500 text-black shadow-lg shadow-orange-500/20' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>🔔 {t.settings?.afterEnd || 'Sau giờ tan'}</button>
                                             </div>
                                         </div>
                                         <div className="space-y-3">
                                             <div className="flex items-center justify-between">
-                                                <p className="text-sm text-slate-300">{clockOutMode === 'before' ? 'Nhắc trước' : 'Nhắc sau'} giờ tan ca</p>
-                                                <span className="text-sm font-black text-orange-400 bg-orange-500/10 px-3 py-1 rounded-full min-w-[72px] text-center">{clockOutMinutes} phút</span>
+                                                <p className="text-sm text-slate-300">{clockOutMode === 'before' ? (t.settings?.remindBefore || 'Nhắc trước') : (t.settings?.remindAfter || 'Nhắc sau')} {t.settings?.shiftEnd || 'giờ tan ca'}</p>
+                                                <span className="text-sm font-black text-orange-400 bg-orange-500/10 px-3 py-1 rounded-full min-w-[72px] text-center">{clockOutMinutes} {t.settings?.minutes || 'phút'}</span>
                                             </div>
                                             <input type="range" min={1} max={10} step={1} value={clockOutMinutes} onChange={(e) => handleClockOutMinutesChange(Number(e.target.value))} className="w-full h-2 bg-slate-700 rounded-full appearance-none cursor-pointer accent-orange-500" />
                                             <div className="flex justify-between text-[10px] text-slate-600 font-bold">
-                                                <span>1 phút</span>
-                                                <span>5 phút</span>
-                                                <span>10 phút</span>
+                                                <span>1 {t.settings?.minutes || 'phút'}</span>
+                                                <span>5 {t.settings?.minutes || 'phút'}</span>
+                                                <span>10 {t.settings?.minutes || 'phút'}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1010,7 +1010,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
                     <div className="sticky bottom-6 z-10 flex justify-end">
                         <button onClick={handleSave} disabled={isSaving} className={`shadow-2xl shadow-primary/30 px-8 py-4 bg-primary hover:bg-primary/90 text-black font-black uppercase tracking-wider rounded-2xl flex items-center gap-3 transition-transform ${isSaving ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:-translate-y-1 active:scale-95'}`}>
                             {isSaving ? <span className="material-symbols-outlined animate-spin">progress_activity</span> : <span className="material-symbols-outlined">save</span>}
-                            {isSaving ? 'Đang lưu...' : 'Lưu tất cả thay đổi'}
+                            {isSaving ? (t.settings?.actions?.saving || 'Đang lưu...') : (t.settings?.actions?.save || 'Lưu tất cả thay đổi')}
                         </button>
                     </div>
                 </div>

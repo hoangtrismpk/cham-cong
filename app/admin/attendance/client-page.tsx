@@ -12,6 +12,8 @@ import { format } from 'date-fns'
 import { vi as viLocale, enUS } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/contexts/i18n-context'
+import { toast } from 'sonner'
+import * as XLSX from 'xlsx'
 
 interface EmployeeData {
     id: string
@@ -25,6 +27,7 @@ interface EmployeeData {
     checkIn: string | null
     checkOut: string | null
     totalHours: number | null
+    activeSessionStartTime: string | null
 }
 
 interface AttendancePageProps {
@@ -93,10 +96,136 @@ export function AttendanceClient({ initialEmployees, stats, todayStr }: Attendan
     }
 
     const formatHours = (hours: number | null) => {
-        if (hours === null || hours === undefined) return '0h 0m'
+        if (hours === null || hours === undefined || isNaN(hours)) return '0h 0m'
         const h = Math.floor(hours)
         const m = Math.round((hours - h) * 60)
         return `${h}h ${m}m`
+    }
+
+
+    const handleExportReport = async () => {
+        try {
+            toast.loading('Đang tạo báo cáo, vui lòng đợi...', { id: 'export-report' })
+
+            const monthStr = todayStr.substring(0, 7)
+            const res = await fetch(`/api/admin/reports/attendance?month=${monthStr}`)
+            if (!res.ok) throw new Error('Failed to fetch report data')
+
+            const data = await res.json()
+            const { profiles, logs, leaves } = data
+
+            const sheet1Data: any[] = []
+            const summaryData: any[] = []
+
+            const year = parseInt(monthStr.split('-')[0])
+            const month = parseInt(monthStr.split('-')[1])
+            const numDays = new Date(year, month, 0).getDate()
+
+            profiles.forEach((emp: any) => {
+                let totalWorkDays = 0
+                let totalLeaveDays = 0
+                let totalOnTimeDays = 0
+                let totalLateDays = 0
+                let totalLateMinutes = 0
+                let totalOvertimeHours = 0
+
+                for (let d = 1; d <= numDays; d++) {
+                    const dateStr = `${monthStr}-${String(d).padStart(2, '0')}`
+
+                    // Stop checking future dates
+                    if (dateStr > todayStr) continue
+
+                    const dayLogs = logs.filter((l: any) => l.user_id === emp.id && l.work_date === dateStr)
+                    dayLogs.sort((a: any, b: any) => new Date(a.check_in_time).getTime() - new Date(b.check_in_time).getTime())
+                    const leave = leaves.find((l: any) => l.user_id === emp.id && l.leave_date === dateStr)
+
+                    const firstLog = dayLogs[0]
+                    const lastLog = dayLogs[dayLogs.length - 1]
+
+                    let status = 'VẮNG MẶT'
+                    if (leave) status = 'NGHỈ PHÉP'
+                    else if (firstLog) {
+                        status = firstLog.status === 'late' ? 'ĐI TRỄ' : 'ĐÚNG GIỜ'
+                    }
+
+                    if (firstLog) {
+                        totalWorkDays++
+                        totalLateMinutes += (firstLog.late_minutes || 0)
+                        totalOvertimeHours += dayLogs.reduce((sum: number, lg: any) => sum + (lg.overtime_hours || 0), 0)
+                        if (firstLog.status === 'late') {
+                            totalLateDays++
+                        } else {
+                            totalOnTimeDays++
+                        }
+                    }
+                    if (leave) totalLeaveDays++
+
+                    let employeeIdStr = `#EMP-${emp.id.substring(0, 4)}`
+
+                    // Calculate total day hours
+                    let dailyHours = 0
+                    dayLogs.forEach((lg: any) => {
+                        if (lg.check_in_time && lg.check_out_time) {
+                            dailyHours += (new Date(lg.check_out_time).getTime() - new Date(lg.check_in_time).getTime()) / (1000 * 60 * 60)
+                        } else if (lg.check_in_time && dateStr === todayStr) {
+                            dailyHours += (new Date().getTime() - new Date(lg.check_in_time).getTime()) / (1000 * 60 * 60)
+                        }
+                    })
+
+                    sheet1Data.push({
+                        'Ngày': dateStr,
+                        'Nhân viên': emp.full_name || 'Chưa cập nhật',
+                        'ID': employeeIdStr,
+                        'Phòng ban': emp.department || 'Chưa phân bổ',
+                        'Trạng thái': status,
+                        'Giờ vào': formatTime(firstLog?.check_in_time),
+                        'Giờ ra': formatTime(lastLog?.check_out_time),
+                        'Đi trễ (phút)': firstLog?.late_minutes || 0,
+                        'Tăng ca (giờ)': dayLogs.reduce((sum: number, lg: any) => sum + (lg.overtime_hours || 0), 0),
+                        'Tổng giờ': formatHours(dailyHours)
+                    })
+                }
+
+                summaryData.push({
+                    'Nhân viên': emp.full_name || 'Chưa cập nhật',
+                    'ID': `#EMP-${emp.id.substring(0, 4)}`,
+                    'Phòng ban': emp.department || 'Chưa phân bổ',
+                    'Tổng ngày chấm công': totalWorkDays,
+                    'Tổng ngày nghỉ phép': totalLeaveDays,
+                    'Số ngày đi đúng giờ': totalOnTimeDays,
+                    'Số ngày đi trễ': totalLateDays,
+                    'Tổng thời gian đi trễ (phút)': totalLateMinutes,
+                    'Tổng thời gian tăng ca (giờ)': totalOvertimeHours
+                })
+            })
+
+            // Sort sheet1 by Date then Name
+            sheet1Data.sort((a, b) => a['Ngày'].localeCompare(b['Ngày']) || a['Nhân viên'].localeCompare(b['Nhân viên']))
+
+            const ws1 = XLSX.utils.json_to_sheet(sheet1Data)
+            const ws2 = XLSX.utils.json_to_sheet(summaryData)
+
+            // Auto fit column widths
+            if (sheet1Data.length > 0) {
+                const ws1Cols = Object.keys(sheet1Data[0]).map(k => ({ wch: Math.max(k.length + 2, 14) }))
+                ws1['!cols'] = ws1Cols
+            }
+            if (summaryData.length > 0) {
+                const ws2Cols = Object.keys(summaryData[0]).map(k => ({ wch: Math.max(k.length + 2, 16) }))
+                ws2['!cols'] = ws2Cols
+            }
+
+            const wb = XLSX.utils.book_new()
+            XLSX.utils.book_append_sheet(wb, ws1, "Chi tiết chấm công")
+            XLSX.utils.book_append_sheet(wb, ws2, "Tổng quan tháng")
+
+            XLSX.writeFile(wb, `BaoCao_ChamCong_${monthStr}.xlsx`)
+
+            toast.success('Xuất báo cáo thành công!', { id: 'export-report' })
+        } catch (error) {
+            console.error('Error exporting CSV:', error)
+            toast.error('Lỗi khi lấy dữ liệu xuất báo cáo', { id: 'export-report' })
+        }
     }
 
     return (
@@ -112,7 +241,11 @@ export function AttendanceClient({ initialEmployees, stats, todayStr }: Attendan
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
-                        <Button variant="outline" className="border-slate-700 bg-transparent text-slate-300 hover:bg-slate-800 hover:text-white">
+                        <Button
+                            variant="outline"
+                            className="border-slate-700 bg-transparent text-slate-300 hover:bg-slate-800 hover:text-white"
+                            onClick={handleExportReport}
+                        >
                             <Download className="w-4 h-4 mr-2" />
                             {t.admin.attendancePage.exportReport}
                         </Button>
@@ -315,7 +448,7 @@ export function AttendanceClient({ initialEmployees, stats, todayStr }: Attendan
                                                     {formatTime(emp.checkOut)}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-black text-white text-right tabular-nums">
-                                                    {formatHours(emp.totalHours)}
+                                                    {formatHours((emp.totalHours || 0) + (emp.activeSessionStartTime ? (Date.now() - new Date(emp.activeSessionStartTime).getTime()) / (1000 * 60 * 60) : 0))}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right">
                                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-white hover:bg-slate-700/50 rounded-full">

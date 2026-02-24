@@ -1,39 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
-import * as firebaseAdmin from 'firebase-admin'
-
-// Initialize Firebase Admin SDK (server-side, Node.js)
-function getFirebaseAdmin() {
-    if (firebaseAdmin.apps.length > 0) {
-        return firebaseAdmin.apps[0]!
-    }
-
-    const b64 = process.env.FIREBASE_SERVICE_ACCOUNT_B64
-    if (b64) {
-        try {
-            const json = Buffer.from(b64, 'base64').toString('utf-8')
-            const serviceAccount = JSON.parse(json)
-            return firebaseAdmin.initializeApp({
-                credential: firebaseAdmin.credential.cert(serviceAccount),
-            })
-        } catch (e) {
-            console.error('Error parsing FIREBASE_SERVICE_ACCOUNT_B64:', e)
-        }
-    }
-
-    // Fallback: try JSON file path
-    const jsonPath = process.env.FIREBASE_SERVICE_ACCOUNT_JSON
-    if (jsonPath) {
-        // Dynamic import for file-based credential
-        const serviceAccount = require(jsonPath)
-        return firebaseAdmin.initializeApp({
-            credential: firebaseAdmin.credential.cert(serviceAccount),
-        })
-    }
-
-    throw new Error('No Firebase credentials found. Set FIREBASE_SERVICE_ACCOUNT_B64 or FIREBASE_SERVICE_ACCOUNT_JSON env var.')
-}
+import { sendPushToTokens } from '@/lib/firebase-admin'
 
 export async function POST(req: Request) {
     try {
@@ -49,11 +17,12 @@ export async function POST(req: Request) {
         const adminSb = createAdminClient()
         const { data: profile } = await adminSb
             .from('profiles')
-            .select('role')
+            .select('role_id, roles(name)')
             .eq('id', user.id)
             .single()
 
-        if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
+        const roleName = Array.isArray(profile?.roles) ? profile.roles[0]?.name : (profile?.roles as any)?.name
+        if (!roleName || !['admin', 'super_admin'].includes(roleName)) {
             return NextResponse.json({ error: 'Forbidden: Admin only' }, { status: 403 })
         }
 
@@ -84,34 +53,31 @@ export async function POST(req: Request) {
             }, { status: 404 })
         }
 
-        // 4. Send push notification
-        const app = getFirebaseAdmin()
+        // 4. Send push notification via FCM HTTP v1 API (no firebase-admin SDK)
         const fcmTokens = tokens.map(t => t.token)
-
-        const fcmMessage = {
-            notification: {
+        const { results, successCount, failureCount } = await sendPushToTokens(
+            fcmTokens,
+            {
                 title: title || '🔔 Test Notification',
                 body: message || 'Đây là thông báo test từ Admin Dashboard',
             },
-            data: {
+            {
                 url: '/',
                 type: 'admin_test',
                 sentAt: new Date().toISOString(),
-            },
-            tokens: fcmTokens,
-        }
-
-        const response = await firebaseAdmin.messaging().sendEachForMulticast(fcmMessage)
+            }
+        )
 
         // 5. Clean up stale tokens
         const staleTokens: string[] = []
-        for (let i = 0; i < response.responses.length; i++) {
-            const resp = response.responses[i]
-            if (!resp.success) {
-                const errCode = resp.error?.code
+        for (let i = 0; i < results.length; i++) {
+            const r = results[i]
+            if (!r.success) {
+                const errCode = r.error || ''
                 if (
-                    errCode === 'messaging/invalid-registration-token' ||
-                    errCode === 'messaging/registration-token-not-registered'
+                    errCode.includes('UNREGISTERED') ||
+                    errCode.includes('INVALID_ARGUMENT') ||
+                    errCode.includes('NOT_FOUND')
                 ) {
                     staleTokens.push(fcmTokens[i])
                     await adminSb
@@ -127,19 +93,19 @@ export async function POST(req: Request) {
             user_id: targetUserId,
             shift_id: null,
             notification_type: 'admin_test',
-            status: response.successCount > 0 ? 'sent' : 'failed',
+            status: successCount > 0 ? 'sent' : 'failed',
         })
 
         return NextResponse.json({
             success: true,
             total_tokens: tokens.length,
-            success_count: response.successCount,
-            failure_count: response.failureCount,
+            success_count: successCount,
+            failure_count: failureCount,
             stale_tokens_removed: staleTokens.length,
             token_details: tokens.map((t, i) => ({
                 device_type: t.device_type,
-                status: response.responses[i].success ? 'delivered' : 'failed',
-                error: response.responses[i].error?.code || null,
+                status: results[i]?.success ? 'delivered' : 'failed',
+                error: results[i]?.error || null,
             })),
         })
 

@@ -75,6 +75,7 @@ export default async function DashboardPage() {
                 isCheckedOut={isCheckedOut}
                 userName={user.user_metadata.full_name || 'Bạn'}
                 workSettings={workSettings}
+                todayShift={todayShift}
               />
             </div>
           </div>

@@ -14,7 +14,8 @@ import {
     PanelLeft,
     ChevronRight,
     Menu,
-    Building2
+    Building2,
+    Mail
 } from 'lucide-react'
 import {
     Sheet,
@@ -45,58 +46,71 @@ export default function SettingsLayout({
     const [isCollapsed, setIsCollapsed] = useState(true)
 
     // Settings navigation items with i18n
-    const settingsNavItems = [
-        {
-            title: t.adminSettings.general,
-            href: '/admin/settings/general',
-            icon: Settings,
-            description: t.adminSettings.generalSettings.description,
-            permission: 'settings.view'
-        },
-        {
-            title: t.adminSettings.organization.navTitle,
-            href: '/admin/settings/organization',
-            icon: Building2,
-            description: t.adminSettings.organization.navDescription,
-            permission: 'settings.view'
-        },
-        {
-            title: t.adminSettings.security,
-            href: '/admin/settings/security',
-            icon: Shield,
-            description: t.adminSettings.securitySettings.description,
-            permission: 'settings.view'
-        },
-        {
-            title: t.adminSettings.notifications,
-            href: '/admin/settings/notifications',
-            icon: Bell,
-            description: t.adminSettings.notificationDashboard.subtitle,
-            permission: 'settings.view'
-        },
-        {
-            title: t.adminSettings.featureToggles,
-            href: '/admin/settings/feature-toggles',
-            icon: ToggleLeft,
-            description: t.adminSettings.featureTogglesComingSoon.description,
-            comingSoon: true,
-            permission: 'settings.view'
-        },
-        {
-            title: t.adminSettings.integrations.title,
-            href: '/admin/settings/integrations',
-            icon: Puzzle,
-            description: t.adminSettings.integrations.description,
-            permission: 'settings.view'
-        },
-        {
-            title: t.adminSettings.roles,
-            href: '/admin/settings/roles',
-            icon: Users,
-            description: t.adminSettings.roleSettings.description,
-            permission: 'roles.view'
-        }
-    ]
+    const settingsNavItems: {
+        title: string
+        href: string
+        icon: any
+        description: string
+        permission: string
+        comingSoon?: boolean
+    }[] = [
+            {
+                title: t.adminSettings.general,
+                href: '/admin/settings/general',
+                icon: Settings,
+                description: t.adminSettings.generalSettings.description,
+                permission: 'settings.view'
+            },
+            {
+                title: t.adminSettings.organization.navTitle,
+                href: '/admin/settings/organization',
+                icon: Building2,
+                description: t.adminSettings.organization.navDescription,
+                permission: 'settings.view'
+            },
+            {
+                title: t.adminSettings.security,
+                href: '/admin/settings/security',
+                icon: Shield,
+                description: t.adminSettings.securitySettings.description,
+                permission: 'settings.view'
+            },
+            {
+                title: t.adminSettings.notifications,
+                href: '/admin/settings/notifications',
+                icon: Bell,
+                description: t.adminSettings.notificationDashboard.subtitle,
+                permission: 'settings.view'
+            },
+            {
+                title: t.adminSettings.featureToggles,
+                href: '/admin/settings/feature-toggles',
+                icon: ToggleLeft,
+                description: t.adminSettings.featureTogglesComingSoon.description,
+                permission: 'settings.view'
+            },
+            {
+                title: t.adminSettings.integrations.title,
+                href: '/admin/settings/integrations',
+                icon: Puzzle,
+                description: t.adminSettings.integrations.description,
+                permission: 'settings.view'
+            },
+            {
+                title: t.adminSettings.roles,
+                href: '/admin/settings/roles',
+                icon: Users,
+                description: t.adminSettings.roleSettings.description,
+                permission: 'roles.view'
+            },
+            {
+                title: 'Email (Resend)',
+                href: '/admin/settings/email',
+                icon: Mail,
+                description: 'Cấu hình dịch vụ gửi email tự động',
+                permission: 'settings.view'
+            }
+        ]
 
     useEffect(() => {
         async function loadPermissions() {
@@ -311,16 +325,16 @@ export default function SettingsLayout({
                                 <SheetTitle className="sr-only">Menu Cấu hình</SheetTitle>
                                 <div className="flex flex-col h-full bg-[#0d1117]">
                                     {/* Mobile Menu Header */}
-                                    <div className="p-4 border-b border-slate-800">
+                                    <div className="p-4 border-b border-slate-800 space-y-1.5">
                                         <Link
                                             href="/admin"
-                                            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-3"
+                                            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-2"
                                         >
                                             <ChevronLeft className="h-4 w-4" />
                                             <span className="text-sm">{t.adminSettings.settingsLayout.backToDashboard}</span>
                                         </Link>
                                         <h1 className="text-xl font-semibold text-white">{t.adminSettings.settingsLayout.systemConfig}</h1>
-                                        <p className="text-sm text-slate-400 mt-1">{t.adminSettings.settingsLayout.manageSystemSettings}</p>
+                                        <p className="text-sm text-slate-400 leading-relaxed">{t.adminSettings.settingsLayout.manageSystemSettings}</p>
                                     </div>
 
                                     {/* Mobile Menu Navigation */}

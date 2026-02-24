@@ -17,11 +17,12 @@ export async function GET() {
         const adminSb = createAdminClient()
         const { data: profile } = await adminSb
             .from('profiles')
-            .select('role')
+            .select('role_id, roles(name)')
             .eq('id', user.id)
             .single()
 
-        if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
+        const roleName = Array.isArray(profile?.roles) ? profile.roles[0]?.name : (profile?.roles as any)?.name
+        if (!roleName || !['admin', 'super_admin'].includes(roleName)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }
 
