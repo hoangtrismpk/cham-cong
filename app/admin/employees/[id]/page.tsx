@@ -176,24 +176,28 @@ export default function EmployeeDetailPage() {
                     <div className="flex items-start justify-between">
                         <div className="flex items-center gap-6">
                             {/* Avatar */}
-                            <div className={`relative w-24 h-24 rounded-full flex items-center justify-center text-white font-black bg-gradient-to-br border-4 border-slate-700 shadow-xl overflow-hidden ${!employee.avatar_url ? getAvatarFallback(employee.full_name) : 'bg-slate-800'}`}>
-                                {employee.avatar_url ? (
-                                    <img src={employee.avatar_url} alt={employee.full_name} className="w-full h-full object-cover" />
-                                ) : (
-                                    <span className="text-3xl uppercase">
-                                        {`${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`}
-                                    </span>
-                                )}
-                                <div className="absolute bottom-1 right-1 w-6 h-6 bg-emerald-500 border-2 border-[#161b22] rounded-full"></div>
+                            <div className="relative">
+                                <div className={`w-24 h-24 rounded-full flex items-center justify-center text-white font-black bg-gradient-to-br border-4 border-slate-700 shadow-xl overflow-hidden ${!employee.avatar_url ? getAvatarFallback(employee.full_name) : 'bg-slate-800'}`}>
+                                    {employee.avatar_url ? (
+                                        <img src={employee.avatar_url} alt={employee.full_name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <span className="text-3xl uppercase">
+                                            {`${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="absolute bottom-1 right-1 z-10 w-6 h-6 bg-emerald-500 border-2 border-[#161b22] rounded-full"></div>
                             </div>
 
                             {/* Info */}
                             <div>
                                 <div className="flex items-center gap-3 mb-2">
                                     <h1 className="text-3xl font-bold">{employee.full_name}</h1>
-                                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                                        {employee.employment_type?.toUpperCase() || 'N/A'}
-                                    </Badge>
+                                    {employee.employment_type && (
+                                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                                            {employee.employment_type.toUpperCase()}
+                                        </Badge>
+                                    )}
                                 </div>
                                 <p className="text-lg text-slate-300 mb-1">
                                     {employee.job_title} • {employee.department}
