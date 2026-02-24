@@ -57,7 +57,7 @@ export default function EmployeeDetailPage() {
     const [nextShift, setNextShift] = useState<any>(null)
     const [activeTab, setActiveTab] = useState('personal')
 
-    // Load employee data
+    // Load employee data (fast: show profile first)
     useEffect(() => {
         async function loadData() {
             setLoading(true)
@@ -69,32 +69,17 @@ export default function EmployeeDetailPage() {
             }
 
             setEmployee(result.employee)
+            setLoading(false) // Show profile immediately
 
-            // We delay loading attendance until the user opens the tab
-            setAttendanceLogs([])
-            setAttendanceStats({})
+            // Load stats + next shift in parallel (non-blocking)
+            const [statsResult, nextShiftResult] = await Promise.all([
+                getEmployeeQuickStats(result.employee.id),
+                getEmployeeNextShift(result.employee.id)
+            ])
 
-            // Load quick stats
-            const statsResult = await getEmployeeQuickStats(result.employee.id)
-            console.log('📊 Quick Stats Result:', statsResult)
-            if (statsResult._debug) {
-                console.log('🔍 Debug Info:', statsResult._debug)
-            }
-
-            // Always set stats, even if there are partial errors (e.g. leave requests failed but attendance worked)
             setQuickStats(statsResult)
-
-            if (statsResult.error) {
-                console.warn('⚠️ Quick stats partial error:', statsResult.error)
-            }
-
-            // Load next shift
-            const nextShiftResult = await getEmployeeNextShift(result.employee.id)
             setNextShift(nextShiftResult)
-
-            setLoading(false)
         }
-        loadData()
         loadData()
     }, [employeeId, router])
 
