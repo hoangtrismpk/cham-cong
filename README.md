@@ -9,7 +9,7 @@
 
 ---
 
-| **20** Bộ Kỹ năng (Modules) | **18** Agent Chuyên gia | **21** Quy trình (Workflows) | **17** Luật Hệ thống (Rules) |
+| **20** Bộ Kỹ năng (Modules) | **18** Agent Chuyên gia | **21** Quy trình (Workflows) | **18** Luật Hệ thống (Rules) |
 | :---: | :---: | :---: | :---: |
 
 ---
@@ -32,6 +32,9 @@
 
 ### 🔒 Bảo mật & Hệ thống
 - 🔐 **MFA (Multi-Factor Authentication)**: Bảo vệ tài khoản với mã xác thực 2 lớp (TOTP).
+- 🚨 **Cảnh báo Đăng nhập Lạ (Device Tracking)**: Phát hiện và gửi email cảnh báo khi có đăng nhập từ thiết bị hoặc Location IP bất thường.
+- 🔑 **Force Password Change**: Bắt buộc nhân viên đổi mật khẩu ngay trong lần đầu đăng nhập.
+- 📧 **Hệ thống Email Templates**: Quản lý mẫu email động trong Database với các biến nội dung tùy biến và gửi qua API Resend (Cấp/Đổi mật khẩu, Báo cáo Nghỉ phép...).
 - 🛡️ **Invisible reCAPTCHA v3**: Chặn Bot tự động mà không làm phiền trải nghiệm người dùng tại các trang đăng nhập.
 - 🛂 **Phân quyền (RBAC)**: Hệ thống quyền hạn chặt chẽ (Admin, HR, Manager, Member) dựa trên Row Level Security (RLS) của Supabase.
 - 🌐 **Đa ngôn ngữ**: Hỗ trợ hoàn chỉnh Tiếng Việt và Tiếng Anh.

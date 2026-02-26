@@ -7,6 +7,6 @@ export const metadata = {
 }
 
 export default async function EmailTemplatesPage() {
-    await requirePermission('settings.view', '/admin')
+    await requirePermission('email_templates.view', '/admin')
     return <EmailTemplatesClientPage />
 }

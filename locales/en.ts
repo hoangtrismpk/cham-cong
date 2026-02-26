@@ -960,6 +960,8 @@ export const en: Translations = {
                 'users.edit': 'Edit Employee Info',
                 'users.delete': 'Delete/Lock Employee',
                 'attendance.view': 'View Attendance Data',
+                'attendance.view_all': 'View All Employees Attendance (Company-wide)',
+                'attendance.view_team': 'View Team Attendance Only (Direct Reports)',
                 'attendance.edit': '⚠ Edit Attendance Data',
                 'attendance.export': 'Export Attendance Report',
                 'leaves.view': 'View Leave Calendar',

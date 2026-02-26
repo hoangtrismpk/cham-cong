@@ -41,6 +41,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { enrollMFA, challengeMFA, verifyMFA, unenrollMFA, getMFAFactors } from '@/app/actions/mfa'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { notifyPasswordChanged } from '@/app/actions/email-triggers'
 
 interface SettingsClientProps {
     user: any
@@ -219,6 +220,8 @@ export function SettingsClient({ user }: SettingsClientProps) {
                 setPassword('')
                 setConfirmPassword('')
                 toast.success(t.settings?.messages?.passwordUpdated || 'Đã cập nhật mật khẩu')
+                // Send email notification (fire-and-forget)
+                notifyPasswordChanged()
             }
 
             if (profile) {

@@ -2,7 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { format, subDays } from 'date-fns'
 import { getPendingStats } from '@/app/actions/approvals'
 import { AdminDashboardClient } from '@/components/admin/dashboard-view'
-import { redirect } from 'next/navigation'
+import { ClientRedirect } from '@/components/client-redirect'
 
 export const revalidate = 0 // Disable caching for realtime data
 
@@ -11,7 +11,7 @@ export default async function AdminDashboard() {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
-        redirect('/login')
+        return <ClientRedirect url="/login" />
     }
 
     // Custom permission logic to avoid infinite redirects and query DB only once
@@ -58,7 +58,7 @@ export default async function AdminDashboard() {
                 break
             }
         }
-        redirect(redirectUrl)
+        return <ClientRedirect url={redirectUrl} />
     }
 
     // 1. Get Stats Overview

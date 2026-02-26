@@ -6,6 +6,7 @@ import { addDays, parseISO, format } from 'date-fns'
 import { createAuditLog } from './audit-logs'
 import { checkPermission } from '@/utils/permissions'
 import { getDescendantIds } from './my-team'
+import { EmailService } from '@/lib/email-service'
 
 /**
  * Determine the scope of approvals the current user can see.
@@ -457,6 +458,11 @@ export async function approveActivity(id: string, type: string): Promise<{ succe
 
                 notificationBody = `Đơn nghỉ phép ngày ${dayName} - ${dateStr} của bạn đã được duyệt.`
 
+                // Send email notification (await to guarantee it sends before action returns in Vercel/NextJS)
+                await sendLeaveEmail('approved', request.user_id, { ...request, id }, supabase).catch(err => {
+                    console.error('[Approve] Failed to send email:', err)
+                })
+
                 // Audit Log
                 await createAuditLog({
                     action: 'APPROVE',
@@ -683,6 +689,11 @@ export async function rejectActivity(id: string, type: string, note: string): Pr
                 const dateStr = new Date(request.leave_date).toLocaleDateString('vi-VN')
                 notificationBody = `Đơn xin nghỉ phép ngày ${dateStr} của bạn đã bị từ chối. Lý do: ${note}`
 
+                // Send email notification (await to guarantee it sends)
+                await sendLeaveEmail('rejected', request.user_id, { ...request, id }, supabase, note).catch(err => {
+                    console.error('[Reject] Failed to send email:', err)
+                })
+
                 // Audit Log
                 await createAuditLog({
                     action: 'REJECT',
@@ -830,4 +841,91 @@ export async function rejectActivity(id: string, type: string, note: string): Pr
 function getVietnameseDayName(date: Date) {
     const days = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7']
     return days[date.getDay()]
+}
+
+/**
+ * Helper: Send leave approval/rejection email
+ */
+async function sendLeaveEmail(
+    status: 'approved' | 'rejected',
+    employeeUserId: string,
+    leaveData: any,
+    supabase: any,
+    rejectionReason?: string
+) {
+    try {
+        // Get full leave request data
+        const { data: fullRequest } = await supabase
+            .from('leave_requests')
+            .select('leave_type, duration_hours, start_time, end_time')
+            .eq('id', leaveData.id || '')
+            .single()
+
+        // Get employee info
+        const { data: employee } = await supabase
+            .from('profiles')
+            .select('email, full_name')
+            .eq('id', employeeUserId)
+            .single()
+
+        if (!employee?.email) return
+
+        // Get approver info
+        const { data: { user: approver } } = await supabase.auth.getUser()
+        let approverName = 'Quản lý'
+        if (approver) {
+            const { data: approverProfile } = await supabase
+                .from('profiles')
+                .select('full_name')
+                .eq('id', approver.id)
+                .single()
+            approverName = approverProfile?.full_name || 'Quản lý'
+        }
+
+        const leaveType = fullRequest?.leave_type || 'full_day'
+        const leaveTypeMap: Record<string, string> = {
+            'full_day': 'Nghỉ cả ngày',
+            'half_day_morning': 'Nghỉ buổi sáng',
+            'half_day_afternoon': 'Nghỉ buổi chiều',
+            'partial': 'Nghỉ theo giờ',
+        }
+
+        // Determine start/end time
+        let startTime = '08:00'
+        let endTime = '17:00'
+        if (leaveType === 'partial' && fullRequest?.start_time && fullRequest?.end_time) {
+            startTime = fullRequest.start_time
+            endTime = fullRequest.end_time
+        } else if (leaveType === 'half_day_morning') {
+            startTime = '08:00'
+            endTime = '12:00'
+        } else if (leaveType === 'half_day_afternoon') {
+            startTime = '13:00'
+            endTime = '17:00'
+        }
+
+        const leaveDate = new Date(leaveData.leave_date)
+        const formattedDate = leaveDate.toLocaleDateString('vi-VN')
+
+        // Calculate total days
+        const durationHours = fullRequest?.duration_hours || 8
+        const totalDays = durationHours >= 8
+            ? Math.round(durationHours / 8 * 10) / 10
+            : (durationHours / 8).toFixed(1)
+
+        const templateSlug = status === 'approved' ? 'leave-approved' : 'leave-rejected'
+
+        EmailService.sendAsync(templateSlug, employee.email, {
+            user_name: employee.full_name,
+            approver_name: approverName,
+            leave_dates: formattedDate,
+            leave_type: leaveTypeMap[leaveType] || leaveType,
+            start_date: `${formattedDate} ${startTime}`,
+            end_date: `${formattedDate} ${endTime}`,
+            total_days: String(totalDays),
+            rejection_reason: rejectionReason || '',
+        })
+    } catch (err) {
+        console.error('[sendLeaveEmail] Error:', err)
+    }
 }

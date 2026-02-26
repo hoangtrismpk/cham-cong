@@ -288,15 +288,18 @@ export default function CreateEmployeeDialog() {
                                 <SelectValue placeholder={t.admin.employeeManagement.create.selectRole} />
                             </SelectTrigger>
                             <SelectContent className="bg-[#1a1f2e] border-slate-800 text-white">
-                                {roles.map(role => (
-                                    <SelectItem
-                                        key={role.id}
-                                        value={role.id}
-                                        className="cursor-pointer hover:bg-slate-800/50"
-                                    >
-                                        {role.display_name || role.name}
-                                    </SelectItem>
-                                ))}
+                                {roles.map(role => {
+                                    const label = (t.adminSettings.roleSettings as any).roleLabels?.[role.name] || role.display_name || role.name;
+                                    return (
+                                        <SelectItem
+                                            key={role.id}
+                                            value={role.id}
+                                            className="cursor-pointer hover:bg-slate-800/50"
+                                        >
+                                            {label}
+                                        </SelectItem>
+                                    );
+                                })}
                             </SelectContent>
                         </Select>
                     </div>

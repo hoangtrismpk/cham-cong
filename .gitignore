@@ -79,9 +79,10 @@ implementation_plan.md
 GEMINI*.md
 ERRORS.md
 docs/
-
+*.local.md
+.agent/credentials.local.md
+/test-push-debug.log
+/debug.log
 
 supabase/seed_hoang_tri_pattern*.sql
 
-# Agent local files (credentials, logs, etc.)
-.agent/

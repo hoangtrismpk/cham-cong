@@ -40,9 +40,10 @@ interface AttendancePageProps {
         onLeave: number
     }
     todayStr: string
+    viewScope?: 'all' | 'team'
 }
 
-export function AttendanceClient({ initialEmployees, stats, todayStr }: AttendancePageProps) {
+export function AttendanceClient({ initialEmployees, stats, todayStr, viewScope = 'all' }: AttendancePageProps) {
     const { t, locale } = useI18n()
     const { can } = usePermissions()
     const dateLocale = locale === 'vi' ? viLocale : enUS
@@ -110,7 +111,7 @@ export function AttendanceClient({ initialEmployees, stats, todayStr }: Attendan
             toast.loading('Đang tạo báo cáo, vui lòng đợi...', { id: 'export-report' })
 
             const monthStr = todayStr.substring(0, 7)
-            const res = await fetch(`/api/admin/reports/attendance?month=${monthStr}`)
+            const res = await fetch(`/api/admin/reports/attendance?month=${monthStr}&scope=${viewScope}`)
             if (!res.ok) throw new Error('Failed to fetch report data')
 
             const data = await res.json()
@@ -240,6 +241,18 @@ export function AttendanceClient({ initialEmployees, stats, todayStr }: Attendan
                         <div className="flex items-center gap-2 mt-1 text-slate-400 text-sm">
                             <Calendar className="w-4 h-4" />
                             <span>{t.admin.attendancePage.subtitle}, {format(new Date(todayStr), 'MMM dd, yyyy', { locale: dateLocale })}</span>
+                            {viewScope === 'team' && (
+                                <Badge className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20 text-[10px] font-bold uppercase tracking-wider ml-2">
+                                    <span className="material-symbols-outlined text-[12px] mr-1">diversity_3</span>
+                                    {locale === 'vi' ? 'Nhóm của tôi' : 'My Team'}
+                                </Badge>
+                            )}
+                            {viewScope === 'all' && (
+                                <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20 text-[10px] font-bold uppercase tracking-wider ml-2">
+                                    <span className="material-symbols-outlined text-[12px] mr-1">groups_3</span>
+                                    {locale === 'vi' ? 'Toàn công ty' : 'Company-wide'}
+                                </Badge>
+                            )}
                         </div>
                     </div>
                     <div className="flex items-center gap-3">

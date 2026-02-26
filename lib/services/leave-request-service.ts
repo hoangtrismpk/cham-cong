@@ -5,6 +5,7 @@
  */
 
 import { createClient } from '@/utils/supabase/server';
+import { EmailService } from '@/lib/email-service';
 import type {
     LeaveRequest,
     LeaveRequestWithEmployee,
@@ -201,6 +202,9 @@ export class LeaveRequestService {
 
         // Mark related daily summaries for recalculation
         await this.markSummaryForRecalculation(data.employee_id, data.leave_date);
+
+        // Send email notification to the employee (fire-and-forget)
+        this.sendLeaveStatusEmail(data, update.approved_by).catch(() => { });
 
         return data;
     }
@@ -440,5 +444,83 @@ export class LeaveRequestService {
             .update({ needs_recalculation: true })
             .eq('employee_id', employeeId)
             .eq('work_date', date);
+    }
+
+    /**
+     * Send email notification when leave request status changes
+     */
+    private static async sendLeaveStatusEmail(
+        leaveRequest: LeaveRequest,
+        approverId?: string
+    ): Promise<void> {
+        try {
+            const supabase = await createClient();
+
+            // Get employee info
+            const { data: employee } = await supabase
+                .from('profiles')
+                .select('email, full_name')
+                .eq('id', leaveRequest.employee_id)
+                .single();
+
+            if (!employee?.email) return;
+
+            // Get approver name
+            let approverName = 'Quản lý';
+            if (approverId) {
+                const { data: approver } = await supabase
+                    .from('profiles')
+                    .select('full_name')
+                    .eq('id', approverId)
+                    .single();
+                approverName = approver?.full_name || 'Quản lý';
+            }
+
+            // Format leave type
+            const leaveTypeMap: Record<string, string> = {
+                'full_day': 'Nghỉ cả ngày',
+                'half_day_morning': 'Nghỉ buổi sáng',
+                'half_day_afternoon': 'Nghỉ buổi chiều',
+                'partial': 'Nghỉ theo giờ',
+            };
+
+            const templateSlug = leaveRequest.status === 'approved' ? 'leave-approved' : 'leave-rejected';
+
+            // Calculate total days from duration_hours
+            const durationHours = leaveRequest.duration_hours || 8;
+            const totalDays = durationHours >= 8
+                ? Math.round(durationHours / 8 * 10) / 10
+                : (durationHours / 8).toFixed(1);
+
+            const leaveDate = new Date(leaveRequest.leave_date);
+            const formattedDate = leaveDate.toLocaleDateString('vi-VN');
+
+            // Determine start/end time based on leave type
+            let startTime = '08:00';
+            let endTime = '17:00';
+            if (leaveRequest.leave_type === 'partial' && leaveRequest.start_time && leaveRequest.end_time) {
+                startTime = leaveRequest.start_time;
+                endTime = leaveRequest.end_time;
+            } else if (leaveRequest.leave_type === 'half_day_morning') {
+                startTime = '08:00';
+                endTime = '12:00';
+            } else if (leaveRequest.leave_type === 'half_day_afternoon') {
+                startTime = '13:00';
+                endTime = '17:00';
+            }
+
+            EmailService.sendAsync(templateSlug, employee.email, {
+                user_name: employee.full_name,
+                approver_name: approverName,
+                leave_dates: formattedDate,
+                leave_type: leaveTypeMap[leaveRequest.leave_type] || leaveRequest.leave_type,
+                start_date: `${formattedDate} ${startTime}`,
+                end_date: `${formattedDate} ${endTime}`,
+                total_days: String(totalDays),
+                rejection_reason: (leaveRequest as any).rejection_reason || '',
+            });
+        } catch (err) {
+            console.error('[LeaveRequestService] sendLeaveStatusEmail error:', err);
+        }
     }
 }

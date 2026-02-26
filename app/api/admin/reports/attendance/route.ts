@@ -11,6 +11,7 @@ export async function GET(request: Request) {
 
         const { searchParams } = new URL(request.url)
         const monthStr = searchParams.get('month') // e.g. "2026-02"
+        const scope = searchParams.get('scope') || 'all' // 'all' or 'team'
 
         if (!monthStr) {
             return NextResponse.json({ error: 'Missing month parameter' }, { status: 400 })
@@ -18,19 +19,51 @@ export async function GET(request: Request) {
 
         const supabase = await createClient()
 
-        // Fetch all profiles
-        const { data: profiles, error: profileError } = await supabase
+        // Determine view scope based on permissions
+        const hasViewAll = await checkPermission('attendance.view_all')
+        const hasViewTeam = await checkPermission('attendance.view_team')
+
+        // Effective scope: server-side re-validation (don't trust client param alone)
+        const effectiveScope: 'all' | 'team' = hasViewAll ? 'all' : (hasViewTeam ? 'team' : 'all')
+
+        // Get current user for team filter
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        // Build profile query with scope filter
+        let profileQuery = supabase
             .from('profiles')
             .select('id, full_name, email, department, job_title')
 
+        if (effectiveScope === 'team') {
+            // Only direct reports of the current user
+            profileQuery = profileQuery.eq('manager_id', user.id)
+        }
+
+        const { data: profiles, error: profileError } = await profileQuery
+
         if (profileError) throw profileError
 
-        // Fetch attendance logs for the month using date range (DATE type, not text)
+        // If no profiles match (e.g., team scope with no direct reports), return empty
+        if (!profiles || profiles.length === 0) {
+            return NextResponse.json({
+                profiles: [],
+                logs: [],
+                leaves: []
+            })
+        }
+
+        // Build allowed user IDs set for filtering logs & leaves
+        const allowedIds = profiles.map(p => p.id)
+
+        // Fetch attendance logs for the month using date range
         const [year, month] = monthStr.split('-').map(Number)
         const firstDay = `${monthStr}-01`
-        const lastDay = new Date(year, month, 0).toISOString().split('T')[0] // last day of month
+        const lastDay = new Date(year, month, 0).toISOString().split('T')[0]
 
-        const { data: logs, error: logError } = await supabase
+        const { data: allLogs, error: logError } = await supabase
             .from('attendance_logs')
             .select('*')
             .gte('work_date', firstDay)
@@ -38,8 +71,8 @@ export async function GET(request: Request) {
 
         if (logError) throw logError
 
-        // Fetch leave requests for the month using date range
-        const { data: leaves, error: leaveError } = await supabase
+        // Fetch leave requests for the month
+        const { data: allLeaves, error: leaveError } = await supabase
             .from('leave_requests')
             .select('*')
             .eq('status', 'approved')
@@ -48,10 +81,15 @@ export async function GET(request: Request) {
 
         if (leaveError) throw leaveError
 
+        // Filter logs and leaves to only allowed profiles (respect scope)
+        const allowedIdSet = new Set(allowedIds)
+        const logs = (allLogs || []).filter(l => allowedIdSet.has(l.user_id))
+        const leaves = (allLeaves || []).filter(l => allowedIdSet.has(l.user_id))
+
         return NextResponse.json({
             profiles: profiles || [],
-            logs: logs || [],
-            leaves: leaves || []
+            logs,
+            leaves
         })
 
     } catch (error: any) {

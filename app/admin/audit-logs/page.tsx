@@ -7,7 +7,7 @@ export const metadata = {
 }
 
 export default async function AuditLogsPage() {
-    await requirePermission('settings.view', '/admin')
+    await requirePermission('audit_logs.view', '/admin')
 
     return <AuditLogsClientPage />
 }

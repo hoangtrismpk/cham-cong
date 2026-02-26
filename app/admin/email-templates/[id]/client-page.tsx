@@ -177,6 +177,43 @@ const CATEGORY_OPTIONS = [
     { value: 'system', label: 'System' },
 ]
 
+// Master list of ALL available variables with descriptions
+const ALL_VARIABLES: { key: string; desc: string }[] = [
+    // User info
+    { key: 'user_name', desc: 'Họ tên người nhận' },
+    { key: 'user_email', desc: 'Email người nhận' },
+    // Company
+    { key: 'company_name', desc: 'Tên công ty' },
+    { key: 'support_email', desc: 'Email hỗ trợ' },
+    // Account
+    { key: 'temp_password', desc: 'Mật khẩu tạm thời (tạo TK)' },
+    { key: 'login_url', desc: 'Link đăng nhập hệ thống' },
+    { key: 'reset_link', desc: 'Link đặt lại mật khẩu' },
+    { key: 'expiry_time', desc: 'Thời hạn hiệu lực link' },
+    // Leave
+    { key: 'approver_name', desc: 'Tên người phê duyệt' },
+    { key: 'leave_dates', desc: 'Ngày nghỉ phép' },
+    { key: 'leave_type', desc: 'Loại nghỉ phép' },
+    { key: 'start_date', desc: 'Ngày bắt đầu nghỉ' },
+    { key: 'end_date', desc: 'Ngày kết thúc nghỉ' },
+    { key: 'total_days', desc: 'Tổng số ngày nghỉ' },
+    { key: 'rejection_reason', desc: 'Lý do từ chối đơn' },
+    // Security
+    { key: 'changed_at', desc: 'Thời điểm đổi mật khẩu' },
+    { key: 'login_time', desc: 'Thời gian đăng nhập' },
+    { key: 'device', desc: 'Thiết bị đăng nhập' },
+    { key: 'ip_address', desc: 'Địa chỉ IP' },
+    { key: 'location', desc: 'Vị trí đăng nhập' },
+    // Attendance report
+    { key: 'report_date', desc: 'Ngày báo cáo' },
+    { key: 'on_time_count', desc: 'Số NV đúng giờ' },
+    { key: 'late_count', desc: 'Số NV đi trễ' },
+    { key: 'absent_count', desc: 'Số NV vắng mặt' },
+    { key: 'on_leave_count', desc: 'Số NV nghỉ phép' },
+    // General
+    { key: 'action_url', desc: 'Link nút hành động (CTA)' },
+]
+
 // Preview sample values
 const PREVIEW_VALUES: Record<string, string> = {
     user_name: 'Sarah Johnson',
@@ -190,6 +227,9 @@ const PREVIEW_VALUES: Record<string, string> = {
     approver_name: 'Admin User',
     leave_dates: '25/12 - 28/12/2023',
     leave_type: 'Annual Leave',
+    start_date: '25/12/2023 08:00',
+    end_date: '28/12/2023 17:00',
+    total_days: '4',
     changed_at: '23/02/2026 16:30',
     login_time: '23/02/2026 16:30',
     location: 'Hồ Chí Minh, VN',
@@ -201,7 +241,6 @@ const PREVIEW_VALUES: Record<string, string> = {
     late_count: '3',
     absent_count: '2',
     on_leave_count: '1',
-    support_url: '#',
 }
 
 function renderPreview(content: string): string {
@@ -610,7 +649,7 @@ export default function EditEmailTemplateClientPage({ templateId }: Props) {
                 {/* ── 2-Column Layout ── */}
                 <div className="flex flex-1 overflow-hidden">
                     {/* LEFT: Variables panel */}
-                    <div className="w-[200px] shrink-0 border-r border-slate-800 flex flex-col overflow-y-auto bg-[#111827]">
+                    <div className="w-[240px] shrink-0 border-r border-slate-800 flex flex-col overflow-y-auto bg-[#111827]">
                         {/* Category */}
                         <div className="p-4 border-b border-slate-800">
                             <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-3">{et.templateInfo}</p>
@@ -632,22 +671,25 @@ export default function EditEmailTemplateClientPage({ templateId }: Props) {
                         </div>
 
                         {/* Placeholders */}
-                        <div className="p-4 flex-1">
+                        <div className="p-4 flex-1 overflow-y-auto">
                             <div className="flex items-center justify-between mb-3">
                                 <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{et.placeholders}</p>
                                 <span className="text-[10px] text-cyan-400 font-medium">{et.dynamic}</span>
                             </div>
 
-                            <div className="space-y-1.5">
-                                {template.variables.map((v) => (
+                            <div className="space-y-1">
+                                {ALL_VARIABLES.map(({ key, desc }) => (
                                     <button
-                                        key={v}
-                                        onClick={() => handleCopyVar(v)}
-                                        title="Click to copy"
-                                        className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg bg-[#162032] border border-cyan-500/20 hover:border-cyan-500/50 transition-all group"
+                                        key={key}
+                                        onClick={() => handleCopyVar(key)}
+                                        title={desc}
+                                        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-[#162032] border border-cyan-500/20 hover:border-cyan-500/50 transition-all group text-left gap-2"
                                     >
-                                        <code className="text-[11px] text-cyan-400 font-mono truncate">{`{{${v}}}`}</code>
-                                        {copiedVar === v ? (
+                                        <div className="min-w-0 flex-1">
+                                            <code className="text-[11px] text-cyan-400 font-mono block truncate">{`{{${key}}}`}</code>
+                                            <span className="text-[9px] text-slate-500 block truncate leading-tight mt-0.5">{desc}</span>
+                                        </div>
+                                        {copiedVar === key ? (
                                             <Check className="h-3 w-3 text-emerald-400 shrink-0" />
                                         ) : (
                                             <Copy className="h-3 w-3 text-slate-600 group-hover:text-cyan-400 transition-colors shrink-0" />

@@ -1,6 +1,6 @@
 import { AdminSidebar } from '@/components/admin-sidebar'
 import { createClient } from '@/utils/supabase/server'
-import { redirect } from 'next/navigation'
+import { ClientRedirect } from '@/components/client-redirect'
 import { AdminBottomNav } from '@/components/admin-bottom-nav'
 import { AdminHeader } from '@/components/admin-header'
 import { PermissionProvider } from '@/contexts/permission-context'
@@ -14,7 +14,7 @@ export default async function AdminLayout({
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
-        redirect('/login?next=/admin')
+        return <ClientRedirect url="/login?next=/admin" />
     }
 
     // Check if user has admin access permissions
@@ -22,16 +22,20 @@ export default async function AdminLayout({
         .from('profiles')
         .select(`
             full_name,
-            avatar_url,
-            role, 
+            role,
+            require_password_change,
             roles (
                 name,
                 display_name,
                 permissions
             )
         `)
-        .eq('id', user.id)
+        .eq('id', user?.id as string)
         .single()
+
+    if (profile?.require_password_change) {
+        return <ClientRedirect url="/force-password" />
+    }
 
     const roles = profile?.roles as any
     const roleData = Array.isArray(roles) ? roles[0] : roles
@@ -45,7 +49,7 @@ export default async function AdminLayout({
         permissions.length > 0
 
     if (!hasAccess) {
-        redirect('/')
+        return <ClientRedirect url="/" />
     }
 
     return (

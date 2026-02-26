@@ -28,6 +28,8 @@ export const PERMISSIONS = {
     // Attendance
     ATTENDANCE: {
         VIEW: 'attendance.view',
+        VIEW_ALL: 'attendance.view_all', // View all employees (company-wide)
+        VIEW_TEAM: 'attendance.view_team', // View only managed employees (direct reports)
         EDIT: 'attendance.edit', // Sensitive
         EXPORT: 'attendance.export',
     },

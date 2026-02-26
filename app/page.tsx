@@ -45,12 +45,17 @@ export default async function DashboardPage() {
   const todayShift = await getTodayShift()
   const workSettings = await getWorkSettings()
 
-  // Fetch user's clock-in remind minutes setting
+  // Fetch user profile settings
   const { data: profileSettings } = await supabase
     .from('profiles')
-    .select('clock_in_remind_minutes')
+    .select('clock_in_remind_minutes, require_password_change')
     .eq('id', user.id)
     .single()
+
+  if (profileSettings?.require_password_change) {
+    redirect('/force-password')
+  }
+
   const clockInRemindMinutes = profileSettings?.clock_in_remind_minutes ?? 5
 
   // Multi-session Logic

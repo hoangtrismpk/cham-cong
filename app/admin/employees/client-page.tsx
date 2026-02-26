@@ -28,7 +28,7 @@ import {
 import { toast } from 'sonner';
 import { useI18n } from '@/contexts/i18n-context';
 import CreateEmployeeDialog from '@/components/admin/employees/create-employee-dialog';
-import { getDepartments } from '@/app/actions/employees';
+import { getDepartments, getRoles } from '@/app/actions/employees';
 import { usePermissions } from '@/contexts/permission-context';
 
 
@@ -51,7 +51,7 @@ interface Employee {
     start_date?: string;
     avatar_url?: string;
     emergency_contact?: any;
-    roles?: { display_name: string };
+    roles?: { display_name: string, name?: string };
     manager?: { full_name: string; employee_code: string };
 }
 
@@ -69,13 +69,14 @@ export default function EmployeesClientPage() {
     const [totalPages, setTotalPages] = useState(1);
     const [totalEmployees, setTotalEmployees] = useState(0);
     const [deptList, setDeptList] = useState<string[]>([]);
+    const [roleList, setRoleList] = useState<any[]>([]);
 
     // Constants
     const limit = 10;
 
     // Load static data once
     useEffect(() => {
-        loadDepartments();
+        loadStaticData();
     }, []);
 
     // Debounce search term
@@ -94,9 +95,13 @@ export default function EmployeesClientPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [page, searchDebounce, deptFilter, statusFilter, roleFilter]);
 
-    const loadDepartments = async () => {
-        const depts = await getDepartments();
+    const loadStaticData = async () => {
+        const [depts, roles] = await Promise.all([
+            getDepartments(),
+            getRoles()
+        ]);
         setDeptList(depts);
+        setRoleList(roles);
     };
 
     const loadEmployees = async () => {
@@ -131,12 +136,8 @@ export default function EmployeesClientPage() {
         }
     };
 
-    // Extract unique values for filters (Roles from current view is not ideal but acceptable for filter list if dynamic API not available)
+    // Extract unique values for filters
     const departments = ['all', ...deptList];
-    // In a real server-side scenario, we should fetch roles lists separately, but for now we hardcode or keep lightweight
-    // We'll keep the predefined filters for roles based on common roles or fetch them properly if an API existed.
-    // For now let's assume standard roles since we can't extract all roles from partial data.
-    const roles = ['all', 'Admin', 'Manager', 'Human Resources', 'Accountant', 'Member'];
     const statuses = ['all', 'active', 'inactive'];
 
     const handleExport = () => {
@@ -180,7 +181,7 @@ export default function EmployeesClientPage() {
                     empCode: emp.employee_code || `EMP-${emp.id.substring(0, 4).toUpperCase()}`,
                     job: emp.job_title || 'N/A',
                     dept: emp.department || 'N/A',
-                    role: emp.roles?.display_name || 'Thành viên',
+                    role: (t.adminSettings.roleSettings as any).roleLabels?.[emp.roles?.name as string] || emp.roles?.display_name || 'Thành viên',
                     manager: emp.manager ? `${emp.manager.full_name}` : 'N/A',
                     status: emp.status === 'active' ? 'Active' : 'Inactive',
                 };
@@ -305,7 +306,9 @@ export default function EmployeesClientPage() {
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" className="bg-[#0d1117] border-slate-700/50 text-slate-300 hover:text-white hover:border-slate-600 min-w-[120px] justify-between">
                                     <span className="truncate max-w-[80px]">
-                                        {roleFilter === 'all' ? t.admin.employeeManagement.filters.role : roleFilter}
+                                        {roleFilter === 'all'
+                                            ? t.admin.employeeManagement.filters.role
+                                            : ((t.adminSettings.roleSettings as any).roleLabels?.[roleList.find(r => r.id === roleFilter)?.name] || roleList.find(r => r.id === roleFilter)?.display_name || roleFilter)}
                                     </span>
                                     <ChevronRight className="w-4 h-4 rotate-90 shrink-0 ml-2" />
                                 </Button>
@@ -313,16 +316,19 @@ export default function EmployeesClientPage() {
                             <DropdownMenuContent align="end" className="bg-[#1a1f2e] border-slate-700 text-slate-300 w-56">
                                 <DropdownMenuLabel>{t.admin.employeeManagement.filters.role}</DropdownMenuLabel>
                                 <DropdownMenuSeparator className="bg-slate-700/50" />
-                                {roles.map(role => (
-                                    <DropdownMenuItem
-                                        key={role as string}
-                                        onClick={() => { setRoleFilter(role as string); setPage(1); }}
-                                        className="justify-between cursor-pointer"
-                                    >
-                                        {role === 'all' ? 'All Roles' : role}
-                                        {roleFilter === role && <Check className="h-4 w-4 text-primary" />}
-                                    </DropdownMenuItem>
-                                ))}
+                                {[{ id: 'all', name: 'all', display_name: 'All Roles' }, ...roleList].map(role => {
+                                    const label = role.id === 'all' ? 'All Roles' : ((t.adminSettings.roleSettings as any).roleLabels?.[role.name] || role.display_name);
+                                    return (
+                                        <DropdownMenuItem
+                                            key={role.id}
+                                            onClick={() => { setRoleFilter(role.id); setPage(1); }}
+                                            className="justify-between cursor-pointer"
+                                        >
+                                            {label}
+                                            {roleFilter === role.id && <Check className="h-4 w-4 text-primary" />}
+                                        </DropdownMenuItem>
+                                    )
+                                })}
                             </DropdownMenuContent>
                         </DropdownMenu>
 

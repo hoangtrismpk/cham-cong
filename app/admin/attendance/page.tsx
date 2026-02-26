@@ -1,51 +1,99 @@
 import { createClient } from '@/utils/supabase/server'
 import { AttendanceClient } from './client-page'
-import { redirect } from 'next/navigation'
-import { requirePermission } from '@/utils/auth-guard'
+import { ClientRedirect } from '@/components/client-redirect'
+import { checkPermission } from '@/utils/auth-guard'
 
 export const revalidate = 0
 
 export default async function AttendancePage() {
-    await requirePermission('attendance.view', '/admin')
-
     const supabase = await createClient()
-
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) redirect('/login')
+    if (!user) return <ClientRedirect url="/login" />
+
+    // Check base permission
+    const hasView = await checkPermission('attendance.view')
+    if (!hasView) return <ClientRedirect url="/admin" />
+
+    // Determine view scope: view_all > view_team
+    const hasViewAll = await checkPermission('attendance.view_all')
+    const hasViewTeam = await checkPermission('attendance.view_team')
+
+    // Scope: 'all' = company-wide, 'team' = direct reports only
+    // Admin (role admin) defaults to 'all' via checkPermission bypass
+    const viewScope: 'all' | 'team' = hasViewAll ? 'all' : (hasViewTeam ? 'team' : 'all')
 
     // 1. Get Today's Date (VN Timezone)
     const getVNNow = () => new Date(new Date().getTime() + 7 * 60 * 60 * 1000)
     const todayStr = getVNNow().toISOString().split('T')[0]
 
-    // 2. Fetch Data in Parallel
+    // 2. Build the list of user IDs this person is allowed to see
+    let allowedUserIds: string[] | null = null // null = all users (no filter)
+
+    if (viewScope === 'team') {
+        // Only direct reports - get profiles where manager_id = current user
+        const { data: directReports } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('manager_id', user.id)
+
+        allowedUserIds = directReports?.map(p => p.id) || []
+    }
+
+    // 3. Fetch Data in Parallel (apply scope filter)
+    let profilesQuery = supabase
+        .from('profiles')
+        .select('id, full_name, email, avatar_url, department, job_title')
+
+    if (allowedUserIds !== null) {
+        // Team scope: only fetch allowed profiles
+        if (allowedUserIds.length === 0) {
+            // No direct reports - show empty
+            return (
+                <AttendanceClient
+                    initialEmployees={[]}
+                    stats={{ totalEmployees: 0, present: 0, late: 0, onLeave: 0 }}
+                    todayStr={todayStr}
+                    viewScope={viewScope}
+                />
+            )
+        }
+        profilesQuery = profilesQuery.in('id', allowedUserIds)
+    }
+
     const [
-        { count: totalEmployees },
-        { data: attendanceLogs },
-        { data: leaveRequests },
-        { data: profiles }
+        profilesResult,
+        { data: allAttendanceLogs },
+        { data: allLeaveRequests }
     ] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }),
+        profilesQuery,
         supabase.from('attendance_logs').select('*').eq('work_date', todayStr),
         supabase.from('leave_requests').select('user_id').eq('leave_date', todayStr).eq('status', 'approved'),
-        supabase.from('profiles').select('id, full_name, email, avatar_url, department, job_title')
     ])
 
-    // 3. Process Stats
-    // Use Set to ensure unique counts if multiple logs exist (though mostly 1 per day)
-    const presentUserIds = new Set(attendanceLogs?.map(l => l.user_id))
-    const lateUserIds = new Set(attendanceLogs?.filter(l => l.status === 'late').map(l => l.user_id))
-    const leaveUserIds = new Set(leaveRequests?.map(l => l.user_id))
+    const profiles = profilesResult.data || []
+
+    // Build a Set of allowed IDs for filtering logs/leaves
+    const profileIdSet = new Set(profiles.map(p => p.id))
+
+    // Filter attendance logs and leave requests to only allowed profiles
+    const attendanceLogs = (allAttendanceLogs || []).filter(l => profileIdSet.has(l.user_id))
+    const leaveRequests = (allLeaveRequests || []).filter(l => profileIdSet.has(l.user_id))
+
+    // 4. Process Stats
+    const presentUserIds = new Set(attendanceLogs.map(l => l.user_id))
+    const lateUserIds = new Set(attendanceLogs.filter(l => l.status === 'late').map(l => l.user_id))
+    const leaveUserIds = new Set(leaveRequests.map(l => l.user_id))
 
     const stats = {
-        totalEmployees: totalEmployees || 0,
+        totalEmployees: profiles.length,
         present: presentUserIds.size,
         late: lateUserIds.size,
         onLeave: leaveUserIds.size
     }
 
-    // 4. Merge Data for Table
-    const employees = profiles?.map(profile => {
-        const userLogs = attendanceLogs?.filter(l => l.user_id === profile.id) || []
+    // 5. Merge Data for Table
+    const employees = profiles.map(profile => {
+        const userLogs = attendanceLogs.filter(l => l.user_id === profile.id) || []
         const isLeave = leaveUserIds.has(profile.id)
 
         let status = 'absent'
@@ -83,7 +131,7 @@ export default async function AttendancePage() {
 
         return {
             id: profile.id,
-            employeeId: `#EMP-${profile.id.substring(0, 4)}`, // Mock ID format
+            employeeId: `#EMP-${profile.id.substring(0, 4)}`,
             name: profile.full_name || 'N/A',
             email: profile.email,
             avatar: profile.avatar_url,
@@ -95,13 +143,14 @@ export default async function AttendancePage() {
             totalHours,
             activeSessionStartTime
         }
-    }) || []
+    })
 
     return (
         <AttendanceClient
             initialEmployees={employees}
             stats={stats}
             todayStr={todayStr}
+            viewScope={viewScope}
         />
     )
 }

@@ -949,7 +949,7 @@ export const vi = {
             },
             // Permission translation mapping
             permissionLabels: {
-                'dashboard.view': 'Truy cập Dashboard',
+                'dashboard.view': 'Truy cập thống kê',
                 'users.view': 'Xem danh sách nhân viên (Cơ bản)',
                 'my_team.view': 'Xem danh sách Đội ngũ (Của tôi)',
                 'users.view_details': 'Xem chi tiết hồ sơ',
@@ -958,6 +958,8 @@ export const vi = {
                 'users.edit': 'Sửa thông tin nhân viên',
                 'users.delete': 'Xóa/Khóa nhân viên',
                 'attendance.view': 'Xem dữ liệu chấm công',
+                'attendance.view_all': 'Xem chấm công toàn công ty',
+                'attendance.view_team': 'Xem chấm công nhóm quản lý',
                 'attendance.edit': '⚠ Sửa dữ liệu chấm công',
                 'attendance.export': 'Xuất báo cáo chấm công',
                 'leaves.view': 'Xem lịch nghỉ phép',

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { verifyCaptcha } from '@/app/actions/verify-captcha'
+import { detectAndNotifyUnknownDevice } from '@/app/actions/email-triggers'
 
 export async function login(previousState: any, formData: FormData) {
     const remember = formData.get('remember') === 'on'
@@ -41,18 +42,25 @@ export async function login(previousState: any, formData: FormData) {
 
     // Smart Redirect Logic
     if (user) {
+        // Detect unknown device and send alert email (fire-and-forget)
+        detectAndNotifyUnknownDevice(user.id).catch(() => { })
+
+        // Fetch profile to check role and password change requirement
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role, roles(name), require_password_change')
+            .eq('id', user.id)
+            .single()
+
+        if (profile?.require_password_change) {
+            redirect('/force-password')
+        }
+
         // If there's a specific 'next' path (like /admin), use it
         if (nextPath !== '/') {
             revalidatePath(nextPath, 'layout')
             redirect(nextPath)
         }
-
-        // Otherwise, check role to decide destination
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('role, roles(name)')
-            .eq('id', user.id)
-            .single()
 
         const isAdmin = profile?.role === 'admin' || (profile?.roles as any)?.name === 'admin'
 

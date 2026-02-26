@@ -145,13 +145,39 @@ export async function deleteRole(roleId: string) {
 
     const supabase = await createClient()
 
-    // Check if system role
-    const { data: role } = await supabase.from('roles').select('is_system_role').eq('id', roleId).single()
+    // 1. Check if system role
+    const { data: role } = await supabase.from('roles').select('is_system_role, name').eq('id', roleId).single()
 
     if (!role) return { error: 'Không tìm thấy vai trò' }
     if (role.is_system_role) return { error: 'Không thể xóa vai trò mặc định của hệ thống' }
 
     const supabaseAdmin = createAdminClient()
+
+    // 2. Find the default 'member' role to reassign users
+    const { data: memberRole } = await supabase
+        .from('roles')
+        .select('id')
+        .eq('name', 'member')
+        .single()
+
+    if (memberRole) {
+        // 3. Reassign users to 'member' role before deletion
+        // We use 'employee' for the text-based role column as per system standard
+        const { error: updateError } = await supabaseAdmin
+            .from('profiles')
+            .update({
+                role_id: memberRole.id,
+                role: 'employee'
+            })
+            .eq('role_id', roleId)
+
+        if (updateError) {
+            console.error('Error reassigning users during role deletion:', updateError)
+            return { error: 'Lỗi khi chuyển giao nhân sự sang quyền mặc định: ' + updateError.message }
+        }
+    }
+
+    // 4. Delete the role
     const { error } = await supabaseAdmin
         .from('roles')
         .delete()

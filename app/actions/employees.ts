@@ -7,6 +7,7 @@ import { getOrganizationSettings } from './organization'
 import { requirePermissionForAction } from '@/utils/permissions'
 import { checkPermission } from '@/utils/auth-guard'
 import { getDescendantIds } from './my-team'
+import { EmailService } from '@/lib/email-service'
 
 // Types
 export interface EmergencyContact {
@@ -413,6 +414,7 @@ export async function createEmployee(formData: Partial<Employee> & { password?: 
             last_name: formData.last_name,
             full_name: `${formData.first_name} ${formData.last_name}`,
             avatar_url: formData.avatar_url || null,
+            require_password_change: true,
         })
         .eq('id', authData.user.id)
 
@@ -422,6 +424,16 @@ export async function createEmployee(formData: Partial<Employee> & { password?: 
     }
 
     revalidatePath('/admin/employees')
+
+    // Send welcome email (await to guarantee sending before Vercel kills process)
+    await EmailService.sendAsync('account-registration', formData.email!, {
+        user_name: `${formData.first_name} ${formData.last_name}`,
+        user_email: formData.email!,
+        temp_password: formData.password!,
+    }).catch(err => {
+        console.error('[CreateEmployee] Send email error:', err)
+    })
+
     return { success: true, userId: authData.user.id }
 }
 

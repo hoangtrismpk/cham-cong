@@ -76,6 +76,9 @@ export async function POST(
             approver_name: 'Admin',
             leave_dates: '25/12 - 28/12/2023',
             leave_type: 'Annual Leave',
+            start_date: '25/12/2023 08:00',
+            end_date: '28/12/2023 17:00',
+            total_days: '4',
             changed_at: new Date().toLocaleString('vi-VN'),
             login_time: new Date().toLocaleString('vi-VN'),
             location: 'Hồ Chí Minh, VN',
@@ -87,7 +90,6 @@ export async function POST(
             late_count: '3',
             absent_count: '2',
             on_leave_count: '1',
-            support_url: '#',
         }
 
         let htmlContent = template.content

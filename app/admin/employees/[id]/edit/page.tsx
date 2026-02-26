@@ -334,11 +334,14 @@ export default function EditEmployeePage() {
                                             <SelectValue placeholder={t.admin.employeeManagement.create.selectRole} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {roles.map((role) => (
-                                                <SelectItem key={role.id} value={role.id}>
-                                                    {role.display_name}
-                                                </SelectItem>
-                                            ))}
+                                            {roles.map((role) => {
+                                                const label = (t.adminSettings.roleSettings as any).roleLabels?.[role.name] || role.display_name;
+                                                return (
+                                                    <SelectItem key={role.id} value={role.id}>
+                                                        {label}
+                                                    </SelectItem>
+                                                )
+                                            })}
                                         </SelectContent>
                                     </Select>
                                 </div>

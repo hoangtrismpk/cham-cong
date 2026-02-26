@@ -83,8 +83,7 @@ export async function GET(request: Request) {
         }
 
         if (roleFilter !== 'all') {
-            // Filter by role display_name
-            query = query.eq('roles.display_name', roleFilter);
+            query = query.eq('role_id', roleFilter);
         }
 
         // --- 4. Pagination & Sorting ---

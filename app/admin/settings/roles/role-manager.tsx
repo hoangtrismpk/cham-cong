@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Role, Permission, updateRolePermissions, createRole, deleteRole } from '@/app/actions/roles'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { toast } from 'sonner'
-import { Plus, Trash2, Shield, Save, Check, Loader2, Search, AlertTriangle, ChevronRight } from 'lucide-react'
+import { Plus, Trash2, Shield, Save, Check, Loader2, Search, AlertTriangle, ChevronRight, Pencil } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import { useI18n } from '@/contexts/i18n-context'
@@ -24,7 +24,7 @@ interface RoleManagerProps {
 
 export function RoleManager({ roles, permissions }: RoleManagerProps) {
     const router = useRouter()
-    const { t } = useI18n()
+    const { t, locale } = useI18n()
     const { can } = usePermissions()
     const canManage = can('roles.manage')
     const [selectedRole, setSelectedRole] = useState<Role>(roles[0] || null)
@@ -37,12 +37,51 @@ export function RoleManager({ roles, permissions }: RoleManagerProps) {
     // New Role Form
     const [newRoleData, setNewRoleData] = useState({ name: '', display_name: '', description: '' })
 
-    // Group permissions by category
+    // Edit Role Form
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+    const [isUpdatingInfo, setIsUpdatingInfo] = useState(false)
+    const [editRoleData, setEditRoleData] = useState({ id: '', display_name: '', description: '' })
+
+    // Group permissions by category and sort: .view first, then .view_*, then others
     const groupedPermissions = permissions.reduce((acc, perm) => {
         if (!acc[perm.category]) acc[perm.category] = []
         acc[perm.category].push(perm)
         return acc
     }, {} as Record<string, Permission[]>)
+
+    // Sort each group: .view first, then sub-views, then alphabetical
+    Object.keys(groupedPermissions).forEach(category => {
+        groupedPermissions[category].sort((a, b) => {
+            const aAction = a.id.split('.').slice(1).join('.')
+            const bAction = b.id.split('.').slice(1).join('.')
+
+            // Exact .view always first
+            if (aAction === 'view' && bAction !== 'view') return -1
+            if (bAction === 'view' && aAction !== 'view') return 1
+
+            // .view_* variants next
+            const aIsSubView = aAction.startsWith('view_')
+            const bIsSubView = bAction.startsWith('view_')
+            if (aIsSubView && !bIsSubView) return -1
+            if (bIsSubView && !aIsSubView) return 1
+
+            // Alphabetical for the rest
+            return a.id.localeCompare(b.id)
+        })
+    })
+
+    // Helper: Slugify string
+    const slugify = (str: string) => {
+        return str
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[đĐ]/g, "d")
+            .replace(/([^0-9a-z-\s_])/g, "")
+            .replace(/(\s+|_)/g, "_")
+            .replace(/-+/g, "_")
+            .replace(/^-+|-+$/g, "");
+    }
 
     // Handle role selection
     const handleSelectRole = (role: Role) => {
@@ -51,12 +90,68 @@ export function RoleManager({ roles, permissions }: RoleManagerProps) {
         setUnsavedPermissions(role.permissions || [])
     }
 
+    // Handle Role ID Debounce
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (newRoleData.name) {
+                const slugified = slugify(newRoleData.name)
+                if (slugified !== newRoleData.name) {
+                    setNewRoleData(prev => ({ ...prev, name: slugified }))
+                }
+            }
+        }, 1000)
+        return () => clearTimeout(timer)
+    }, [newRoleData.name])
+
+    // Helper: Determine the "gate" permission (resource.view) for a given permission
+    // A permission is "gated" if the parent resource's .view permission is NOT checked
+    const getGatePermission = (permId: string): string | null => {
+        const parts = permId.split('.')
+        if (parts.length < 2) return null
+        const resource = parts[0]
+        const action = parts.slice(1).join('.')
+        // The .view permission itself is the gate - it gates everything else
+        if (action === 'view') return null // view is never gated
+        // Special case: dashboard only has .view
+        if (resource === 'dashboard') return null
+        return `${resource}.view`
+    }
+
+    // Check if a permission is disabled because its gate (.view) is not checked
+    const isPermissionGated = (permId: string): boolean => {
+        const gate = getGatePermission(permId)
+        if (!gate) return false
+        // Check if the gate permission exists in available permissions
+        const gateExists = permissions.some(p => p.id === gate)
+        if (!gateExists) return false
+        // If gate is not checked → this permission is gated (disabled)
+        return !unsavedPermissions.includes(gate) && !unsavedPermissions.includes('*')
+    }
+
     // Toggle Permission
     const togglePermission = (permId: string) => {
         if (selectedRole?.name === 'admin') return // Admin has all rights
 
         setUnsavedPermissions(prev => {
-            if (prev.includes(permId)) return prev.filter(p => p !== permId)
+            // Case 1: Unchecking a permission
+            if (prev.includes(permId)) {
+                const parts = permId.split('.')
+                const resource = parts[0]
+                const action = parts.slice(1).join('.')
+
+                // If unchecking a .view permission → also uncheck ALL child permissions of this resource
+                if (action === 'view') {
+                    return prev.filter(p => {
+                        if (p === permId) return false // Remove the view itself
+                        // Remove all permissions with the same resource prefix
+                        const pResource = p.split('.')[0]
+                        return pResource !== resource
+                    })
+                }
+                return prev.filter(p => p !== permId)
+            }
+
+            // Case 2: Checking a permission
             return [...prev, permId]
         })
     }
@@ -113,6 +208,38 @@ export function RoleManager({ roles, permissions }: RoleManagerProps) {
             if (admin) handleSelectRole(admin)
             router.refresh()
         }
+    }
+
+    // Update Role Info
+    const handleUpdateRoleInfo = async () => {
+        if (!editRoleData.display_name) {
+            toast.error(t.adminSettings.roleSettings.createRole.required)
+            return
+        }
+        setIsUpdatingInfo(true)
+        const { updateRole } = await import('@/app/actions/roles')
+        const res = await updateRole(editRoleData.id, {
+            display_name: editRoleData.display_name,
+            description: editRoleData.description
+        })
+        setIsUpdatingInfo(false)
+
+        if (res.error) {
+            toast.error(res.error)
+        } else {
+            toast.success(t.adminSettings.roleSettings.editRole.success)
+            setIsEditModalOpen(false)
+            router.refresh()
+        }
+    }
+
+    const openEditModal = (role: Role) => {
+        setEditRoleData({
+            id: role.id,
+            display_name: (t.adminSettings.roleSettings as any).roleLabels?.[role.name] || role.display_name,
+            description: (t.adminSettings.roleSettings as any).roleDescriptions?.[role.name] || role.description || ''
+        })
+        setIsEditModalOpen(true)
     }
 
     // Checking if dirty
@@ -279,6 +406,28 @@ export function RoleManager({ roles, permissions }: RoleManagerProps) {
                                     <div className="text-xs text-slate-500 font-mono mt-2 flex items-center gap-2">
                                         <span className="bg-slate-800 px-2 py-0.5 rounded">ID: {selectedRole.name}</span>
                                         {selectedRole.name === 'admin' && <span className="text-amber-500 flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> {t.adminSettings.roleSettings.adminNote}</span>}
+                                        {canManage && !selectedRole.is_system_role && (
+                                            <div className="flex items-center gap-1 ml-4">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-7 w-7 text-primary hover:text-primary hover:bg-primary/10"
+                                                    onClick={() => openEditModal(selectedRole)}
+                                                    title={t.adminSettings.roleSettings.actions.edit || 'Sửa thông tin'}
+                                                >
+                                                    <Pencil className="h-3.5 w-3.5" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-7 w-7 text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                                                    onClick={() => handleDeleteRole(selectedRole.id)}
+                                                    title={t.adminSettings.roleSettings.actions.delete || 'Xóa vai trò'}
+                                                >
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                </Button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -311,26 +460,56 @@ export function RoleManager({ roles, permissions }: RoleManagerProps) {
                                                     </CardTitle>
                                                 </CardHeader>
                                                 <CardContent className="pt-4 space-y-5">
-                                                    {perms.map(perm => (
-                                                        <div key={perm.id} className="flex items-start gap-3 select-none py-1">
-                                                            <Checkbox
-                                                                id={perm.id}
-                                                                disabled={!canManage || selectedRole.name === 'admin'}
-                                                                checked={unsavedPermissions.includes(perm.id) || unsavedPermissions.includes('*')}
-                                                                onCheckedChange={() => togglePermission(perm.id)}
-                                                                className="data-[state=checked]:bg-primary data-[state=checked]:text-black border-slate-600 mt-0.5"
-                                                            />
-                                                            <div className="grid gap-1 leading-snug pt-0.5">
-                                                                <label
-                                                                    htmlFor={perm.id}
-                                                                    className="text-sm font-medium text-slate-200 cursor-pointer hover:text-primary transition-colors"
-                                                                >
-                                                                    {(t.adminSettings.roleSettings as any).permissionLabels?.[perm.id] || perm.display_name}
-                                                                </label>
-                                                                <p className="text-[11px] text-slate-500 font-mono mt-0.5">{perm.id}</p>
+                                                    {perms.map(perm => {
+                                                        const gated = isPermissionGated(perm.id)
+                                                        const isViewPerm = perm.id.endsWith('.view') && !perm.id.includes('view_')
+                                                        const isChecked = unsavedPermissions.includes(perm.id) || unsavedPermissions.includes('*')
+
+                                                        return (
+                                                            <div
+                                                                key={perm.id}
+                                                                className={cn(
+                                                                    "flex items-start gap-3 select-none py-1 rounded-md px-1 -mx-1 transition-all duration-200",
+                                                                    gated && "opacity-40 cursor-not-allowed",
+                                                                    isViewPerm && isChecked && "bg-primary/5 border-l-2 border-primary/30 pl-2",
+                                                                    isViewPerm && !isChecked && "border-l-2 border-slate-700 pl-2"
+                                                                )}
+                                                            >
+                                                                <Checkbox
+                                                                    id={perm.id}
+                                                                    disabled={!canManage || selectedRole.name === 'admin' || gated}
+                                                                    checked={isChecked}
+                                                                    onCheckedChange={() => togglePermission(perm.id)}
+                                                                    className={cn(
+                                                                        "data-[state=checked]:bg-primary data-[state=checked]:text-black border-slate-600 mt-0.5",
+                                                                        gated && "!opacity-30 !cursor-not-allowed"
+                                                                    )}
+                                                                />
+                                                                <div className="grid gap-1 leading-snug pt-0.5">
+                                                                    <label
+                                                                        htmlFor={gated ? undefined : perm.id}
+                                                                        className={cn(
+                                                                            "text-sm font-medium transition-colors",
+                                                                            gated
+                                                                                ? "text-slate-600 cursor-not-allowed"
+                                                                                : "text-slate-200 cursor-pointer hover:text-primary"
+                                                                        )}
+                                                                    >
+                                                                        {(t.adminSettings.roleSettings as any).permissionLabels?.[perm.id] || perm.display_name}
+                                                                    </label>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <p className="text-[11px] text-slate-500 font-mono mt-0.5">{perm.id}</p>
+                                                                        {gated && (
+                                                                            <span className="text-[10px] text-amber-500/70 font-medium flex items-center gap-1 mt-0.5">
+                                                                                <span className="material-symbols-outlined text-[12px]">lock</span>
+                                                                                {locale === 'vi' ? 'Cần bật quyền Xem trước' : 'Requires View permission'}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    ))}
+                                                        )
+                                                    })}
                                                 </CardContent>
                                             </Card>
                                         ))}
@@ -361,7 +540,11 @@ export function RoleManager({ roles, permissions }: RoleManagerProps) {
                                     placeholder={t.adminSettings.roleSettings.createRole.displayNamePlaceholder}
                                     className="bg-slate-800 border-slate-700"
                                     value={newRoleData.display_name}
-                                    onChange={e => setNewRoleData(p => ({ ...p, display_name: e.target.value, name: e.target.value.toLowerCase().replace(/\s+/g, '_') }))}
+                                    onChange={e => setNewRoleData(p => ({
+                                        ...p,
+                                        display_name: e.target.value,
+                                        name: e.target.value
+                                    }))}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -393,6 +576,49 @@ export function RoleManager({ roles, permissions }: RoleManagerProps) {
                             >
                                 {isCreating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                                 {t.adminSettings.roleSettings.createRole.create}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* EDIT ROLE INFO DIALOG */}
+                <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+                    <DialogContent className="bg-slate-900 border-slate-700 text-white">
+                        <DialogHeader>
+                            <DialogTitle>{t.adminSettings.roleSettings.editRole.title}</DialogTitle>
+                            <DialogDescription className="text-slate-400">
+                                {t.adminSettings.roleSettings.createRole.modalDescription}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">{t.adminSettings.roleSettings.editRole.displayName} <span className="text-red-500">*</span></label>
+                                <Input
+                                    placeholder={t.adminSettings.roleSettings.createRole.displayNamePlaceholder}
+                                    className="bg-slate-800 border-slate-700"
+                                    value={editRoleData.display_name}
+                                    onChange={e => setEditRoleData(p => ({ ...p, display_name: e.target.value }))}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">{t.adminSettings.roleSettings.editRole.description}</label>
+                                <Textarea
+                                    placeholder={t.adminSettings.roleSettings.createRole.descriptionPlaceholder}
+                                    className="bg-slate-800 border-slate-700"
+                                    value={editRoleData.description}
+                                    onChange={e => setEditRoleData(p => ({ ...p, description: e.target.value }))}
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="ghost" onClick={() => setIsEditModalOpen(false)}>{t.adminSettings.roleSettings.createRole.cancel}</Button>
+                            <Button
+                                className="bg-primary text-black hover:bg-primary/90"
+                                onClick={handleUpdateRoleInfo}
+                                disabled={isUpdatingInfo}
+                            >
+                                {isUpdatingInfo && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                                {t.adminSettings.roleSettings.actions.save}
                             </Button>
                         </DialogFooter>
                     </DialogContent>
