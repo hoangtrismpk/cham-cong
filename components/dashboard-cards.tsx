@@ -99,24 +99,27 @@ export function AttendanceProgressCard({ weeklyStats, monthlyStats }: Attendance
             </div>
 
             {/* Total Work Time Summary Above Chart */}
-            <div className="flex items-center gap-8 mb-8 relative z-10">
-                <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{t.dashboard.totalWorkTime}</span>
+            {/* Total Work Time Summary Above Chart */}
+            <div className="flex flex-col gap-4 mb-8 relative z-10">
+                <div className="flex items-baseline gap-3">
+                    <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest">{t.dashboard.totalWorkTime}:</span>
                     <div className="flex items-baseline gap-1">
                         <span className="text-2xl font-black text-white">{(data.totalHours + data.totalOT).toFixed(1)}</span>
                         <span className="text-[10px] font-bold text-slate-500">HRS</span>
                     </div>
                 </div>
-                <div className="h-8 w-px bg-white/5"></div>
-                <div className="flex items-center gap-6">
+
+                <div className="flex items-center gap-4 sm:gap-6 bg-slate-900/30 w-full rounded-xl p-3 border border-white/[0.02]">
                     <div className="flex flex-col">
                         <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t.dashboard.standardHours}</span>
                         <span className="text-lg font-black text-primary/80">{data.totalHours}h</span>
                     </div>
+                    <div className="h-8 w-px bg-white/5"></div>
                     <div className="flex flex-col">
                         <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t.dashboard.overtime}</span>
                         <span className="text-lg font-black text-purple-400/80">{data.totalOT}h</span>
                     </div>
+                    <div className="h-8 w-px bg-white/5"></div>
                     {/* Late Stats */}
                     <div className="flex flex-col">
                         <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t.dashboard.lateArrivals}</span>
