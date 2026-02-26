@@ -148,78 +148,133 @@ export function AttendanceProgressCard({ initialData }: AttendanceProgressCardPr
                 </div>
             </div>
 
-            {/* Chart Area */}
-            <div className={`flex-1 flex items-end justify-between ${view === 'week' ? 'gap-3 sm:gap-6 px-4' : 'gap-px sm:gap-0.5'} relative min-h-[220px] ${loading ? 'opacity-30' : 'opacity-100'} transition-opacity duration-300`}>
-                {data.dailyStats.map((stat: any, i: number) => {
-                    // Calculate actual hours for each segment
-                    const lateHours = (stat.lateMinutes || 0) / 60
+            {/* Chart Area - Bar chart with Y-axis (hours) and X-axis (days) */}
+            {(() => {
+                // Pre-compute each bar's total to find the max for auto-scaling
+                const barData = data.dailyStats.map((stat: any) => {
+                    const lateHours = Math.round(((stat.lateMinutes || 0) / 60) * 10) / 10
                     const standardHours = stat.standard || 0
                     const otHours = stat.ot || 0
-                    const totalDayHours = lateHours + standardHours + otHours
+                    // All 3 segments are ADDITIVE for bar height
+                    const totalHours = standardHours + otHours + lateHours
+                    return { ...stat, lateHours, standardHours, otHours, totalHours }
+                })
 
-                    // Use 12h as reference scale for bar height
-                    const maxScale = 12
-                    const totalBarPercent = Math.min((totalDayHours / maxScale) * 100, 100)
+                // Dynamic Y-axis scale: round up to nearest even number, minimum 10
+                const maxVal = Math.max(...barData.map((b: any) => b.totalHours), 0)
+                const yMax = Math.max(Math.ceil(maxVal / 2) * 2, 10)
+                // Generate Y-axis ticks (e.g., 0, 2, 4, 6, 8, 10)
+                const yStep = yMax <= 12 ? 2 : yMax <= 20 ? 4 : Math.ceil(yMax / 5)
+                const yTicks: number[] = []
+                for (let i = yMax; i >= 0; i -= yStep) yTicks.push(i)
+                if (yTicks[yTicks.length - 1] !== 0) yTicks.push(0)
 
-                    // Each segment's share relative to total day hours
-                    const latePct = totalDayHours > 0 ? (lateHours / totalDayHours) * 100 : 0
-                    const stdPct = totalDayHours > 0 ? (standardHours / totalDayHours) * 100 : 0
-                    const otPct = totalDayHours > 0 ? (otHours / totalDayHours) * 100 : 0
+                return (
+                    <div className={`flex-1 relative min-h-[220px] ${loading ? 'opacity-30' : 'opacity-100'} transition-opacity duration-300`}>
+                        <div className="flex h-full">
+                            {/* Y-axis labels */}
+                            <div className="flex flex-col justify-between pr-2 py-0" style={{ height: '180px' }}>
+                                {yTicks.map((tick, i) => (
+                                    <span key={i} className="text-[9px] font-bold text-slate-600 tabular-nums leading-none text-right min-w-[20px]">
+                                        {tick}h
+                                    </span>
+                                ))}
+                            </div>
 
-                    const hasActivity = standardHours > 0 || otHours > 0 || lateHours > 0
-                    const isFuture = stat.date && new Date(stat.date) > new Date()
-
-                    return (
-                        <div key={i} className={`flex-1 flex flex-col items-center gap-3 group/bar h-full justify-end ${stat.isOffDay ? 'opacity-20 hover:opacity-100' : 'opacity-100'} transition-opacity`}>
-                            <div className="w-full flex flex-col justify-end h-full relative">
-                                {/* Tooltip */}
-                                <div className="absolute -top-14 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[9px] py-1.5 px-2.5 rounded-md border border-white/10 opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none shadow-xl flex flex-col items-center gap-0.5">
-                                    <span className="font-bold">{standardHours}h + {otHours}h OT</span>
-                                    {lateHours > 0 && (
-                                        <span className="text-rose-400 font-bold">Late: {stat.lateMinutes}m</span>
-                                    )}
-                                </div>
-
-                                <div className={`w-full mx-auto ${view === 'month' ? 'max-w-full' : 'max-w-[24px] sm:max-w-[48px]'} bg-slate-800/20 rounded-full overflow-hidden flex flex-col justify-end h-[160px] transition-all group-hover/bar:bg-slate-800/40`}>
-                                    {/* Stacked bar: height = totalBarPercent, then internally split by segment % */}
-                                    <div className="w-full flex flex-col justify-end" style={{ height: `${totalBarPercent}%` }}>
-                                        {/* Top: Overtime (purple) */}
-                                        {otPct > 0 && (
+                            {/* Chart body */}
+                            <div className="flex-1 flex flex-col">
+                                {/* Bars + Grid area */}
+                                <div className="relative" style={{ height: '180px' }}>
+                                    {/* Horizontal grid lines */}
+                                    {yTicks.map((tick, i) => {
+                                        const pct = ((yMax - tick) / yMax) * 100
+                                        return (
                                             <div
-                                                className="w-full bg-purple-500/60 transition-all duration-700 rounded-t-full"
-                                                style={{ height: `${otPct}%`, minHeight: otPct > 0 ? '3px' : '0' }}
+                                                key={i}
+                                                className="absolute left-0 right-0 border-t border-dashed border-white/[0.04]"
+                                                style={{ top: `${pct}%` }}
                                             />
-                                        )}
-                                        {/* Middle: Standard hours (green/primary) */}
-                                        {stdPct > 0 && (
-                                            <div
-                                                className="w-full bg-primary/60 transition-all duration-700"
-                                                style={{ height: `${stdPct}%`, minHeight: stdPct > 0 ? '3px' : '0' }}
-                                            />
-                                        )}
-                                        {/* Bottom: Late (red) */}
-                                        {latePct > 0 && (
-                                            <div
-                                                className="w-full bg-rose-500/60 transition-all duration-700 rounded-b-full"
-                                                style={{ height: `${latePct}%`, minHeight: latePct > 0 ? '3px' : '0' }}
-                                            />
-                                        )}
+                                        )
+                                    })}
+
+                                    {/* Bars container */}
+                                    <div className={`absolute inset-0 flex items-end ${view === 'week' ? 'gap-3 sm:gap-5 px-2' : 'gap-px sm:gap-0.5'}`}>
+                                        {barData.map((bar: any, i: number) => {
+                                            const barHeightPct = yMax > 0 ? (bar.totalHours / yMax) * 100 : 0
+                                            const latePct = bar.totalHours > 0 ? (bar.lateHours / bar.totalHours) * 100 : 0
+                                            const stdPct = bar.totalHours > 0 ? (bar.standardHours / bar.totalHours) * 100 : 0
+                                            const otPct = bar.totalHours > 0 ? (bar.otHours / bar.totalHours) * 100 : 0
+                                            const hasActivity = bar.totalHours > 0
+
+                                            return (
+                                                <div key={i} className={`flex-1 h-full flex flex-col justify-end items-center group/bar ${bar.isOffDay ? 'opacity-20 hover:opacity-100' : ''} transition-opacity`}>
+                                                    {/* Tooltip on hover */}
+                                                    <div className="relative w-full flex justify-center">
+                                                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-800/95 backdrop-blur text-white text-[9px] py-1.5 px-3 rounded-lg border border-white/10 opacity-0 group-hover/bar:opacity-100 transition-all whitespace-nowrap z-20 pointer-events-none shadow-2xl flex flex-col items-center gap-0.5">
+                                                            <span className="font-bold">{bar.standardHours}h {bar.otHours > 0 ? `+ ${bar.otHours}h OT` : ''}</span>
+                                                            {bar.lateHours > 0 && (
+                                                                <span className="text-rose-400 font-bold">Trễ: {bar.lateHours > 1 ? `${bar.lateHours.toFixed(1)}h` : `${bar.lateMinutes || Math.round(bar.lateHours * 60)}m`}</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* The stacked bar */}
+                                                    <div
+                                                        className={`w-full ${view === 'month' ? 'max-w-full' : 'max-w-[28px] sm:max-w-[44px]'} rounded-t-lg overflow-hidden flex flex-col justify-end transition-all duration-700 ${hasActivity ? 'group-hover/bar:brightness-125' : ''}`}
+                                                        style={{ height: `${barHeightPct}%`, minHeight: hasActivity ? '4px' : '0' }}
+                                                    >
+                                                        {/* Top: Overtime (purple) */}
+                                                        {otPct > 0 && (
+                                                            <div
+                                                                className="w-full bg-gradient-to-t from-purple-600/70 to-purple-400/70 transition-all duration-700"
+                                                                style={{ height: `${otPct}%`, minHeight: '3px' }}
+                                                            />
+                                                        )}
+                                                        {/* Middle: Standard hours (teal/primary) */}
+                                                        {stdPct > 0 && (
+                                                            <div
+                                                                className="w-full bg-gradient-to-t from-primary/50 to-primary/70 transition-all duration-700"
+                                                                style={{ height: `${stdPct}%`, minHeight: '3px' }}
+                                                            />
+                                                        )}
+                                                        {/* Bottom: Late time (red) */}
+                                                        {latePct > 0 && (
+                                                            <div
+                                                                className="w-full bg-gradient-to-t from-rose-600/70 to-rose-400/70 transition-all duration-700"
+                                                                style={{ height: `${latePct}%`, minHeight: '3px' }}
+                                                            />
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
                                     </div>
                                 </div>
-                            </div>
-                            <span className={`text-[8px] font-black tracking-tighter transition-colors ${hasActivity ? 'text-slate-400' : 'text-slate-600'} ${view === 'month' ? 'scale-90 pointer-events-none' : ''}`}>
-                                {view === 'week' ? (dayNames[stat.label] || stat.label) : parseInt(stat.label, 10).toString()}
-                            </span>
-                        </div>
-                    )
-                })}
 
-                {loading && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                                {/* X-axis labels */}
+                                <div className={`flex ${view === 'week' ? 'gap-3 sm:gap-5 px-2' : 'gap-px sm:gap-0.5'} mt-3 border-t border-white/[0.06] pt-2`}>
+                                    {barData.map((bar: any, i: number) => {
+                                        const hasActivity = bar.totalHours > 0
+                                        return (
+                                            <div key={i} className="flex-1 text-center">
+                                                <span className={`text-[9px] font-black tracking-tight transition-colors ${hasActivity ? 'text-slate-400' : 'text-slate-700'} ${view === 'month' ? 'text-[7px]' : ''}`}>
+                                                    {view === 'week' ? (dayNames[bar.label] || bar.label) : parseInt(bar.label, 10).toString()}
+                                                </span>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+
+                        {loading && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                            </div>
+                        )}
                     </div>
-                )}
-            </div>
+                )
+            })()}
         </div>
     )
 }
