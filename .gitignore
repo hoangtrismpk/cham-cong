@@ -64,7 +64,7 @@ Thumbs.db
 Design/
 
 firebase-b64.txt
-docs/logs/
+# docs/logs/
 
 # Supabase Local
 supabase/.temp/
@@ -80,9 +80,11 @@ GEMINI*.md
 ERRORS.md
 docs/
 *.local.md
-.agent/credentials.local.md
 /test-push-debug.log
 /debug.log
+
+.agent/
+.agents/
 
 supabase/seed_hoang_tri_pattern*.sql
 

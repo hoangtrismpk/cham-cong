@@ -152,9 +152,13 @@ Deno.serve(async (req) => {
                     }
                 } else {
                     // 'after' mode: Remind X minutes AFTER end time
-                    const endTimeDate = new Date(`${todayStr}T${endT}:00`);
-                    const reminderAfter = new Date(endTimeDate.getTime() + settings.clockOutMins * 60000);
-                    const reminderAfterTime = timeFormatter.format(reminderAfter);
+                    // FIX: Parse end time relative to VN timezone by using vnNow date components
+                    const [endH, endM] = endT.split(':').map(Number);
+                    const endTimeDate = new Date(vnNow);
+                    endTimeDate.setHours(endH, endM, 0, 0);
+                    const reminderAfterMs = settings.clockOutMins * 60000;
+                    const reminderAfterDate = new Date(endTimeDate.getTime() + reminderAfterMs);
+                    const reminderAfterTime = `${String(reminderAfterDate.getHours()).padStart(2, '0')}:${String(reminderAfterDate.getMinutes()).padStart(2, '0')}`;
                     // Trigger if current time is between end_time and reminder_after_time
                     if (currentTimeVN >= endT && currentTimeVN <= reminderAfterTime) {
                         targets.push({ userId, tokens: userTokensMap[userId], time: endT, title, type: 'clock_out', shiftId });
@@ -167,15 +171,21 @@ Deno.serve(async (req) => {
 
         // 6. Send
         for (const target of targets) {
-            // Dedup
-            const { data: exists } = await supabase
+            // Dedup - FIX: use .is() for null shift_id instead of .eq()
+            let dedupQuery = supabase
                 .from('notification_logs')
                 .select('id')
                 .eq('user_id', target.userId)
                 .eq('notification_type', `server_push_${target.type}`)
-                .gte('sent_at', `${todayStr}T00:00:00Z`)
-                .eq('shift_id', target.shiftId)
-                .maybeSingle();
+                .gte('sent_at', `${todayStr}T00:00:00Z`);
+
+            if (target.shiftId) {
+                dedupQuery = dedupQuery.eq('shift_id', target.shiftId);
+            } else {
+                dedupQuery = dedupQuery.is('shift_id', null);
+            }
+
+            const { data: exists } = await dedupQuery.maybeSingle();
 
             if (exists) continue;
 
