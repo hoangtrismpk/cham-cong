@@ -15,6 +15,14 @@ interface AttendanceProgressCardProps {
 export function AttendanceProgressCard({ weeklyStats, monthlyStats }: AttendanceProgressCardProps) {
     const { t, locale } = useI18n()
     const [view, setView] = useState<'week' | 'month'>('week')
+    const [showBars, setShowBars] = useState(false)
+
+    // Trigger animation explicitly on mount & view change so all bars grow from 0
+    useEffect(() => {
+        setShowBars(false)
+        const timer = setTimeout(() => setShowBars(true), 50)
+        return () => clearTimeout(timer)
+    }, [view])
 
     // Switch data instantly based on current view
     const data = view === 'week' ? weeklyStats : monthlyStats
@@ -187,7 +195,7 @@ export function AttendanceProgressCard({ weeklyStats, monthlyStats }: Attendance
                                                     {/* The stacked bar */}
                                                     <div
                                                         className={`w-full ${view === 'month' ? 'max-w-full' : 'max-w-[28px] sm:max-w-[44px]'} rounded-t-lg overflow-hidden flex flex-col justify-end transition-all duration-700 ${hasActivity ? 'group-hover/bar:brightness-125' : ''}`}
-                                                        style={{ height: `${barHeightPct}%`, minHeight: hasActivity ? '4px' : '0' }}
+                                                        style={{ height: showBars ? `${barHeightPct}%` : '0%', minHeight: (hasActivity && showBars) ? '4px' : '0' }}
                                                     >
                                                         {/* Top: Overtime (purple) */}
                                                         {otPct > 0 && (
