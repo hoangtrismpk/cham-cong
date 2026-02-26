@@ -56,8 +56,8 @@ export function AttendanceProgressCard({ weeklyStats, monthlyStats }: Attendance
                 </div>
 
                 <div className="flex flex-col items-end gap-3">
-                    {/* Legend */}
-                    <div className="flex items-center gap-3">
+                    {/* Legend - Desktop/Tablet only */}
+                    <div className="hidden sm:flex items-center gap-3">
                         <div className="flex items-center gap-1.5">
                             <div className="w-1.5 h-1.5 rounded-full bg-primary/80"></div>
                             <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t.dashboard.standardHours}</span>
@@ -247,6 +247,22 @@ export function AttendanceProgressCard({ weeklyStats, monthlyStats }: Attendance
                                             </div>
                                         )
                                     })}
+                                </div>
+
+                                {/* Legend - Mobile only, centered below chart */}
+                                <div className="flex sm:hidden items-center justify-center gap-3 mt-4 pt-3 border-t border-white/[0.04]">
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-primary/80"></div>
+                                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t.dashboard.standardHours}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-purple-500/80"></div>
+                                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t.dashboard.overtime}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-rose-500/80"></div>
+                                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t.dashboard.lateArrivals}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
