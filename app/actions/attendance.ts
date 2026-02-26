@@ -520,25 +520,31 @@ export async function getAttendanceStats(view: 'week' | 'month' = 'week') {
     // For each unique date, we need to know if OT is allowed
     const { getEffectiveSchedule, hasApprovedOvertimeRequest } = await import('./overtime')
 
-    for (const [dateKey, dayLogs] of logsByDate) {
-        // Sort by check_in_time ascending to identify the first arrival
-        dayLogs.sort((a, b) => new Date(a.check_in_time).getTime() - new Date(b.check_in_time).getTime())
+    // Fetch schedule and OT allowances in parallel to avoid N+1 query issue (critical for Month view)
+    const processedDays = await Promise.all(
+        Array.from(logsByDate.entries()).map(async ([dateKey, dayLogs]) => {
+            dayLogs.sort((a, b) => new Date(a.check_in_time).getTime() - new Date(b.check_in_time).getTime())
 
-        const dayStats = statsMap.get(dateKey) || { standard: 0, ot: 0, lateMinutes: 0 }
-
-        // Check if OT is allowed for this day (schedule flag OR approved request)
-        let allowOT = false
-        if (dayLogs.length > 0) {
-            const userId = dayLogs[0].user_id
-            try {
-                const schedule = await getEffectiveSchedule(userId, dateKey)
-                const otApproved = await hasApprovedOvertimeRequest(userId, dateKey)
-                allowOT = schedule.allowOvertime || otApproved
-            } catch (e) {
-                // Fallback: don't cap if schedule lookup fails
-                allowOT = true
+            let allowOT = false
+            if (dayLogs.length > 0) {
+                const userId = dayLogs[0].user_id
+                try {
+                    const [schedule, otApproved] = await Promise.all([
+                        getEffectiveSchedule(userId, dateKey),
+                        hasApprovedOvertimeRequest(userId, dateKey)
+                    ])
+                    allowOT = schedule.allowOvertime || otApproved
+                } catch (e) {
+                    allowOT = true
+                }
             }
-        }
+            return { dateKey, dayLogs, allowOT }
+        })
+    )
+
+    // Now process the hours synchronously
+    for (const { dateKey, dayLogs, allowOT } of processedDays) {
+        const dayStats = statsMap.get(dateKey) || { standard: 0, ot: 0, lateMinutes: 0 }
 
         // Process hours for ALL logs in the day
         dayLogs.forEach(log => {

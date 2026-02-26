@@ -43,7 +43,8 @@ export default async function DashboardPage() {
   const [
     todayLog,
     history,
-    attendanceStats,
+    weeklyStats,
+    monthlyStats,
     todayShift,
     workSettings,
     profileSettingsResult
@@ -51,6 +52,7 @@ export default async function DashboardPage() {
     getTodayStatus(),
     getAttendanceHistory(),
     getAttendanceStats('week'),
+    getAttendanceStats('month'),
     getTodayShift(),
     getWorkSettings(),
     supabase
@@ -104,7 +106,7 @@ export default async function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Hours Breakdown */}
           <div className="lg:col-span-2">
-            <AttendanceProgressCard initialData={attendanceStats} />
+            <AttendanceProgressCard weeklyStats={weeklyStats} monthlyStats={monthlyStats} />
           </div>
 
           {/* Recent History */}

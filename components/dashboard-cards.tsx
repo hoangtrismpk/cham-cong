@@ -8,51 +8,17 @@ import { useState, useEffect } from 'react'
 import { getAttendanceStats } from '@/app/actions/attendance'
 
 interface AttendanceProgressCardProps {
-    initialData: any
+    weeklyStats: any
+    monthlyStats: any
 }
 
-export function AttendanceProgressCard({ initialData }: AttendanceProgressCardProps) {
+export function AttendanceProgressCard({ weeklyStats, monthlyStats }: AttendanceProgressCardProps) {
     const { t, locale } = useI18n()
     const [view, setView] = useState<'week' | 'month'>('week')
-    const [data, setData] = useState(initialData)
-    const [loading, setLoading] = useState(false)
 
-    useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true)
-            const result = await getAttendanceStats(view)
-            setData(result)
-            setLoading(false)
-        }
-
-        // Always fetch data if the view changes
-        // Since we don't cache locally yet, we need to refetch even for the initial view
-        // to handle the case where the user navigates away and back.
-        // We skip the very first mount fetch if initialData is correct, but the logic below 
-        // is safer and simpler: just fetch on view change.
-        // To optimize: we could compare view with initialView and only skip if it's truly the FIRST mount.
-        // But for this bug fix (returning to week view not updating columns), always fetching is the Solution.
-
-        // Wait, if we want to use initialData on FIRST mount only:
-        // That is handled by useState(initialData).
-        // The problem with the previous code was: "if (view !== initialView) fetchData()"
-        // When view becomes == initialView again, it didn't fetch.
-
-        // Solution: Remove the condition. The component mounts with initialData.
-        // If view changes (even to something else and back), we fetch.
-        // However, on strict first mount, view is 'week' (default) or whatever initialView is.
-        // If we dont want a double fetch on mount:
-
-        const isFirstMount = data === initialData
-        const derivedInitialView = initialData.dailyStats.length > 7 ? 'month' : 'week'
-
-        if (isFirstMount && view === derivedInitialView) {
-            // Do nothing, we have data. 
-        } else {
-            fetchData()
-        }
-
-    }, [view])
+    // Switch data instantly based on current view
+    const data = view === 'week' ? weeklyStats : monthlyStats
+    const loading = false
 
     const currentPeriod = format(new Date(), 'MMMM', { locale: locale === 'vi' ? vi : undefined })
 
