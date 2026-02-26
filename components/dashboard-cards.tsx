@@ -72,8 +72,8 @@ export function AttendanceProgressCard({ weeklyStats, monthlyStats }: Attendance
                         </div>
                     </div>
 
-                    {/* View Switcher (Localized) */}
-                    <div className="bg-slate-900/50 p-0.5 rounded-lg border border-white/5 flex">
+                    {/* View Switcher - Desktop/Tablet only */}
+                    <div className="hidden sm:flex bg-slate-900/50 p-0.5 rounded-lg border border-white/5">
                         <button
                             onClick={() => {
                                 if (view === 'week') return;
@@ -249,19 +249,45 @@ export function AttendanceProgressCard({ weeklyStats, monthlyStats }: Attendance
                                     })}
                                 </div>
 
-                                {/* Legend - Mobile only, centered below chart */}
-                                <div className="flex sm:hidden items-center justify-center gap-3 mt-4 pt-3 border-t border-white/[0.04]">
-                                    <div className="flex items-center gap-1.5">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-primary/80"></div>
-                                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t.dashboard.standardHours}</span>
+                                {/* Mobile only: View Switcher + Legend below chart */}
+                                <div className="flex sm:hidden flex-col items-center gap-3 mt-4 pt-3 border-t border-white/[0.04]">
+                                    {/* View Switcher - Mobile */}
+                                    <div className="bg-slate-900/50 p-0.5 rounded-lg border border-white/5 flex">
+                                        <button
+                                            onClick={() => {
+                                                if (view === 'week') return;
+                                                setShowBars(false);
+                                                setView('week');
+                                            }}
+                                            className={`px-5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${view === 'week' ? 'bg-slate-800 text-primary shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                                        >
+                                            {t.dashboard.week}
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                if (view === 'month') return;
+                                                setShowBars(false);
+                                                setView('month');
+                                            }}
+                                            className={`px-5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${view === 'month' ? 'bg-slate-800 text-primary shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                                        >
+                                            {t.dashboard.month}
+                                        </button>
                                     </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-purple-500/80"></div>
-                                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t.dashboard.overtime}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-rose-500/80"></div>
-                                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t.dashboard.lateArrivals}</span>
+                                    {/* Legend - Mobile */}
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-primary/80"></div>
+                                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t.dashboard.standardHours}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-purple-500/80"></div>
+                                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t.dashboard.overtime}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-rose-500/80"></div>
+                                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t.dashboard.lateArrivals}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
