@@ -34,20 +34,32 @@ messaging.onBackgroundMessage((payload) => {
 
 // Also handle notification click
 self.addEventListener('notificationclick', (event) => {
-    console.log('Notification clicked');
+    console.log('Notification clicked', event);
     event.notification.close();
+
+    // Get URL payload from data
+    const urlToOpen = (event.notification.data && event.notification.data.url) || '/';
+
     event.waitUntil(
         Promise.all([
             // 1. Open Window logic
             clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+                const targetUrl = new URL(urlToOpen, self.location.origin).href;
+
+                // Check if there is already a window/tab open with the target URL
                 for (let i = 0; i < windowClients.length; i++) {
                     let client = windowClients[i];
-                    if (client.url.includes('/') && 'focus' in client) {
+                    if (client.url === targetUrl && 'focus' in client) {
                         return client.focus();
                     }
+                    // Or at least focus and navigate the existing window
+                    if (client.url.includes(self.location.origin) && 'navigate' in client) {
+                        return client.navigate(targetUrl).then(c => c ? c.focus() : null);
+                    }
                 }
+                // If no window is found, open a new one
                 if (clients.openWindow) {
-                    return clients.openWindow((event.notification.data && event.notification.data.url) || '/');
+                    return clients.openWindow(targetUrl);
                 }
             }),
 
