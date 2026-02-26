@@ -19,7 +19,6 @@ export function AttendanceProgressCard({ weeklyStats, monthlyStats }: Attendance
 
     // Trigger animation explicitly on mount & view change so all bars grow from 0
     useEffect(() => {
-        setShowBars(false)
         const timer = setTimeout(() => setShowBars(true), 50)
         return () => clearTimeout(timer)
     }, [view])
@@ -76,13 +75,21 @@ export function AttendanceProgressCard({ weeklyStats, monthlyStats }: Attendance
                     {/* View Switcher (Localized) */}
                     <div className="bg-slate-900/50 p-0.5 rounded-lg border border-white/5 flex">
                         <button
-                            onClick={() => setView('week')}
+                            onClick={() => {
+                                if (view === 'week') return;
+                                setShowBars(false);
+                                setView('week');
+                            }}
                             className={`px-4 py-1 text-[9px] font-black uppercase tracking-widest rounded-md transition-all ${view === 'week' ? 'bg-slate-800 text-primary shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
                         >
                             {t.dashboard.week}
                         </button>
                         <button
-                            onClick={() => setView('month')}
+                            onClick={() => {
+                                if (view === 'month') return;
+                                setShowBars(false);
+                                setView('month');
+                            }}
                             className={`px-4 py-1 text-[9px] font-black uppercase tracking-widest rounded-md transition-all ${view === 'month' ? 'bg-slate-800 text-primary shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
                         >
                             {t.dashboard.month}
@@ -172,7 +179,7 @@ export function AttendanceProgressCard({ weeklyStats, monthlyStats }: Attendance
                                     })}
 
                                     {/* Bars container */}
-                                    <div className={`absolute inset-0 flex items-end ${view === 'week' ? 'gap-3 sm:gap-5 px-2' : 'gap-px sm:gap-0.5'}`}>
+                                    <div key={view} className={`absolute inset-0 flex items-end ${view === 'week' ? 'gap-3 sm:gap-5 px-2' : 'gap-px sm:gap-0.5'}`}>
                                         {barData.map((bar: any, i: number) => {
                                             const barHeightPct = yMax > 0 ? (bar.totalHours / yMax) * 100 : 0
                                             const latePct = bar.totalHours > 0 ? (bar.lateHours / bar.totalHours) * 100 : 0
