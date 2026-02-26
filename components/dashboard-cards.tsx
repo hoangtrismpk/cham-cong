@@ -188,7 +188,7 @@ export function AttendanceProgressCard({ weeklyStats, monthlyStats }: Attendance
                                             const hasActivity = bar.totalHours > 0
 
                                             return (
-                                                <div key={i} className={`flex-1 h-full flex flex-col justify-end items-center group/bar ${bar.isOffDay ? 'opacity-20 hover:opacity-100' : ''} transition-opacity`}>
+                                                <div key={i} className={`flex-1 min-w-0 h-full flex flex-col justify-end items-center group/bar ${bar.isOffDay ? 'opacity-20 hover:opacity-100' : ''} transition-opacity`}>
                                                     {/* Tooltip on hover */}
                                                     <div className="relative w-full flex justify-center">
                                                         <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-800/95 backdrop-blur text-white text-[9px] py-1.5 px-3 rounded-lg border border-white/10 opacity-0 group-hover/bar:opacity-100 transition-all whitespace-nowrap z-20 pointer-events-none shadow-2xl flex flex-col items-center gap-0.5">
@@ -201,7 +201,7 @@ export function AttendanceProgressCard({ weeklyStats, monthlyStats }: Attendance
 
                                                     {/* The stacked bar */}
                                                     <div
-                                                        className={`w-full ${view === 'month' ? 'max-w-full' : 'max-w-[28px] sm:max-w-[44px]'} rounded-t-lg overflow-hidden flex flex-col justify-end transition-all duration-700 ${hasActivity ? 'group-hover/bar:brightness-125' : ''}`}
+                                                        className={`w-[85%] sm:w-full ${view === 'month' ? 'max-w-[10px] sm:max-w-[16px]' : 'max-w-[28px] sm:max-w-[44px]'} rounded-t-lg overflow-hidden flex flex-col justify-end transition-all duration-700 ${hasActivity ? 'group-hover/bar:brightness-125' : ''}`}
                                                         style={{ height: showBars ? `${barHeightPct}%` : '0%', minHeight: (hasActivity && showBars) ? '4px' : '0' }}
                                                     >
                                                         {/* Top: Overtime (purple) */}
@@ -237,8 +237,8 @@ export function AttendanceProgressCard({ weeklyStats, monthlyStats }: Attendance
                                     {barData.map((bar: any, i: number) => {
                                         const hasActivity = bar.totalHours > 0
                                         return (
-                                            <div key={i} className="flex-1 text-center">
-                                                <span className={`text-[9px] font-black tracking-tight transition-colors ${hasActivity ? 'text-slate-400' : 'text-slate-700'} ${view === 'month' ? 'text-[7px]' : ''}`}>
+                                            <div key={i} className="flex-1 min-w-0 text-center">
+                                                <span className={`text-[9px] font-black tracking-tight transition-colors ${hasActivity ? 'text-slate-400' : 'text-slate-700'} ${view === 'month' ? 'text-[6px] sm:text-[7px]' : ''}`}>
                                                     {view === 'week' ? (dayNames[bar.label] || bar.label) : parseInt(bar.label, 10).toString()}
                                                 </span>
                                             </div>
