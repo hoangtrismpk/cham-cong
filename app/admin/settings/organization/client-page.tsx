@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { Plus, X, Save, Loader2, Building2, Briefcase, RefreshCw, PenSquare, Check, XCircle } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import {
     AlertDialog,
     AlertDialogAction,
@@ -22,6 +23,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useI18n } from '@/contexts/i18n-context' // Import i18n hook
+import { usePermissions } from '@/contexts/permission-context'
 
 interface OrganizationSettingsClientProps {
     initialDepartments: string[]
@@ -33,6 +35,8 @@ export default function OrganizationSettingsClient({
     initialJobTitles
 }: OrganizationSettingsClientProps) {
     const { t } = useI18n() // Initialize translation
+    const { can } = usePermissions()
+    const canManage = can('settings_organization.manage')
     const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [syncLoading, setSyncLoading] = useState(false)
@@ -150,7 +154,7 @@ export default function OrganizationSettingsClient({
                 <div className="flex items-center gap-3">
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="outline" className="border-slate-700 hover:bg-slate-800 text-slate-300">
+                            <Button variant="outline" className="border-slate-700 hover:bg-slate-800 text-slate-300" disabled={!canManage}>
                                 <RefreshCw className={`w-4 h-4 mr-2 ${syncLoading ? 'animate-spin' : ''}`} />
                                 {t.adminSettings.organization.syncButton}
                             </Button>
@@ -173,23 +177,25 @@ export default function OrganizationSettingsClient({
                         </AlertDialogContent>
                     </AlertDialog>
 
-                    <Button
-                        onClick={handleSave}
-                        disabled={loading}
-                        className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-900/20"
-                    >
-                        {loading ? (
-                            <>
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                {t.adminSettings.organization.saving}
-                            </>
-                        ) : (
-                            <>
-                                <Save className="w-4 h-4 mr-2" />
-                                {t.adminSettings.organization.saveButton}
-                            </>
-                        )}
-                    </Button>
+                    {canManage && (
+                        <Button
+                            onClick={handleSave}
+                            disabled={loading || !canManage}
+                            className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-900/20"
+                        >
+                            {loading ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    {t.adminSettings.organization.saving}
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="w-4 h-4 mr-2" />
+                                    {t.adminSettings.organization.saveButton}
+                                </>
+                            )}
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -212,11 +218,12 @@ export default function OrganizationSettingsClient({
                             <Input
                                 placeholder={t.adminSettings.organization.departments.placeholder}
                                 value={newDept}
+                                disabled={!canManage}
                                 onChange={(e) => setNewDept(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && addDepartment()}
                                 className="bg-[#161b22] border-slate-700 text-white focus:ring-emerald-500/50"
                             />
-                            <Button onClick={addDepartment} variant="outline" className="border-slate-700 hover:bg-emerald-500/10 hover:text-emerald-500 hover:border-emerald-500/50">
+                            <Button onClick={addDepartment} disabled={!canManage} variant="outline" className="border-slate-700 hover:bg-emerald-500/10 hover:text-emerald-500 hover:border-emerald-500/50">
                                 <Plus className="w-4 h-4" />
                             </Button>
                         </div>
@@ -246,25 +253,27 @@ export default function OrganizationSettingsClient({
                                             key={idx}
                                             variant="secondary"
                                             className="pl-3 pr-1 py-1 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20 flex items-center gap-2 transition-all group select-none"
-                                            onClick={() => setEditingDept({ index: idx, value: dept })}
+                                            onClick={() => canManage && setEditingDept({ index: idx, value: dept })}
                                         >
-                                            <span className="cursor-pointer group-hover:underline decoration-emerald-500/30 underline-offset-2">{dept}</span>
-                                            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); setEditingDept({ index: idx, value: dept }); }}
-                                                    className="p-1 rounded-full hover:bg-emerald-500/20 text-emerald-500/70 hover:text-emerald-400 transition-colors"
-                                                    title="Edit"
-                                                >
-                                                    <PenSquare className="w-3 h-3" />
-                                                </button>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); removeDepartment(dept); }}
-                                                    className="p-1 rounded-full hover:bg-red-500/20 text-red-500/70 hover:text-red-400 transition-colors"
-                                                    title="Delete"
-                                                >
-                                                    <X className="w-3 h-3" />
-                                                </button>
-                                            </div>
+                                            <span className={cn(canManage && "cursor-pointer group-hover:underline decoration-emerald-500/30 underline-offset-2")}>{dept}</span>
+                                            {canManage && (
+                                                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); setEditingDept({ index: idx, value: dept }); }}
+                                                        className="p-1 rounded-full hover:bg-emerald-500/20 text-emerald-500/70 hover:text-emerald-400 transition-colors"
+                                                        title="Edit"
+                                                    >
+                                                        <PenSquare className="w-3 h-3" />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); removeDepartment(dept); }}
+                                                        className="p-1 rounded-full hover:bg-red-500/20 text-red-500/70 hover:text-red-400 transition-colors"
+                                                        title="Delete"
+                                                    >
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                            )}
                                         </Badge>
                                     )
                                 ))
@@ -294,11 +303,12 @@ export default function OrganizationSettingsClient({
                             <Input
                                 placeholder={t.adminSettings.organization.jobTitles.placeholder}
                                 value={newTitle}
+                                disabled={!canManage}
                                 onChange={(e) => setNewTitle(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && addJobTitle()}
                                 className="bg-[#161b22] border-slate-700 text-white focus:ring-blue-500/50"
                             />
-                            <Button onClick={addJobTitle} variant="outline" className="border-slate-700 hover:bg-blue-500/10 hover:text-blue-500 hover:border-blue-500/50">
+                            <Button onClick={addJobTitle} disabled={!canManage} variant="outline" className="border-slate-700 hover:bg-blue-500/10 hover:text-blue-500 hover:border-blue-500/50">
                                 <Plus className="w-4 h-4" />
                             </Button>
                         </div>
@@ -328,25 +338,27 @@ export default function OrganizationSettingsClient({
                                             key={idx}
                                             variant="secondary"
                                             className="pl-3 pr-1 py-1 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border-blue-500/20 flex items-center gap-2 transition-all group select-none"
-                                            onClick={() => setEditingTitle({ index: idx, value: title })}
+                                            onClick={() => canManage && setEditingTitle({ index: idx, value: title })}
                                         >
-                                            <span className="cursor-pointer group-hover:underline decoration-blue-500/30 underline-offset-2">{title}</span>
-                                            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); setEditingTitle({ index: idx, value: title }); }}
-                                                    className="p-1 rounded-full hover:bg-blue-500/20 text-blue-500/70 hover:text-blue-400 transition-colors"
-                                                    title="Edit"
-                                                >
-                                                    <PenSquare className="w-3 h-3" />
-                                                </button>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); removeJobTitle(title); }}
-                                                    className="p-1 rounded-full hover:bg-red-500/20 text-red-500/70 hover:text-red-400 transition-colors"
-                                                    title="Delete"
-                                                >
-                                                    <X className="w-3 h-3" />
-                                                </button>
-                                            </div>
+                                            <span className={cn(canManage && "cursor-pointer group-hover:underline decoration-blue-500/30 underline-offset-2")}>{title}</span>
+                                            {canManage && (
+                                                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); setEditingTitle({ index: idx, value: title }); }}
+                                                        className="p-1 rounded-full hover:bg-blue-500/20 text-blue-500/70 hover:text-blue-400 transition-colors"
+                                                        title="Edit"
+                                                    >
+                                                        <PenSquare className="w-3 h-3" />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); removeJobTitle(title); }}
+                                                        className="p-1 rounded-full hover:bg-red-500/20 text-red-500/70 hover:text-red-400 transition-colors"
+                                                        title="Delete"
+                                                    >
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                            )}
                                         </Badge>
                                     )
                                 ))

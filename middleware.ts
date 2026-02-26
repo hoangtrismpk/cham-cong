@@ -39,17 +39,23 @@ export async function middleware(request: NextRequest) {
 
     // Protect routes
     // Only redirect if user is NOT logged in and trying to access protected routes
-    const isProtectedRoute = request.nextUrl.pathname.startsWith('/admin') ||
-        request.nextUrl.pathname.startsWith('/dashboard') ||
-        request.nextUrl.pathname.startsWith('/schedule') ||
-        request.nextUrl.pathname.startsWith('/timesheets') ||
-        request.nextUrl.pathname.startsWith('/reports') ||
-        request.nextUrl.pathname.startsWith('/settings');
+    const pathname = request.nextUrl.pathname
+    const isProtectedRoute = pathname === '/' ||
+        pathname.startsWith('/admin') ||
+        pathname.startsWith('/dashboard') ||
+        pathname.startsWith('/schedule') ||
+        pathname.startsWith('/timesheets') ||
+        pathname.startsWith('/reports') ||
+        pathname.startsWith('/settings');
 
     if (!user && isProtectedRoute) {
         const url = request.nextUrl.clone()
         url.pathname = '/login'
-        url.searchParams.set('next', request.nextUrl.pathname)
+        // Only add ?next= when redirecting from a non-root page
+        // (root "/" is the default post-login destination anyway)
+        if (pathname !== '/') {
+            url.searchParams.set('next', pathname)
+        }
         return NextResponse.redirect(url)
     }
 

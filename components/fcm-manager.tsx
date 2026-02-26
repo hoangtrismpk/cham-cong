@@ -24,14 +24,11 @@ export function FCMManager() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        // Save token
-        const { error } = await supabase
-            .from('fcm_tokens')
-            .upsert({
-                user_id: user.id,
-                token: token,
-                device_type: getDeviceType()
-            }, { onConflict: 'user_id, token' });
+        // Save token using RPC to handle handover scenario (multiple users, same device)
+        const { error } = await supabase.rpc('register_fcm_token', {
+            p_token: token,
+            p_device_type: getDeviceType()
+        });
 
         if (error) {
             console.error('Error saving FCM token:', error.message, error.details, error.hint);

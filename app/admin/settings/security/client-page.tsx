@@ -25,6 +25,7 @@ import {
     RefreshCw
 } from 'lucide-react'
 import { useI18n } from '@/contexts/i18n-context'
+import { usePermissions } from '@/contexts/permission-context'
 
 interface SecuritySettings {
     '2fa_enabled': boolean
@@ -46,6 +47,8 @@ const defaultSettings: SecuritySettings = {
 
 export default function SecuritySettingsClientPage() {
     const { t } = useI18n()
+    const { can } = usePermissions()
+    const canManage = can('settings_security.manage')
     const [settings, setSettings] = useState<SecuritySettings>(defaultSettings)
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -179,18 +182,20 @@ export default function SecuritySettingsClientPage() {
                         {t.adminSettings.securitySettings.description}
                     </p>
                 </div>
-                <Button
-                    onClick={handleSave}
-                    disabled={saving || !hasChanges}
-                    className="bg-blue-600 hover:bg-blue-700"
-                >
-                    {saving ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                        <Save className="mr-2 h-4 w-4" />
-                    )}
-                    {saving ? t.adminSettings.securitySettings.actions.testing : t.adminSettings.securitySettings.actions.saveChanges}
-                </Button>
+                {canManage && (
+                    <Button
+                        onClick={handleSave}
+                        disabled={saving || !hasChanges}
+                        className="bg-blue-600 hover:bg-blue-700"
+                    >
+                        {saving ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <Save className="mr-2 h-4 w-4" />
+                        )}
+                        {saving ? t.adminSettings.securitySettings.actions.testing : t.adminSettings.securitySettings.actions.saveChanges}
+                    </Button>
+                )}
             </div>
 
             <div className="space-y-6">

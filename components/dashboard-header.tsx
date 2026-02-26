@@ -7,7 +7,7 @@ export function DashboardHeader({ dateStr }: { dateStr: string }) {
 
     return (
         <div className="flex items-center gap-4">
-            <span className="text-slate-400 font-medium tracking-wide uppercase text-sm">{t.dashboard.currentTime}</span>
+            <span className="text-slate-400 font-semibold tracking-widest uppercase text-[10px] bg-slate-800/40 px-3 py-1 rounded-full border border-white/5">{dateStr}</span>
         </div>
     )
 }

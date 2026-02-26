@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { useI18n } from '@/contexts/i18n-context'
 import { createClient } from '@/utils/supabase/client'
 import { toast } from 'sonner'
+import { usePermissions } from '@/contexts/permission-context'
 
 type DiagnosticData = {
     fcm_tokens: {
@@ -67,6 +68,8 @@ type UserItem = {
 export default function NotificationsSettingsClientPage() {
     const { t } = useI18n()
     const nt = t.adminSettings.notificationDashboard
+    const { can } = usePermissions()
+    const canManage = can('settings_notifications.manage')
 
     const [activeTab, setActiveTab] = useState<'diagnostics' | 'testPush' | 'logs'>('diagnostics')
     const [diagnostics, setDiagnostics] = useState<DiagnosticData>(null)
@@ -175,8 +178,8 @@ export default function NotificationsSettingsClientPage() {
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 flex-1 justify-center ${activeTab === tab.id
-                                ? 'bg-slate-800 text-white shadow-md border border-slate-700/50'
-                                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                            ? 'bg-slate-800 text-white shadow-md border border-slate-700/50'
+                            : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
                             }`}
                     >
                         <tab.icon className="h-4 w-4" />
@@ -192,7 +195,7 @@ export default function NotificationsSettingsClientPage() {
                     <div className="space-y-4">
                         <button
                             onClick={runDiagnostics}
-                            disabled={isRunning}
+                            disabled={isRunning || !canManage}
                             className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white rounded-xl font-medium text-sm shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50"
                         >
                             <RefreshCw className={`h-4 w-4 ${isRunning ? 'animate-spin' : ''}`} />
@@ -419,7 +422,7 @@ export default function NotificationsSettingsClientPage() {
                         {/* Send button */}
                         <button
                             onClick={sendTestPush}
-                            disabled={isSending || !selectedUserId}
+                            disabled={isSending || !selectedUserId || !canManage}
                             className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white rounded-xl font-medium text-sm shadow-lg shadow-emerald-500/20 transition-all disabled:opacity-50 w-full justify-center"
                         >
                             <Send className={`h-4 w-4 ${isSending ? 'animate-pulse' : ''}`} />
@@ -429,8 +432,8 @@ export default function NotificationsSettingsClientPage() {
                         {/* Result */}
                         {testResult && (
                             <div className={`rounded-xl border p-4 space-y-3 ${testResult.success_count > 0
-                                    ? 'bg-emerald-950/30 border-emerald-500/30'
-                                    : 'bg-red-950/30 border-red-500/30'
+                                ? 'bg-emerald-950/30 border-emerald-500/30'
+                                : 'bg-red-950/30 border-red-500/30'
                                 }`}>
                                 <h4 className="text-sm font-semibold text-white">{nt.testPush.result}</h4>
                                 <div className="grid grid-cols-3 gap-3 text-center">

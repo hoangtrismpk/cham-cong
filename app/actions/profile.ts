@@ -235,9 +235,13 @@ export async function getMyProfile() {
     }
 
     // Transform data match Employee type
+    const roles = data.roles as any
+    const roleData = Array.isArray(roles) ? roles[0] : roles
+
     const profile = {
         ...data,
-        role_name: (data.roles as any)?.display_name || 'Thành viên',
+        role_name: roleData?.display_name || 'Thành viên',
+        permissions: roleData?.permissions || [],
         skills: data.skills || [],
         emergency_contact: data.emergency_contact || { name: '', relationship: '', phone: '' }
     }

@@ -78,7 +78,7 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className="font-display antialiased bg-background text-foreground">
+      <body className="font-display antialiased bg-background text-foreground" suppressHydrationWarning>
         <I18nProvider>
           <LoadingProvider>
             <RecaptchaProvider siteKey={siteKey} enabled={enabled}>

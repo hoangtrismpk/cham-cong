@@ -118,6 +118,26 @@ export async function createRole(data: { name: string, display_name: string, des
     return { success: true }
 }
 
+// Update role basic info
+export async function updateRole(roleId: string, data: { display_name: string, description?: string }) {
+    const hasPerm = await checkPermission('roles.manage')
+    if (!hasPerm) return { error: 'Bạn không có quyền quản lý phân quyền' }
+
+    const supabaseAdmin = createAdminClient()
+    const { error } = await supabaseAdmin
+        .from('roles')
+        .update({
+            display_name: data.display_name,
+            description: data.description
+        })
+        .eq('id', roleId)
+
+    if (error) return { error: error.message }
+
+    revalidatePath('/admin/settings/roles')
+    return { success: true }
+}
+
 // Delete role
 export async function deleteRole(roleId: string) {
     const hasPerm = await checkPermission('roles.manage')

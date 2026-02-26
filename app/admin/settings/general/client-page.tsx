@@ -21,6 +21,7 @@ import {
     Activity
 } from 'lucide-react'
 import { useI18n } from '@/contexts/i18n-context'
+import { usePermissions } from '@/contexts/permission-context'
 
 interface GeneralSettings {
     company_name: string
@@ -66,6 +67,8 @@ const defaultSettings: GeneralSettings = {
 
 export default function GeneralSettingsClientPage() {
     const { t } = useI18n()
+    const { can } = usePermissions()
+    const canManage = can('settings.manage')
     const [settings, setSettings] = useState<GeneralSettings>(defaultSettings)
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -477,20 +480,22 @@ export default function GeneralSettingsClientPage() {
                 </Card>
 
                 {/* Sticky Save Button */}
-                <div className="sticky bottom-6 z-10 flex justify-end pt-4">
-                    <button
-                        onClick={handleSave}
-                        disabled={saving || !hasChanges}
-                        className={`shadow-2xl shadow-primary/30 px-8 py-4 bg-primary hover:bg-primary/90 text-black font-black uppercase tracking-wider rounded-2xl flex items-center gap-3 transition-all ${(!hasChanges || saving) ? 'opacity-50 cursor-not-allowed scale-95' : 'cursor-pointer hover:-translate-y-1 active:scale-95'}`}
-                    >
-                        {saving ? (
-                            <Loader2 className="h-5 w-5 animate-spin" />
-                        ) : (
-                            <Save className="h-5 w-5" />
-                        )}
-                        {saving ? t.adminSettings.generalSettings.actions.saving : t.adminSettings.generalSettings.actions.save}
-                    </button>
-                </div>
+                {canManage && (
+                    <div className="sticky bottom-6 z-10 flex justify-end pt-4">
+                        <button
+                            onClick={handleSave}
+                            disabled={saving || !hasChanges}
+                            className={`shadow-2xl shadow-primary/30 px-8 py-4 bg-primary hover:bg-primary/90 text-black font-black uppercase tracking-wider rounded-2xl flex items-center gap-3 transition-all ${(!hasChanges || saving) ? 'opacity-50 cursor-not-allowed scale-95' : 'cursor-pointer hover:-translate-y-1 active:scale-95'}`}
+                        >
+                            {saving ? (
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                            ) : (
+                                <Save className="h-5 w-5" />
+                            )}
+                            {saving ? t.adminSettings.generalSettings.actions.saving : t.adminSettings.generalSettings.actions.save}
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     )

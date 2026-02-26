@@ -15,17 +15,21 @@ const messaging = firebase.messaging();
 // Handle background messages
 // Handle background messages
 messaging.onBackgroundMessage((payload) => {
-    console.log('[firebase-messaging-sw.js] Received check-in background message ', payload);
-    // Add Identification Prefix if from Server
-    const notificationTitle = `[FHB] ${payload.notification?.title || 'Nhắc nhở Chấm công'}`;
-    const notificationOptions = {
-        body: payload.notification?.body || 'Đã đến giờ chấm công rồi!',
-        icon: '/iconapp.png', // Use correct icon
-        badge: '/iconapp.png',
-        data: payload.data || { url: '/' }
-    };
+    console.log('[firebase-messaging-sw.js] Received background message ', payload);
 
-    self.registration.showNotification(notificationTitle, notificationOptions);
+    // If the payload already has 'notification', Firebase's internal SDK will automatically show it.
+    // We only need to manually show it if it's a data-only message.
+    if (!payload.notification) {
+        const notificationTitle = `[FHB] ${payload.data?.title || 'Nhắc nhở Chấm công'}`;
+        const notificationOptions = {
+            body: payload.data?.body || 'Bạn có thông báo mới!',
+            icon: '/iconapp.png',
+            badge: '/iconapp.png',
+            data: payload.data || { url: '/' }
+        };
+
+        self.registration.showNotification(notificationTitle, notificationOptions);
+    }
 });
 
 // Also handle notification click

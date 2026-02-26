@@ -3,6 +3,7 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import { AdminBottomNav } from '@/components/admin-bottom-nav'
 import { AdminHeader } from '@/components/admin-header'
+import { PermissionProvider } from '@/contexts/permission-context'
 
 export default async function AdminLayout({
     children,
@@ -33,14 +34,15 @@ export default async function AdminLayout({
         .single()
 
     const roles = profile?.roles as any
-    const permissions = (Array.isArray(roles) ? roles[0]?.permissions : roles?.permissions) || []
+    const roleData = Array.isArray(roles) ? roles[0] : roles
+    const permissions = roleData?.permissions || []
 
-    // Allow if user has 'admin' role OR has 'dashboard.view' permission
+    // Allow if user has 'admin' role OR has ANY permission
     const hasAccess =
         profile?.role === 'admin' ||
-        (roles?.name === 'admin') ||
+        (roleData?.name === 'admin') ||
         permissions.includes('*') ||
-        permissions.includes('dashboard.view')
+        permissions.length > 0
 
     if (!hasAccess) {
         redirect('/')
@@ -59,7 +61,9 @@ export default async function AdminLayout({
                     profile={profile}
                 />
                 <main className="flex-1 overflow-y-auto bg-[#0a0f14] custom-scrollbar pb-24 lg:pb-0">
-                    {children}
+                    <PermissionProvider permissions={permissions} roleName={roleData?.name || null}>
+                        {children}
+                    </PermissionProvider>
                 </main>
                 <AdminBottomNav />
             </div>

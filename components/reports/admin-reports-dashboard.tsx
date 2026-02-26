@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { useRouter } from 'next/navigation'
+import { usePermissions } from '@/contexts/permission-context'
 
 import { getGlobalReportExport } from '@/app/actions/work-reports-admin'
 import ReportDetailModal from './report-detail-modal'
@@ -54,6 +55,7 @@ const PAGE_SIZE = 10
 export default function AdminReportsDashboard({ reports: initialReports, total, stats, currentPage, filters }: Props) {
     const router = useRouter()
     const { t, locale } = useI18n()
+    const { can } = usePermissions()
     const dateLocale = locale === 'vi' ? vi : enUS
     const [reports, setReports] = useState<WorkReport[]>(initialReports)
     const [selectedReport, setSelectedReport] = useState<WorkReport | null>(null)
@@ -251,14 +253,16 @@ export default function AdminReportsDashboard({ reports: initialReports, total, 
                     <p className="text-slate-400 font-medium tracking-wide">{t.admin.reportDashboard.subtitle}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button
-                        onClick={handleExport}
-                        variant="outline"
-                        className="h-12 bg-[#1a1f2e] border-slate-700 text-slate-300 hover:bg-slate-800 rounded-2xl px-6 font-bold shadow-xl transition-all"
-                    >
-                        <Download className="w-4 h-4 mr-2 text-primary" />
-                        {t.admin.reportDashboard.export}
-                    </Button>
+                    {can('reports.export') && (
+                        <Button
+                            onClick={handleExport}
+                            variant="outline"
+                            className="h-12 bg-[#1a1f2e] border-slate-700 text-slate-300 hover:bg-slate-800 rounded-2xl px-6 font-bold shadow-xl transition-all"
+                        >
+                            <Download className="w-4 h-4 mr-2 text-primary" />
+                            {t.admin.reportDashboard.export}
+                        </Button>
+                    )}
                     <div className="relative group">
                         <select
                             value={`${filters.month}-${filters.year}`}

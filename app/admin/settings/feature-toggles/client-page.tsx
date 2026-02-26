@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator'
 import { Loader2, Save, Send, Users, UserPlus, X, Check } from 'lucide-react'
 import { useI18n } from '@/contexts/i18n-context'
+import { usePermissions } from '@/contexts/permission-context'
 import { cn } from '@/lib/utils'
 
 interface FeatureSettings {
@@ -28,6 +29,8 @@ interface UserProfile {
 
 export default function FeatureTogglesSettingsClientPage() {
     const { t } = useI18n()
+    const { can } = usePermissions()
+    const canManage = can('settings_feature_toggles.manage')
     const [settings, setSettings] = useState<FeatureSettings>({
         reports_require_direct_manager: true,
         reports_default_recipients: []
@@ -94,6 +97,7 @@ export default function FeatureTogglesSettingsClientPage() {
     }
 
     const toggleRecipient = (userId: string) => {
+        if (!canManage) return;
         setSettings(prev => {
             const current = prev.reports_default_recipients
             const updated = current.includes(userId)
@@ -143,18 +147,20 @@ export default function FeatureTogglesSettingsClientPage() {
                         Cấu hình và bật/tắt các tính năng hệ thống như gửi thông báo, báo cáo...
                     </p>
                 </div>
-                <Button
-                    onClick={handleSave}
-                    disabled={saving || !hasChanges}
-                    className="bg-cyan-600 hover:bg-cyan-700 text-white shadow-lg shadow-cyan-500/20"
-                >
-                    {saving ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                        <Save className="mr-2 h-4 w-4" />
-                    )}
-                    {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
-                </Button>
+                {canManage && (
+                    <Button
+                        onClick={handleSave}
+                        disabled={saving || !hasChanges}
+                        className="bg-cyan-600 hover:bg-cyan-700 text-white shadow-lg shadow-cyan-500/20"
+                    >
+                        {saving ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <Save className="mr-2 h-4 w-4" />
+                        )}
+                        {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
+                    </Button>
+                )}
             </div>
 
             <div className="space-y-6">
@@ -182,6 +188,7 @@ export default function FeatureTogglesSettingsClientPage() {
                                 </p>
                             </div>
                             <Switch
+                                disabled={!canManage}
                                 checked={settings.reports_require_direct_manager}
                                 onCheckedChange={(checked) => handleChange('reports_require_direct_manager', checked)}
                                 className="data-[state=checked]:bg-cyan-500"
@@ -227,8 +234,9 @@ export default function FeatureTogglesSettingsClientPage() {
                                                         </div>
                                                         <span className="text-sm text-white font-medium">{u.full_name}</span>
                                                         <button
+                                                            disabled={!canManage}
                                                             onClick={() => toggleRecipient(u.id)}
-                                                            className="text-slate-400 hover:text-red-400 transition-colors bg-slate-700/50 hover:bg-slate-700 rounded-full p-0.5 ml-1"
+                                                            className={cn("text-slate-400 transition-colors bg-slate-700/50 rounded-full p-0.5 ml-1", canManage && "hover:text-red-400 hover:bg-slate-700")}
                                                         >
                                                             <X className="h-3 w-3" />
                                                         </button>
@@ -254,12 +262,13 @@ export default function FeatureTogglesSettingsClientPage() {
                                                 return (
                                                     <div
                                                         key={user.id}
-                                                        onClick={() => toggleRecipient(user.id)}
+                                                        onClick={() => canManage && toggleRecipient(user.id)}
                                                         className={cn(
-                                                            "relative flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-all border duration-300",
+                                                            "relative flex items-center gap-3 p-2.5 rounded-xl transition-all border duration-300",
+                                                            canManage && "cursor-pointer hover:border-slate-700 hover:bg-slate-800/30",
                                                             isSelected
                                                                 ? "bg-cyan-500/10 border-cyan-500/30"
-                                                                : "bg-[#161b22] border-slate-800 hover:border-slate-700 hover:bg-slate-800/30"
+                                                                : "bg-[#161b22] border-slate-800"
                                                         )}
                                                     >
                                                         <div className={cn(

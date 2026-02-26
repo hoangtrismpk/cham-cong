@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { Loader2, CheckCircle2, XCircle, ExternalLink, AlertTriangle, Trash2 } from 'lucide-react'
 import { useI18n } from '@/contexts/i18n-context'
+import { usePermissions } from '@/contexts/permission-context'
 
 interface WordPressConfig {
     id: string
@@ -20,6 +21,8 @@ interface WordPressConfig {
 
 export default function IntegrationsSettingsClientPage() {
     const { t } = useI18n()
+    const { can } = usePermissions()
+    const canManage = can('settings_integrations.manage')
     const [config, setConfig] = useState<WordPressConfig | null>(null)
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -218,6 +221,7 @@ export default function IntegrationsSettingsClientPage() {
                         type="url"
                         placeholder={t.adminSettings.integrations.form.siteUrlPlaceholder}
                         value={formData.site_url}
+                        disabled={!canManage}
                         onChange={(e) => setFormData({ ...formData, site_url: e.target.value })}
                         className="bg-[#0d131a] border-slate-700 text-white"
                     />
@@ -235,6 +239,7 @@ export default function IntegrationsSettingsClientPage() {
                         type="text"
                         placeholder={t.adminSettings.integrations.form.usernamePlaceholder}
                         value={formData.username}
+                        disabled={!canManage}
                         onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                         className="bg-[#0d131a] border-slate-700 text-white"
                     />
@@ -249,6 +254,7 @@ export default function IntegrationsSettingsClientPage() {
                         type="password"
                         placeholder="xxxx xxxx xxxx xxxx xxxx xxxx"
                         value={formData.app_password}
+                        disabled={!canManage}
                         onChange={(e) => setFormData({ ...formData, app_password: e.target.value })}
                         className="bg-[#0d131a] border-slate-700 text-white font-mono"
                     />
@@ -266,37 +272,39 @@ export default function IntegrationsSettingsClientPage() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-3 pt-4 border-t border-slate-800">
-                    <Button
-                        onClick={handleTest}
-                        disabled={testing || !formData.site_url}
-                        variant="outline"
-                        className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
-                    >
-                        {testing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {t.adminSettings.integrations.actions.test}
-                    </Button>
-
-                    <Button
-                        onClick={handleSave}
-                        disabled={saving}
-                        className="bg-cyan-500 hover:bg-cyan-600 text-black font-medium"
-                    >
-                        {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {t.adminSettings.integrations.actions.save}
-                    </Button>
-
-                    {config && (
+                {canManage && (
+                    <div className="flex gap-3 pt-4 border-t border-slate-800">
                         <Button
-                            onClick={handleDelete}
-                            variant="destructive"
-                            className="ml-auto"
+                            onClick={handleTest}
+                            disabled={testing || !formData.site_url}
+                            variant="outline"
+                            className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
                         >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            {t.adminSettings.integrations.actions.delete}
+                            {testing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {t.adminSettings.integrations.actions.test}
                         </Button>
-                    )}
-                </div>
+
+                        <Button
+                            onClick={handleSave}
+                            disabled={saving}
+                            className="bg-cyan-500 hover:bg-cyan-600 text-black font-medium"
+                        >
+                            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {t.adminSettings.integrations.actions.save}
+                        </Button>
+
+                        {config && (
+                            <Button
+                                onClick={handleDelete}
+                                variant="destructive"
+                                className="ml-auto"
+                            >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                {t.adminSettings.integrations.actions.delete}
+                            </Button>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Security Warning */}

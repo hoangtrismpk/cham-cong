@@ -3,6 +3,7 @@
 import { WeeklyAttendanceChart } from '@/components/charts/weekly-attendance-chart'
 import { DepartmentChart } from '@/components/charts/department-chart'
 import { format, differenceInMinutes, parseISO } from 'date-fns'
+import { vi, enUS } from 'date-fns/locale'
 import Link from 'next/link'
 import { useI18n } from '@/contexts/i18n-context'
 
@@ -66,7 +67,8 @@ export function AdminDashboardClient({
     activeLogs,
     todayStr
 }: AdminDashboardClientProps) {
-    const { t } = useI18n()
+    const { t, locale } = useI18n()
+    const dateLocale = locale === 'vi' ? vi : enUS
 
     return (
         <div className="p-8 max-w-[1600px] w-full mx-auto space-y-8 bg-[#0b0f1a] min-h-screen">
@@ -262,7 +264,7 @@ export function AdminDashboardClient({
                                                 {statusText}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-xs text-slate-300 font-mono">{format(checkIn, 'hh:mm a')}</td>
+                                        <td className="px-6 py-4 text-xs text-slate-300 font-mono">{format(checkIn, 'hh:mm a', { locale: dateLocale })}</td>
                                         <td className="px-6 py-4 text-xs font-bold text-white">
                                             {log.check_out_time ? t.admin.completed : `${hours}h ${minutes}m`}
                                         </td>

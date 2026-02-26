@@ -15,6 +15,7 @@ import { Plus, Trash2, Shield, Save, Check, Loader2, Search, AlertTriangle, Chev
 import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import { useI18n } from '@/contexts/i18n-context'
+import { usePermissions } from '@/contexts/permission-context'
 
 interface RoleManagerProps {
     roles: Role[]
@@ -24,6 +25,8 @@ interface RoleManagerProps {
 export function RoleManager({ roles, permissions }: RoleManagerProps) {
     const router = useRouter()
     const { t } = useI18n()
+    const { can } = usePermissions()
+    const canManage = can('roles.manage')
     const [selectedRole, setSelectedRole] = useState<Role>(roles[0] || null)
     const [unsavedPermissions, setUnsavedPermissions] = useState<string[]>(roles[0]?.permissions || [])
     const [isSaving, setIsSaving] = useState(false)
@@ -130,14 +133,16 @@ export function RoleManager({ roles, permissions }: RoleManagerProps) {
                             <h3 className="font-bold text-white flex items-center gap-2">
                                 <Shield className="h-4 w-4 text-primary" /> {t.adminSettings.roleSettings.roles}
                             </h3>
-                            <Button
-                                variant="default"
-                                size="sm"
-                                className="bg-primary text-black hover:bg-primary/90"
-                                onClick={() => setIsCreateModalOpen(true)}
-                            >
-                                <Plus className="h-4 w-4 mr-1" /> {t.adminSettings.roleSettings.createRole.button}
-                            </Button>
+                            {canManage && (
+                                <Button
+                                    variant="default"
+                                    size="sm"
+                                    className="bg-primary text-black hover:bg-primary/90"
+                                    onClick={() => setIsCreateModalOpen(true)}
+                                >
+                                    <Plus className="h-4 w-4 mr-1" /> {t.adminSettings.roleSettings.createRole.button}
+                                </Button>
+                            )}
                         </div>
                     </div>
 
@@ -199,17 +204,19 @@ export function RoleManager({ roles, permissions }: RoleManagerProps) {
                                         <h3 className="font-bold text-white flex items-center gap-2">
                                             <Shield className="h-4 w-4 text-primary" /> {t.adminSettings.roleSettings.roles}
                                         </h3>
-                                        <Button
-                                            variant="default"
-                                            size="sm"
-                                            className="bg-primary text-black hover:bg-primary/90"
-                                            onClick={() => {
-                                                setIsMobileRoleDrawerOpen(false)
-                                                setIsCreateModalOpen(true)
-                                            }}
-                                        >
-                                            <Plus className="h-4 w-4 mr-1" /> {t.adminSettings.roleSettings.createRole.button}
-                                        </Button>
+                                        {canManage && (
+                                            <Button
+                                                variant="default"
+                                                size="sm"
+                                                className="bg-primary text-black hover:bg-primary/90"
+                                                onClick={() => {
+                                                    setIsMobileRoleDrawerOpen(false)
+                                                    setIsCreateModalOpen(true)
+                                                }}
+                                            >
+                                                <Plus className="h-4 w-4 mr-1" /> {t.adminSettings.roleSettings.createRole.button}
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
 
@@ -275,7 +282,7 @@ export function RoleManager({ roles, permissions }: RoleManagerProps) {
                                     </div>
                                 </div>
 
-                                {selectedRole.name !== 'admin' && (
+                                {selectedRole.name !== 'admin' && canManage && (
                                     <Button
                                         onClick={handleSave}
                                         disabled={!isDirty || isSaving}
@@ -308,6 +315,7 @@ export function RoleManager({ roles, permissions }: RoleManagerProps) {
                                                         <div key={perm.id} className="flex items-start gap-3 select-none py-1">
                                                             <Checkbox
                                                                 id={perm.id}
+                                                                disabled={!canManage || selectedRole.name === 'admin'}
                                                                 checked={unsavedPermissions.includes(perm.id) || unsavedPermissions.includes('*')}
                                                                 onCheckedChange={() => togglePermission(perm.id)}
                                                                 className="data-[state=checked]:bg-primary data-[state=checked]:text-black border-slate-600 mt-0.5"

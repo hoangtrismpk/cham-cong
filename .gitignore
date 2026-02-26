@@ -77,10 +77,11 @@ supabase/seed_hoang_tri_pattern*.sql
 /scripts/*.js
 implementation_plan.md
 GEMINI*.md
-.agent/
 ERRORS.md
 docs/
 
 
 supabase/seed_hoang_tri_pattern*.sql
 
+# Agent local files (credentials, logs, etc.)
+.agent/

@@ -173,24 +173,26 @@ export async function saveShift(shiftData: any) {
         return { error: error.message }
     }
 
-    // Notification for Admins
-    const { data: adminProfiles } = await supabase
-        .from('profiles')
-        .select('id')
-        .in('role', ['admin', 'manager', 'hr_manager'])
+    // Notification for all approvers (managers + admins)
+    try {
+        const { getApproverIds } = await import('@/app/actions/approvals')
+        const approverIds = await getApproverIds(user.id)
 
-    if (adminProfiles && adminProfiles.length > 0) {
-        const { sendNotification } = await import('@/app/actions/notification-system')
-        const dateStr = new Date(work_date).toLocaleDateString('vi-VN')
-        const requesterName = user.user_metadata?.full_name || user.email || 'Nhân viên'
-        const message = `${requesterName} đã yêu cầu đổi lịch làm việc ngày ${dateStr}.`
+        if (approverIds.length > 0) {
+            const { sendNotification } = await import('@/app/actions/notification-system')
+            const dateStr = new Date(work_date).toLocaleDateString('vi-VN')
+            const requesterName = user.user_metadata?.full_name || user.email || 'Nhân viên'
 
-        await sendNotification({
-            userIds: adminProfiles.map(a => a.id),
-            title: 'Yêu cầu đổi lịch mới',
-            message: message,
-            type: 'info'
-        })
+            await sendNotification({
+                userIds: approverIds,
+                title: 'Yêu cầu đổi lịch mới',
+                message: `${requesterName} đã yêu cầu đổi lịch làm việc ngày ${dateStr}.`,
+                type: 'info',
+                link: '/admin/approvals'
+            })
+        }
+    } catch (notifError) {
+        console.error('[Schedule] Notification error:', notifError)
     }
 
     revalidatePath('/schedule')

@@ -20,6 +20,11 @@ export const PERMISSIONS = {
         DELETE: 'users.delete',
     },
 
+    // My Team
+    MY_TEAM: {
+        VIEW: 'my_team.view',
+    },
+
     // Attendance
     ATTENDANCE: {
         VIEW: 'attendance.view',
@@ -43,16 +48,41 @@ export const PERMISSIONS = {
         EXPORT: 'reports.export',
     },
 
+    // Notifications / Campaigns
+    NOTIFICATIONS: {
+        VIEW: 'notifications.view',
+        SEND: 'notifications.send',
+    },
+
+    // Audit Logs
+    AUDIT_LOGS: {
+        VIEW: 'audit_logs.view',
+        EXPORT: 'audit_logs.export',
+    },
+
+    // Email Templates
+    EMAIL_TEMPLATES: {
+        VIEW: 'email_templates.view',
+        EDIT: 'email_templates.edit',
+    },
+
     // System & Settings
     SETTINGS: {
         VIEW: 'settings.view',
         MANAGE: 'settings.manage',
+        MANAGE_ORGANIZATION: 'settings_organization.manage',
+        MANAGE_SECURITY: 'settings_security.manage',
+        MANAGE_NOTIFICATIONS: 'settings_notifications.manage',
+        MANAGE_EMAIL: 'settings_email.manage',
+        MANAGE_FEATURE_TOGGLES: 'settings_feature_toggles.manage',
+        MANAGE_INTEGRATIONS: 'settings_integrations.manage',
     },
     ROLES: {
         VIEW: 'roles.view',
         MANAGE: 'roles.manage',
-    }
+    },
 } as const
+
 
 // ==========================================
 // HELPER FUNCTIONS
@@ -158,4 +188,19 @@ export async function checkPermissions(
     } else {
         return requiredPermissions.some(p => hasPermission(p))
     }
+}
+
+/**
+ * Require a permission for a Server Action.
+ * Returns null if authorized, or an error object if denied.
+ * Usage in Server Actions:
+ *   const denied = await requirePermissionForAction('users.edit')
+ *   if (denied) return denied
+ */
+export async function requirePermissionForAction(permission: string): Promise<{ error: string } | null> {
+    const hasAccess = await checkPermission(permission)
+    if (!hasAccess) {
+        return { error: 'Permission denied: You do not have the required permission to perform this action.' }
+    }
+    return null
 }

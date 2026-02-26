@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
+import { isRedirectError } from 'next/dist/client/components/redirect-error'
 
 export default function Error({
     error,
@@ -12,9 +13,19 @@ export default function Error({
     reset: () => void
 }) {
     useEffect(() => {
-        // Log the error to an error reporting service
+        // NEXT_REDIRECT is not a real error - it's how Next.js handles redirect()
+        // Re-throw so Next.js router can process the redirect properly
+        if (isRedirectError(error)) {
+            throw error
+        }
+        // Log real errors only
         console.error(error)
     }, [error])
+
+    // Don't render error UI for redirects (avoids flash before redirect)
+    if (isRedirectError(error)) {
+        return null
+    }
 
     return (
         <div className="h-screen w-full flex flex-col items-center justify-center bg-background text-foreground space-y-6 p-4 text-center">

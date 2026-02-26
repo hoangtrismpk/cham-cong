@@ -41,12 +41,16 @@ import {
     ChevronRight,
 } from 'lucide-react'
 import { format } from 'date-fns'
+import { vi as viLocale, enUS } from 'date-fns/locale'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { useI18n } from '@/contexts/i18n-context'
+import { usePermissions } from '@/contexts/permission-context'
 
 export default function EmployeeDetailPage() {
-    const { t } = useI18n()
+    const { t, locale } = useI18n()
+    const { can } = usePermissions()
+    const dateLocale = locale === 'vi' ? viLocale : enUS
     const params = useParams()
     const router = useRouter()
     const employeeId = params.id as string
@@ -203,7 +207,7 @@ export default function EmployeeDetailPage() {
                                     </span>
                                     <span className="flex items-center gap-1">
                                         <Calendar className="h-3.5 w-3.5" />
-                                        {t.admin.detail.labels.joined} {employee.start_date ? format(new Date(employee.start_date), 'MMM yyyy') : 'N/A'}
+                                        {t.admin.detail.labels.joined} {employee.start_date ? format(new Date(employee.start_date), 'MMM yyyy', { locale: dateLocale }) : 'N/A'}
                                     </span>
                                 </div>
                             </div>
@@ -219,16 +223,18 @@ export default function EmployeeDetailPage() {
                                 <Download className="h-4 w-4 mr-2" />
                                 {t.admin.detail.exportPDF}
                             </Button>
-                            <Button
-                                className="bg-primary hover:bg-primary/90 text-black"
-                                onClick={() => {
-                                    const displayId = employee.numeric_id ? employee.numeric_id.toString().padStart(6, '0') : employeeId;
-                                    router.push(`/admin/employees/${displayId}/edit`);
-                                }}
-                            >
-                                <Edit className="h-4 w-4 mr-2" />
-                                {t.admin.detail.editButton}
-                            </Button>
+                            {can('users.edit') && (
+                                <Button
+                                    className="bg-primary hover:bg-primary/90 text-black"
+                                    onClick={() => {
+                                        const displayId = employee.numeric_id ? employee.numeric_id.toString().padStart(6, '0') : employeeId;
+                                        router.push(`/admin/employees/${displayId}/edit`);
+                                    }}
+                                >
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    {t.admin.detail.editButton}
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -273,7 +279,7 @@ export default function EmployeeDetailPage() {
                                         <div className="grid grid-cols-2 gap-x-8 gap-y-5">
                                             <div>
                                                 <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">{t.admin.detail.labels.id}</p>
-                                                <p className="text-white font-medium">{employee.employee_code || 'N/A'}</p>
+                                                <p className="text-white font-medium">{employee.employee_code || (employee.numeric_id ? employee.numeric_id.toString().padStart(6, '0') : 'N/A')}</p>
                                             </div>
                                             <div>
                                                 <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">{t.admin.detail.labels.department}</p>
@@ -286,7 +292,7 @@ export default function EmployeeDetailPage() {
                                             <div>
                                                 <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">{t.admin.detail.labels.dob}</p>
                                                 <p className="text-white font-medium">
-                                                    {employee.dob ? format(new Date(employee.dob), 'dd/MM/yyyy') : 'N/A'}
+                                                    {employee.dob ? format(new Date(employee.dob), 'dd/MM/yyyy', { locale: dateLocale }) : 'N/A'}
                                                 </p>
                                             </div>
                                             <div>
@@ -420,7 +426,7 @@ export default function EmployeeDetailPage() {
                                             {nextShift ? (
                                                 <>
                                                     <h3 className="text-2xl font-black text-white mb-1">
-                                                        {format(new Date(nextShift.work_date), 'EEEE, dd/MM')}, {nextShift.start_time}
+                                                        {format(new Date(nextShift.work_date), 'EEEE, dd/MM', { locale: dateLocale })}, {nextShift.start_time}
                                                     </h3>
                                                     <p className="text-sm text-blue-100 font-medium">
                                                         {nextShift.location} • {nextShift.title}
@@ -521,10 +527,10 @@ export default function EmployeeDetailPage() {
                             <CardHeader>
                                 <div className="flex items-center justify-between">
                                     <CardTitle>
-                                        {t.admin.detail.attendance.title.replace('{{month}}', format(new Date(), 'MMM yyyy'))}
+                                        {t.admin.detail.attendance.title.replace('{{month}}', format(new Date(), 'MMM yyyy', { locale: dateLocale }))}
                                     </CardTitle>
                                     <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 font-bold">
-                                        {format(new Date(), 'MMMM yyyy')}
+                                        {format(new Date(), 'MMMM yyyy', { locale: dateLocale })}
                                     </Button>
                                 </div>
                             </CardHeader>
@@ -551,13 +557,13 @@ export default function EmployeeDetailPage() {
                                             attendanceLogs.map((log) => (
                                                 <TableRow key={log.id || `${log.work_date}-${log.user_id}`} className="border-slate-800 hover:bg-slate-800/40">
                                                     <TableCell className="font-medium">
-                                                        {format(new Date(log.work_date), 'MMM dd, yyyy')}
+                                                        {format(new Date(log.work_date), 'dd/MM/yyyy', { locale: dateLocale })}
                                                     </TableCell>
                                                     <TableCell className="text-slate-300">
-                                                        {log.check_in_time ? format(new Date(log.check_in_time), 'hh:mm a') : '—'}
+                                                        {log.check_in_time ? format(new Date(log.check_in_time), 'hh:mm a', { locale: dateLocale }) : '—'}
                                                     </TableCell>
                                                     <TableCell className="text-slate-300">
-                                                        {log.check_out_time ? format(new Date(log.check_out_time), 'hh:mm a') : '—'}
+                                                        {log.check_out_time ? format(new Date(log.check_out_time), 'hh:mm a', { locale: dateLocale }) : '—'}
                                                     </TableCell>
                                                     <TableCell className="font-bold">
                                                         {log.totalHours ? `${log.totalHours}h` : '0h'}

@@ -50,22 +50,25 @@ export async function submitLeaveRequest(formData: FormData) {
         return { error: error.message }
     }
 
-    // NOTIFICATION: Notify Admins
-    const { data: admins } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('role', 'admin') // Simplified role check
+    // NOTIFICATION: Notify all approvers (managers up chain + admins)
+    try {
+        const { getApproverIds } = await import('@/app/actions/approvals')
+        const approverIds = await getApproverIds(user.id)
 
-    if (admins && admins.length > 0) {
-        const { sendNotification } = await import('@/app/actions/notification-system')
-        const adminIds = admins.map(a => a.id)
+        if (approverIds.length > 0) {
+            const { sendNotification } = await import('@/app/actions/notification-system')
+            const dateStr = new Date(leave_date).toLocaleDateString('vi-VN')
 
-        await sendNotification({
-            userIds: adminIds,
-            title: 'Đơn xin phép mới',
-            message: `${user.user_metadata?.full_name || user.email} đã gửi một yêu cầu xin nghỉ phép mới.`,
-            type: 'info'
-        })
+            await sendNotification({
+                userIds: approverIds,
+                title: 'Đơn xin phép mới',
+                message: `${user.user_metadata?.full_name || user.email} đã gửi yêu cầu nghỉ phép ngày ${dateStr}.`,
+                type: 'info',
+                link: '/admin/approvals'
+            })
+        }
+    } catch (notifError) {
+        console.error('[Leave] Notification error:', notifError)
     }
 
     return { data }

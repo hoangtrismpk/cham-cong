@@ -102,20 +102,29 @@ export function DashboardSidebar({ user, onClose }: DashboardSidebarProps) {
                 </Link>
 
                 {/* Admin Access Link */}
-                {(profile?.role === 'admin' || profile?.role_name === 'Quản trị viên' || profile?.role_id === 'admin') && (
-                    <div className="pt-2">
-                        <div className="px-4 py-2">
-                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-600/70 italic">Quản trị</p>
+                {(() => {
+                    if (!profile) return false;
+                    const p = profile.permissions || [];
+                    const r = Array.isArray(profile.roles) ? profile.roles[0] : profile.roles;
+                    const isAdmin = profile.role === 'admin' || r?.name === 'admin' || p.includes('*');
+                    return isAdmin || p.length > 0;
+                })() && (
+                        <div className="pt-2">
+                            <div className="px-4 py-2">
+                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-600/70 italic">Quản trị</p>
+                            </div>
+                            <Link
+                                className="flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-emerald-400 hover:text-white hover:bg-emerald-500/10 transition-all duration-300 group"
+                                href="/admin"
+                                onClick={() => {
+                                    if (window.innerWidth < 768) onClose?.()
+                                }}
+                            >
+                                <span className="material-symbols-outlined group-hover:rotate-90 transition-transform">admin_panel_settings</span>
+                                Admin Panel
+                            </Link>
                         </div>
-                        <Link
-                            className="flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-emerald-400 hover:text-white hover:bg-emerald-500/10 transition-all duration-300 group"
-                            href="/admin"
-                        >
-                            <span className="material-symbols-outlined group-hover:rotate-90 transition-transform">admin_panel_settings</span>
-                            Admin Panel
-                        </Link>
-                    </div>
-                )}
+                    )}
 
                 <div className="pt-6 pb-2 px-4">
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 italic">Tài khoản</p>

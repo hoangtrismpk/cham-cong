@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Users, Clock, AlertCircle, Calendar, Shield, Layout, List, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
+import { Users, Shield, Layout, List, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
 import Link from 'next/link'
 import { useI18n } from '@/contexts/i18n-context'
@@ -90,48 +90,75 @@ export default function MyTeamClient({ team: initialTeam, stats: initialStats, c
                 </div>
             </header>
 
-            {/* KPI Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card className="bg-[#161b22] border-slate-800">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-400 uppercase tracking-widest">{t.admin.myTeam.stats.total}</CardTitle>
-                        <Users className="h-4 w-4 text-primary" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-black text-white">{stats.total}</div>
-                        <p className="text-xs text-slate-500 mt-1">{t.admin.myTeam.stats.totalDesc}</p>
-                    </CardContent>
-                </Card>
-                <Card className="bg-[#161b22] border-slate-800">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-400 uppercase tracking-widest">{t.admin.myTeam.stats.present}</CardTitle>
-                        <Clock className="h-4 w-4 text-emerald-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-black text-emerald-500">{stats.present}</div>
-                        <p className="text-xs text-slate-500 mt-1">{t.admin.myTeam.stats.presentDesc}</p>
-                    </CardContent>
-                </Card>
-                <Card className="bg-[#161b22] border-slate-800">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-400 uppercase tracking-widest">{t.admin.myTeam.stats.late}</CardTitle>
-                        <AlertCircle className="h-4 w-4 text-amber-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-black text-amber-500">{stats.late}</div>
-                        <p className="text-xs text-slate-500 mt-1">{t.admin.myTeam.stats.lateDesc}</p>
-                    </CardContent>
-                </Card>
-                <Card className="bg-[#161b22] border-slate-800">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-400 uppercase tracking-widest">{t.admin.myTeam.stats.absent}</CardTitle>
-                        <Calendar className="h-4 w-4 text-rose-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-black text-rose-500">{stats.absent + stats.leave}</div>
-                        <p className="text-xs text-slate-500 mt-1">{t.admin.myTeam.stats.absentDesc}</p>
-                    </CardContent>
-                </Card>
+            {/* KPI Cards - Matching Admin Dashboard Style */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
+                {/* Total Team Members */}
+                <div className="bg-[#161b2c] p-4 md:p-5 rounded-2xl border border-[#2d3748] shadow-sm group hover:border-blue-500/50 transition-all relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-blue-500/10 transition-all"></div>
+                    <div className="flex justify-between items-center mb-3 md:mb-4 relative z-10">
+                        <div className="p-1.5 md:p-2 bg-blue-500/10 text-blue-500 rounded-xl group-hover:scale-110 transition-transform">
+                            <span className="material-symbols-outlined text-[20px] md:text-[24px]">groups_3</span>
+                        </div>
+                        <span className="text-blue-500 text-[9px] md:text-xs font-bold bg-blue-500/10 px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg">100%</span>
+                    </div>
+                    <p className="text-slate-500 text-[9px] md:text-xs font-bold uppercase tracking-wider relative z-10">{t.admin.myTeam.stats.total}</p>
+                    <p className="text-xl md:text-3xl font-black text-white mt-1 relative z-10">{stats.total}</p>
+                    <div className="mt-2 md:mt-4 w-full bg-slate-800 h-1 rounded-full overflow-hidden relative z-10">
+                        <div className="bg-blue-500 h-full rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]" style={{ width: '100%' }}></div>
+                    </div>
+                </div>
+
+                {/* Present / Check-in */}
+                <div className="bg-[#161b2c] p-4 md:p-5 rounded-2xl border border-[#2d3748] shadow-sm group hover:border-emerald-500/50 transition-all relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-emerald-500/10 transition-all"></div>
+                    <div className="flex justify-between items-center mb-3 md:mb-4 relative z-10">
+                        <div className="p-1.5 md:p-2 bg-emerald-500/10 text-emerald-500 rounded-xl group-hover:scale-110 transition-transform">
+                            <span className="material-symbols-outlined text-[20px] md:text-[24px]">login</span>
+                        </div>
+                        <span className="text-emerald-500 text-[9px] md:text-xs font-bold bg-emerald-500/10 px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg">
+                            {stats.total > 0 ? Math.round((stats.present / stats.total) * 100) : 0}%
+                        </span>
+                    </div>
+                    <p className="text-slate-500 text-[9px] md:text-xs font-bold uppercase tracking-wider relative z-10">{t.admin.myTeam.stats.present}</p>
+                    <p className="text-xl md:text-3xl font-black text-white mt-1 relative z-10">{stats.present}</p>
+                    <div className="mt-2 md:mt-4 w-full bg-slate-800 h-1 rounded-full overflow-hidden relative z-10">
+                        <div className="bg-emerald-500 h-full rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]" style={{ width: `${stats.total > 0 ? (stats.present / stats.total) * 100 : 0}%` }}></div>
+                    </div>
+                </div>
+
+                {/* Late */}
+                <div className="bg-[#161b2c] p-4 md:p-5 rounded-2xl border border-[#2d3748] shadow-sm group hover:border-amber-500/50 transition-all relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-amber-500/10 transition-all"></div>
+                    <div className="flex justify-between items-center mb-3 md:mb-4 relative z-10">
+                        <div className="p-1.5 md:p-2 bg-amber-500/10 text-amber-500 rounded-xl group-hover:scale-110 transition-transform">
+                            <span className="material-symbols-outlined text-[20px] md:text-[24px]">schedule_send</span>
+                        </div>
+                        <span className="text-amber-500 text-[9px] md:text-xs font-bold bg-amber-500/10 px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg">
+                            {stats.total > 0 ? Math.round((stats.late / stats.total) * 100) : 0}%
+                        </span>
+                    </div>
+                    <p className="text-slate-500 text-[9px] md:text-xs font-bold uppercase tracking-wider relative z-10">{t.admin.myTeam.stats.late}</p>
+                    <p className="text-xl md:text-3xl font-black text-white mt-1 relative z-10">{stats.late}</p>
+                    <div className="mt-2 md:mt-4 w-full bg-slate-800 h-1 rounded-full overflow-hidden relative z-10">
+                        <div className="bg-amber-500 h-full rounded-full shadow-[0_0_8px_rgba(245,158,11,0.5)]" style={{ width: `${stats.total > 0 ? (stats.late / stats.total) * 100 : 0}%` }}></div>
+                    </div>
+                </div>
+
+                {/* Absent / Leave */}
+                <div className="bg-[#161b2c] p-4 md:p-5 rounded-2xl border border-[#2d3748] shadow-sm group hover:border-rose-500/50 transition-all relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-rose-500/10 transition-all"></div>
+                    <div className="flex justify-between items-center mb-3 md:mb-4 relative z-10">
+                        <div className="p-1.5 md:p-2 bg-rose-500/10 text-rose-500 rounded-xl group-hover:scale-110 transition-transform">
+                            <span className="material-symbols-outlined text-[20px] md:text-[24px]">logout</span>
+                        </div>
+                        <span className="text-slate-400 text-[9px] md:text-xs font-bold bg-slate-800 px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg">{t.admin.today || 'Hôm nay'}</span>
+                    </div>
+                    <p className="text-slate-500 text-[9px] md:text-xs font-bold uppercase tracking-wider relative z-10">{t.admin.myTeam.stats.absent}</p>
+                    <p className="text-xl md:text-3xl font-black text-white mt-1 relative z-10">{stats.absent + stats.leave}</p>
+                    <div className="mt-2 md:mt-4 w-full bg-slate-800 h-1 rounded-full overflow-hidden relative z-10">
+                        <div className="bg-rose-500 h-full rounded-full shadow-[0_0_8px_rgba(244,63,94,0.5)]" style={{ width: `${stats.total > 0 ? ((stats.absent + stats.leave) / stats.total) * 100 : 0}%` }}></div>
+                    </div>
+                </div>
             </div>
 
             {/* Main Content Tabs */}
@@ -196,9 +223,10 @@ export default function MyTeamClient({ team: initialTeam, stats: initialStats, c
                                                                     )}
                                                                 </div>
                                                                 <div>
-                                                                    <Link href={`/admin/employees/${displayId}`} className="font-bold text-white hover:text-primary transition-colors">
+                                                                    <Link href={`/admin/employees/${displayId}`} className="font-bold text-white hover:text-primary transition-colors block leading-tight">
                                                                         {member.full_name}
                                                                     </Link>
+                                                                    <p className="text-[11px] text-slate-500 mt-0.5">{member.email}</p>
                                                                     {member.manager_id === currentUserId && (
                                                                         <p className="text-[10px] text-emerald-500 flex items-center gap-1 mt-1.5">
                                                                             <Shield className="h-3 w-3" /> {t.admin.myTeam.table.directReport}

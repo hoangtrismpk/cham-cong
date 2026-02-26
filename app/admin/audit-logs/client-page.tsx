@@ -10,7 +10,12 @@ import { Card } from '@/components/ui/card'
 import { Loader2, Download, ChevronLeft, ChevronRight, Search, Filter } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { usePermissions } from '@/contexts/permission-context'
+
 export default function AuditLogsClientPage() {
+    const { can } = usePermissions()
+    const canExport = can('audit_logs.export')
+
     const [logs, setLogs] = useState<AuditLogEntry[]>([])
     const [loading, setLoading] = useState(true)
     const [exporting, setExporting] = useState(false)
@@ -189,19 +194,21 @@ export default function AuditLogsClientPage() {
                         )}
 
                         {/* Export Button */}
-                        <Button
-                            onClick={handleExport}
-                            disabled={exporting}
-                            variant="outline"
-                            className="border-slate-700 bg-[#0d1117] hover:bg-slate-800"
-                        >
-                            {exporting ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Download className="mr-2 h-4 w-4" />
-                            )}
-                            Xuất CSV
-                        </Button>
+                        {canExport && (
+                            <Button
+                                onClick={handleExport}
+                                disabled={exporting}
+                                variant="outline"
+                                className="border-slate-700 bg-[#0d1117] hover:bg-slate-800"
+                            >
+                                {exporting ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Download className="mr-2 h-4 w-4" />
+                                )}
+                                Xuất CSV
+                            </Button>
+                        )}
                     </div>
                 </Card>
             )}

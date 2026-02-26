@@ -2,14 +2,64 @@ import { createClient } from '@/utils/supabase/server'
 import { format, subDays } from 'date-fns'
 import { getPendingStats } from '@/app/actions/approvals'
 import { AdminDashboardClient } from '@/components/admin/dashboard-view'
-import { requirePermission } from '@/utils/auth-guard'
+import { redirect } from 'next/navigation'
 
 export const revalidate = 0 // Disable caching for realtime data
 
 export default async function AdminDashboard() {
-    await requirePermission('dashboard.view', '/admin')
-
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        redirect('/login')
+    }
+
+    // Custom permission logic to avoid infinite redirects and query DB only once
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select(`
+            role, 
+            roles (
+                name,
+                permissions
+            )
+        `)
+        .eq('id', user.id)
+        .single()
+
+    const roles = profile?.roles as any
+    const roleData = Array.isArray(roles) ? roles[0] : roles
+    const permissions = roleData?.permissions || []
+
+    const isAdmin = profile?.role === 'admin' || roleData?.name === 'admin' || permissions.includes('*')
+
+    const hasPerm = (required: string) => {
+        if (isAdmin) return true
+        if (permissions.includes(required)) return true
+        const resource = required.split('.')[0]
+        if (permissions.includes(`${resource}.*`)) return true
+        return false
+    }
+
+    if (!hasPerm('dashboard.view')) {
+        const fallbackRoutes = [
+            { perm: 'my_team.view', url: '/admin/my-team' },
+            { perm: 'users.view', url: '/admin/employees' },
+            { perm: 'approvals.view', url: '/admin/approvals' },
+            { perm: 'attendance.view', url: '/admin/attendance' },
+            { perm: 'reports.view', url: '/admin/reports' },
+            { perm: 'settings.view', url: '/admin/settings/general' },
+        ]
+
+        let redirectUrl = '/'
+        for (const route of fallbackRoutes) {
+            if (hasPerm(route.perm)) {
+                redirectUrl = route.url
+                break
+            }
+        }
+        redirect(redirectUrl)
+    }
 
     // 1. Get Stats Overview
     // Force VN Timezone for 'today' query to avoid UTC mismatch

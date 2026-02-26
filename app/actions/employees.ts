@@ -4,6 +4,9 @@ import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { getOrganizationSettings } from './organization'
+import { requirePermissionForAction } from '@/utils/permissions'
+import { checkPermission } from '@/utils/auth-guard'
+import { getDescendantIds } from './my-team'
 
 // Types
 export interface EmergencyContact {
@@ -255,6 +258,26 @@ export async function getEmployeeById(id: string | number) {
         return { employee: null, error: error.message }
     }
 
+    // Advanced Permission Check for "My Team" logic
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    if (currentUser && currentUser.id !== data.id) {
+        const hasUsersView = await checkPermission('users.view')
+        if (!hasUsersView) {
+            const hasMyTeamView = await checkPermission('my_team.view')
+            if (!hasMyTeamView) {
+                return { employee: null, error: 'Unauthorized to view employee' }
+            }
+            // User only has my_team.view, so verify the target user is in their team
+            const { data: currentProfile } = await supabase.from('profiles').select('role, roles(name)').eq('id', currentUser.id).single()
+            const isAdmin = currentProfile?.role === 'admin' || (currentProfile?.roles as any)?.name === 'admin'
+            const descendants = await getDescendantIds(currentUser.id, isAdmin)
+
+            if (!descendants.includes(data.id)) {
+                return { employee: null, error: 'Employee is outside of your manageable team' }
+            }
+        }
+    }
+
     const employee: Employee = {
         ...data,
         role_name: (data.roles as any)?.display_name || 'Thành viên',
@@ -345,9 +368,9 @@ export async function getManagers() {
 
 // Create a new employee
 export async function createEmployee(formData: Partial<Employee> & { password?: string }) {
-    // 1. Check permissions
-    const isAdmin = await checkIsAdmin()
-    if (!isAdmin) return { error: 'Bạn không có quyền thực hiện hành động này' }
+    // 1. Check permissions (granular: users.create)
+    const denied = await requirePermissionForAction('users.create')
+    if (denied) return denied
 
     // 2. Use Admin Client for Write Operations
     const supabaseAdmin = createAdminClient()
@@ -404,9 +427,9 @@ export async function createEmployee(formData: Partial<Employee> & { password?: 
 
 // Update employee
 export async function updateEmployee(employeeId: string | number, formData: Partial<Employee>) {
-    // 1. Check permissions
-    const isAdmin = await checkIsAdmin()
-    if (!isAdmin) return { error: 'Bạn không có quyền thực hiện hành động này' }
+    // 1. Check permissions (granular: users.edit)
+    const denied = await requirePermissionForAction('users.edit')
+    if (denied) return denied
 
     // 2. Use Admin Client
     const supabaseAdmin = createAdminClient()
@@ -466,9 +489,9 @@ export async function updateEmployee(employeeId: string | number, formData: Part
 
 // Delete (soft delete)
 export async function deleteEmployee(employeeId: string | number) {
-    // 1. Check permissions
-    const isAdmin = await checkIsAdmin()
-    if (!isAdmin) return { error: 'Bạn không có quyền thực hiện hành động này' }
+    // 1. Check permissions (granular: users.delete)
+    const denied = await requirePermissionForAction('users.delete')
+    if (denied) return denied
 
     const supabaseAdmin = createAdminClient()
 

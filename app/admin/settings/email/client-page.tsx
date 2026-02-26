@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/contexts/i18n-context'
+import { usePermissions } from '@/contexts/permission-context'
 
 interface ResendConfig {
     api_key: string
@@ -25,6 +26,8 @@ interface ResendConfig {
 export default function ResendSettingsClientPage() {
     const { t } = useI18n()
     const rs = t.resendSettings
+    const { can } = usePermissions()
+    const canManage = can('settings_email.manage')
     const [config, setConfig] = useState<ResendConfig | null>(null)
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -211,6 +214,7 @@ export default function ResendSettingsClientPage() {
                                 type={showKey ? 'text' : 'password'}
                                 placeholder={rs.form.apiKeyPlaceholder}
                                 value={form.api_key}
+                                disabled={!canManage}
                                 onChange={e => setForm({ ...form, api_key: e.target.value })}
                                 className="bg-[#0d131a] border-slate-700 text-white font-mono text-sm pr-10"
                             />
@@ -253,6 +257,7 @@ export default function ResendSettingsClientPage() {
                             type="email"
                             placeholder={rs.form.fromEmailPlaceholder}
                             value={form.from_email}
+                            disabled={!canManage}
                             onChange={e => setForm({ ...form, from_email: e.target.value })}
                             className="bg-[#0d131a] border-slate-700 text-white text-sm"
                         />
@@ -267,6 +272,7 @@ export default function ResendSettingsClientPage() {
                             type="text"
                             placeholder={rs.form.fromNamePlaceholder}
                             value={form.from_name}
+                            disabled={!canManage}
                             onChange={e => setForm({ ...form, from_name: e.target.value })}
                             className="bg-[#0d131a] border-slate-700 text-white text-sm"
                         />
@@ -279,6 +285,7 @@ export default function ResendSettingsClientPage() {
                         type="email"
                         placeholder={rs.form.replyToPlaceholder}
                         value={form.reply_to}
+                        disabled={!canManage}
                         onChange={e => setForm({ ...form, reply_to: e.target.value })}
                         className="bg-[#0d131a] border-slate-700 text-white text-sm"
                     />
@@ -286,26 +293,28 @@ export default function ResendSettingsClientPage() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-3 pt-2 border-t border-slate-800">
-                    <Button
-                        onClick={handleTest}
-                        disabled={testing || saving}
-                        variant="outline"
-                        className="gap-2 border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
-                    >
-                        {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                        {rs.actions.test}
-                    </Button>
+                {canManage && (
+                    <div className="flex gap-3 pt-2 border-t border-slate-800">
+                        <Button
+                            onClick={handleTest}
+                            disabled={testing || saving}
+                            variant="outline"
+                            className="gap-2 border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+                        >
+                            {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                            {rs.actions.test}
+                        </Button>
 
-                    <Button
-                        onClick={handleSave}
-                        disabled={saving || testing}
-                        className="gap-2 bg-cyan-500 hover:bg-cyan-400 text-black font-semibold"
-                    >
-                        {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                        {rs.actions.save}
-                    </Button>
-                </div>
+                        <Button
+                            onClick={handleSave}
+                            disabled={saving || testing}
+                            className="gap-2 bg-cyan-500 hover:bg-cyan-400 text-black font-semibold"
+                        >
+                            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                            {rs.actions.save}
+                        </Button>
+                    </div>
+                )}
             </div>
 
             {/* Security Note */}

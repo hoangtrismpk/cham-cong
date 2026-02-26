@@ -83,7 +83,7 @@ export default function EditEmployeePage() {
         try {
             const result = await updateEmployee(employeeId, formData)
 
-            if (result.error) {
+            if ('error' in result) {
                 toast.error(result.error)
             } else {
                 toast.success(t.admin.edit.success)

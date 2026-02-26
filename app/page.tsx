@@ -1,6 +1,8 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { format } from 'date-fns'
+import { vi, enUS } from 'date-fns/locale'
 import { RealtimeClock } from '@/components/realtime-clock'
 import { CheckInButton } from '@/components/check-in-button'
 import { getTodayStatus, getAttendanceHistory, getAttendanceStats } from '@/app/actions/attendance'
@@ -31,7 +33,10 @@ export default async function DashboardPage() {
   }
 
   const today = new Date()
-  const dateStr = format(today, 'EEEE, MMM d, yyyy')
+  const cookieStore = await cookies()
+  const currentLocale = cookieStore.get('locale')?.value || 'vi'
+  const dateLocale = currentLocale === 'vi' ? vi : enUS
+  const dateStr = format(today, 'EEEE, MMM d, yyyy', { locale: dateLocale })
 
   // Fetch data
   const todayLog = await getTodayStatus()

@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 
 // Redirect to general settings by default
-export default function SettingsPage() {
+export default async function SettingsPage() {
     redirect('/admin/settings/general')
 }

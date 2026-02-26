@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server'
 import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { createAuditLog } from './audit-logs'
+import { checkPermission } from '@/utils/permissions'
 
 // Get detected public IP of the current user
 export async function getDetectedIp(): Promise<string> {
@@ -77,6 +78,10 @@ export async function getSettingsWithMeta(category?: string): Promise<SystemSett
 
 // Update a single setting
 export async function updateSetting(key: string, value: unknown): Promise<{ success: boolean }> {
+    // Server-side permission check
+    const hasAccess = await checkPermission('settings.manage')
+    if (!hasAccess) throw new Error('Permission denied')
+
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
@@ -123,6 +128,10 @@ export async function updateSetting(key: string, value: unknown): Promise<{ succ
 
 // Bulk update multiple settings
 export async function updateSettings(updates: { key: string; value: unknown }[]): Promise<{ success: boolean }> {
+    // Server-side permission check
+    const hasAccess = await checkPermission('settings.manage')
+    if (!hasAccess) throw new Error('Permission denied')
+
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()

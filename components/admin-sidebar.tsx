@@ -77,14 +77,14 @@ export function AdminSidebar({ className, mobile, onLinkClick, preloadedPermissi
     const links = [
         { href: '/admin', label: t.admin.overview, icon: 'dashboard', permission: 'dashboard.view' },
         { href: '/admin/employees', label: t.admin.employees, icon: 'group', permission: 'users.view' },
-        { href: '/admin/my-team', label: t.admin.myTeam.title, icon: 'diversity_3', permission: 'users.view' },
+        { href: '/admin/my-team', label: t.admin.myTeam.title, icon: 'diversity_3', permission: 'my_team.view' },
         { href: '/admin/approvals', label: t.admin.approvals, icon: 'fact_check', permission: 'approvals.view' },
         { href: '/admin/notifications', label: 'Thông báo', icon: 'campaign', permission: 'settings.view' },
         { href: '/admin/attendance', label: t.admin.attendance, icon: 'schedule', permission: 'attendance.view' },
         { href: '/admin/reports', label: t.admin.reports, icon: 'analytics', permission: 'reports.view' },
         { href: '/admin/audit-logs', label: t.admin.auditLogs, icon: 'history', permission: 'settings.view' },
         { href: '/admin/email-templates', label: 'Email Templates', icon: 'mail', permission: 'settings.view' },
-        { href: '/admin/settings', label: t.admin.settings, icon: 'settings', permission: 'settings.view' },
+        { href: '/admin/settings/general', label: t.admin.settings, icon: 'settings', permission: 'settings.view' },
     ]
 
     // Helper to check if user has permission

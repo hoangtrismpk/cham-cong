@@ -29,6 +29,7 @@ import { toast } from 'sonner';
 import { useI18n } from '@/contexts/i18n-context';
 import CreateEmployeeDialog from '@/components/admin/employees/create-employee-dialog';
 import { getDepartments } from '@/app/actions/employees';
+import { usePermissions } from '@/contexts/permission-context';
 
 
 interface Employee {
@@ -56,6 +57,7 @@ interface Employee {
 
 export default function EmployeesClientPage() {
     const { t } = useI18n();
+    const { can } = usePermissions();
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -231,7 +233,7 @@ export default function EmployeesClientPage() {
                         <Download className="w-4 h-4 mr-2" />
                         {t.admin.employeeManagement.export}
                     </Button>
-                    <CreateEmployeeDialog />
+                    {can('users.create') && <CreateEmployeeDialog />}
                 </div>
             </div>
 
@@ -443,22 +445,30 @@ export default function EmployeesClientPage() {
                                                         </DropdownMenuLabel>
                                                         <DropdownMenuSeparator className="bg-slate-700/50" />
 
-                                                        <DropdownMenuItem asChild className="hover:bg-slate-800 focus:bg-slate-800 cursor-pointer py-2.5 px-3 rounded-md m-1 transition-colors group/item">
-                                                            <Link href={`/admin/employees/${displayId}/edit`}>
-                                                                <span className="flex items-center w-full">{t.admin.employeeManagement.actions.editProfile}</span>
-                                                            </Link>
-                                                        </DropdownMenuItem>
+                                                        {can('users.edit') && (
+                                                            <DropdownMenuItem asChild className="hover:bg-slate-800 focus:bg-slate-800 cursor-pointer py-2.5 px-3 rounded-md m-1 transition-colors group/item">
+                                                                <Link href={`/admin/employees/${displayId}/edit`}>
+                                                                    <span className="flex items-center w-full">{t.admin.employeeManagement.actions.editProfile}</span>
+                                                                </Link>
+                                                            </DropdownMenuItem>
+                                                        )}
 
-                                                        <DropdownMenuItem asChild className="hover:bg-blue-600/10 focus:bg-blue-600/10 text-blue-400 cursor-pointer py-2.5 px-3 rounded-md m-1 transition-colors">
-                                                            <Link href={`/admin/employees/${displayId}/employment`}>
-                                                                {t.admin.employeeManagement.actions.manageEmployment}
-                                                            </Link>
-                                                        </DropdownMenuItem>
+                                                        {can('users.edit') && (
+                                                            <DropdownMenuItem asChild className="hover:bg-blue-600/10 focus:bg-blue-600/10 text-blue-400 cursor-pointer py-2.5 px-3 rounded-md m-1 transition-colors">
+                                                                <Link href={`/admin/employees/${displayId}/employment`}>
+                                                                    {t.admin.employeeManagement.actions.manageEmployment}
+                                                                </Link>
+                                                            </DropdownMenuItem>
+                                                        )}
 
-                                                        <DropdownMenuSeparator className="bg-slate-700/50" />
-                                                        <DropdownMenuItem className="text-red-400 hover:bg-red-500/10 focus:bg-red-500/10 cursor-pointer py-2.5 px-3 rounded-md m-1 transition-colors">
-                                                            {t.admin.employeeManagement.actions.deactivate}
-                                                        </DropdownMenuItem>
+                                                        {can('users.delete') && (
+                                                            <>
+                                                                <DropdownMenuSeparator className="bg-slate-700/50" />
+                                                                <DropdownMenuItem className="text-red-400 hover:bg-red-500/10 focus:bg-red-500/10 cursor-pointer py-2.5 px-3 rounded-md m-1 transition-colors">
+                                                                    {t.admin.employeeManagement.actions.deactivate}
+                                                                </DropdownMenuItem>
+                                                            </>
+                                                        )}
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </td>

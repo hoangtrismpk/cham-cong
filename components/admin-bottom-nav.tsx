@@ -14,7 +14,7 @@ export function AdminBottomNav() {
         { href: '/admin/employees', label: t.admin.employees, icon: 'group' },
         { href: '/admin/approvals', label: t.admin.approvals, icon: 'fact_check' },
         { href: '/admin/reports', label: t.admin.reports, icon: 'bar_chart' },
-        { href: '/admin/settings', label: t.admin.settings, icon: 'settings' },
+        { href: '/admin/settings/general', label: t.admin.settings, icon: 'settings' },
     ]
 
     return (

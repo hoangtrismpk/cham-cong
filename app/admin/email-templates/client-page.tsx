@@ -60,10 +60,14 @@ const ICON_COLOR: Record<string, string> = {
     'daily-attendance-report': 'bg-violet-500/20 text-violet-400',
 }
 
+import { usePermissions } from '@/contexts/permission-context'
+
 export default function EmailTemplatesClientPage() {
     const router = useRouter()
     const { t } = useI18n()
     const et = t.emailTemplates
+    const { can } = usePermissions()
+    const canEdit = can('email_templates.edit')
 
     const [templates, setTemplates] = useState<EmailTemplate[]>([])
     const [loading, setLoading] = useState(true)
@@ -155,13 +159,15 @@ export default function EmailTemplatesClientPage() {
                             className="pl-9 pr-4 h-9 w-[260px] bg-[#161b22] border-slate-700 text-white placeholder:text-slate-500 text-sm focus:ring-cyan-500 focus:border-cyan-500"
                         />
                     </div>
-                    <Button
-                        className="h-9 bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-sm gap-2 shadow-lg shadow-cyan-500/20"
-                        onClick={() => router.push('/admin/email-templates/new')}
-                    >
-                        <Plus className="h-4 w-4" />
-                        {et.createButton}
-                    </Button>
+                    {canEdit && (
+                        <Button
+                            className="h-9 bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-sm gap-2 shadow-lg shadow-cyan-500/20"
+                            onClick={() => router.push('/admin/email-templates/new')}
+                        >
+                            <Plus className="h-4 w-4" />
+                            {et.createButton}
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -294,11 +300,11 @@ export default function EmailTemplatesClientPage() {
                                             <td className="px-4 py-4">
                                                 <button
                                                     onClick={() => handleToggleStatus(template.id, template.is_active)}
-                                                    disabled={isToggling}
-                                                    title={template.is_active ? 'Click để tắt' : 'Click để bật'}
+                                                    disabled={isToggling || !canEdit}
+                                                    title={!canEdit ? 'Không có quyền' : template.is_active ? 'Click để tắt' : 'Click để bật'}
                                                     className={cn(
                                                         "flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide transition-all",
-                                                        isToggling ? "opacity-50 cursor-wait" : "hover:scale-105",
+                                                        isToggling || !canEdit ? "opacity-50 cursor-not-allowed" : "hover:scale-105",
                                                         template.is_active ? "text-emerald-400" : "text-slate-500"
                                                     )}
                                                 >
@@ -319,13 +325,20 @@ export default function EmailTemplatesClientPage() {
                                             {/* Actions */}
                                             <td className="px-5 py-4">
                                                 <div className="flex items-center justify-end gap-2">
-                                                    <Link
-                                                        href={`/admin/email-templates/${template.id}`}
-                                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-medium rounded-lg transition-all border border-slate-600 hover:border-slate-500"
-                                                    >
-                                                        <Pencil className="h-3 w-3" />
-                                                        {et.actions.edit}
-                                                    </Link>
+                                                    {canEdit ? (
+                                                        <Link
+                                                            href={`/admin/email-templates/${template.id}`}
+                                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-medium rounded-lg transition-all border border-slate-600 hover:border-slate-500"
+                                                        >
+                                                            <Pencil className="h-3 w-3" />
+                                                            {et.actions.edit}
+                                                        </Link>
+                                                    ) : (
+                                                        <span className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-slate-500 text-xs font-medium rounded-lg border border-slate-700 cursor-not-allowed">
+                                                            <Eye className="h-3 w-3" />
+                                                            View
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>

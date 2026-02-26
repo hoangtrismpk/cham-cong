@@ -284,23 +284,22 @@ export async function createOvertimeRequest(data: {
         return { error: error.message }
     }
 
-    // Notify admins
+    // Notify all approvers (managers + admins)
     try {
-        const { data: adminProfiles } = await supabase
-            .from('profiles')
-            .select('id')
-            .in('role', ['admin', 'hr_manager', 'manager'])
+        const { getApproverIds } = await import('@/app/actions/approvals')
+        const approverIds = await getApproverIds(user.id)
 
-        if (adminProfiles && adminProfiles.length > 0) {
+        if (approverIds.length > 0) {
             const { sendNotification } = await import('@/app/actions/notification-system')
             const userName = user.user_metadata?.full_name || user.email || 'Nhân viên'
             const dateStr = new Date(data.requestDate).toLocaleDateString('vi-VN')
 
             await sendNotification({
-                userIds: adminProfiles.map(a => a.id),
+                userIds: approverIds,
                 title: 'Yêu cầu tăng ca mới',
                 message: `${userName} yêu cầu tăng ca ${data.plannedHours}h ngày ${dateStr}.`,
-                type: 'info'
+                type: 'info',
+                link: '/admin/approvals'
             })
         }
     } catch (notifError) {

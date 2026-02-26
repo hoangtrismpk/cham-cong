@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
-import { redirect } from 'next/navigation'
+import { redirect, notFound } from 'next/navigation'
 
 export async function checkPermission(requiredPermission: string): Promise<boolean> {
     const supabase = await createClient()
@@ -51,7 +51,7 @@ export async function checkPermission(requiredPermission: string): Promise<boole
  * If user is not logged in -> Redirect to /login
  * If user is logged in but no permission -> Redirect to / (or /admin if fallback provided)
  */
-export async function requirePermission(requiredPermission: string, fallbackUrl: string = '/') {
+export async function requirePermission(requiredPermission: string, fallbackUrl: string = '404') {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -63,6 +63,10 @@ export async function requirePermission(requiredPermission: string, fallbackUrl:
 
     if (!hasAccess) {
         console.warn(`[AuthGuard] User ${user.email} denied access to ${requiredPermission}`)
-        redirect(fallbackUrl)
+        if (fallbackUrl === '404' || fallbackUrl === '/admin') {
+            notFound()
+        } else {
+            redirect(fallbackUrl)
+        }
     }
 }

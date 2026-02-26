@@ -40,18 +40,74 @@ interface GetMyTeamFilters {
 
 function calculateStats(teamIds: string[], allAttendance: any[]): TeamStats {
     const total = teamIds.length
-    // Present = anyone who has checked in (status 'present', 'late', or just has a check_in_time)
-    const present = allAttendance.filter(l =>
-        l.status === 'present' || l.status === 'late' || l.check_in_time
-    ).length
-    const late = allAttendance.filter(l => l.status === 'late').length
-    const leave = allAttendance.filter(l => l.status === 'leave').length
 
-    // Absent = Total - (Checked-in) - (On leave)
-    // Note: 'late' is already included in checked-in (present)
+    // Deduplicate by user_id - a user with multiple sessions should only be counted once
+    // Priority: 'late' > 'present' > 'leave' (pick the worst status)
+    const userStatusMap = new Map<string, string>()
+    for (const log of allAttendance) {
+        const existing = userStatusMap.get(log.user_id)
+        if (!existing) {
+            userStatusMap.set(log.user_id, log.status || 'present')
+        } else {
+            // If any session is 'late', mark user as late
+            if (log.status === 'late') {
+                userStatusMap.set(log.user_id, 'late')
+            }
+        }
+    }
+
+    let present = 0
+    let late = 0
+    let leave = 0
+
+    for (const [, status] of userStatusMap) {
+        if (status === 'late') {
+            late++
+            present++ // Late users ARE present (they checked in, just late)
+        } else if (status === 'present') {
+            present++
+        } else if (status === 'leave') {
+            leave++
+        }
+    }
+
+    // Absent = people in team who have NO attendance record today and are NOT on leave
     const absent = Math.max(0, total - present - leave)
 
     return { total, present, late, absent, leave }
+}
+
+export async function getDescendantIds(userId: string, isAdmin: boolean = false): Promise<string[]> {
+    const supabase = await createClient()
+    const { data: allProfiles, error } = await supabase
+        .from('profiles')
+        .select('id, manager_id')
+
+    if (error || !allProfiles) return []
+
+    let teamIds: string[] = []
+
+    if (isAdmin) {
+        teamIds = allProfiles.map(p => p.id)
+    } else {
+        const queue = [userId]
+        const visited = new Set([userId])
+        teamIds.push(userId)
+
+        while (queue.length > 0) {
+            const managerId = queue.shift()
+            const directs = allProfiles.filter(p => p.manager_id === managerId)
+
+            for (const direct of directs) {
+                if (!visited.has(direct.id)) {
+                    visited.add(direct.id)
+                    teamIds.push(direct.id)
+                    queue.push(direct.id)
+                }
+            }
+        }
+    }
+    return teamIds
 }
 
 export async function getMyTeamData(filters: GetMyTeamFilters = {}) {
@@ -78,7 +134,6 @@ export async function getMyTeamData(filters: GetMyTeamFilters = {}) {
         const isAdmin = roleName === 'admin'
 
         // 2. Fetch Hierarchy Structure (Lightweight)
-        // Only fetch minimal columns to build the tree
         const { data: allProfiles, error } = await supabase
             .from('profiles')
             .select('id, manager_id, full_name, email, employee_code, department, status')
@@ -87,33 +142,7 @@ export async function getMyTeamData(filters: GetMyTeamFilters = {}) {
         if (!allProfiles) return { team: [], stats: { total: 0, present: 0, late: 0, absent: 0, leave: 0 }, meta: { total: 0, page, limit, totalPages: 0 } }
 
         // 3. Build Team IDs list
-        let teamIds: string[] = []
-
-        if (isAdmin) {
-            // Admin sees everyone who matches first-level filters (if we were filtering strictly)
-            // But for hierarchy logic, Admin is root of everything.
-            // Let's filter later.
-            teamIds = allProfiles.map(p => p.id)
-        } else {
-            // Manager sees themselves + descendants
-            const queue = [user.id]
-            const visited = new Set([user.id])
-            teamIds.push(user.id)
-
-            // BFS to find all descendants
-            while (queue.length > 0) {
-                const managerId = queue.shift()
-                const directs = allProfiles.filter(p => p.manager_id === managerId)
-
-                for (const direct of directs) {
-                    if (!visited.has(direct.id)) {
-                        visited.add(direct.id)
-                        teamIds.push(direct.id)
-                        queue.push(direct.id)
-                    }
-                }
-            }
-        }
+        const teamIds = await getDescendantIds(user.id, isAdmin)
 
         // --- FILTERING (Search/Dept/Status) on the full list FIRST ---
         // This is done in memory since we already fetched the lightweight structure.
@@ -177,12 +206,29 @@ export async function getMyTeamData(filters: GetMyTeamFilters = {}) {
             .in('id', pageIds)
             .order('full_name', { ascending: true }) // Sort the page results
 
-        // Merge logs into page members
+        // Merge logs into page members (use latest check-in log per user)
         const teamWithStatus: TeamMember[] = (pageProfiles || []).map((member: any) => {
-            const log = allAttendance.find(l => l.user_id === member.id)
+            // Get all logs for this user, pick the latest one for check_in time
+            const memberLogs = allAttendance.filter(l => l.user_id === member.id)
+            if (memberLogs.length === 0) {
+                return { ...member, attendance: null }
+            }
+
+            // Sort by check_in_time desc to get the latest
+            memberLogs.sort((a: any, b: any) =>
+                new Date(b.check_in_time).getTime() - new Date(a.check_in_time).getTime()
+            )
+            const latestLog = memberLogs[0]
+
+            // If ANY log is 'late', mark user as late (worst status wins)
+            const hasLate = memberLogs.some((l: any) => l.status === 'late')
+
             return {
                 ...member,
-                attendance: log ? { status: log.status, check_in: log.check_in_time } : null
+                attendance: {
+                    status: hasLate ? 'late' : (latestLog.status || 'present'),
+                    check_in: latestLog.check_in_time
+                }
             }
         })
 

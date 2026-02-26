@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils'
 import { useI18n } from '@/contexts/i18n-context'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
+import { usePermissions } from '@/contexts/permission-context'
 
 interface EmployeeData {
     id: string
@@ -43,6 +44,7 @@ interface AttendancePageProps {
 
 export function AttendanceClient({ initialEmployees, stats, todayStr }: AttendancePageProps) {
     const { t, locale } = useI18n()
+    const { can } = usePermissions()
     const dateLocale = locale === 'vi' ? viLocale : enUS
 
     const [searchQuery, setSearchQuery] = useState('')
@@ -92,7 +94,7 @@ export function AttendanceClient({ initialEmployees, stats, todayStr }: Attendan
     const formatTime = (isoString: string | null) => {
         if (!isoString) return '--:--'
         // Handle timezone properly or just format time part
-        return format(new Date(isoString), 'hh:mm a')
+        return format(new Date(isoString), 'hh:mm a', { locale: dateLocale })
     }
 
     const formatHours = (hours: number | null) => {
@@ -241,18 +243,22 @@ export function AttendanceClient({ initialEmployees, stats, todayStr }: Attendan
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
-                        <Button
-                            variant="outline"
-                            className="border-slate-700 bg-transparent text-slate-300 hover:bg-slate-800 hover:text-white"
-                            onClick={handleExportReport}
-                        >
-                            <Download className="w-4 h-4 mr-2" />
-                            {t.admin.attendancePage.exportReport}
-                        </Button>
-                        <Button className="bg-cyan-500 hover:bg-cyan-600 text-white font-semibold shadow-lg shadow-cyan-500/20">
-                            <Plus className="w-4 h-4 mr-2" />
-                            {t.admin.attendancePage.manualEntry}
-                        </Button>
+                        {can('attendance.export') && (
+                            <Button
+                                variant="outline"
+                                className="border-slate-700 bg-transparent text-slate-300 hover:bg-slate-800 hover:text-white"
+                                onClick={handleExportReport}
+                            >
+                                <Download className="w-4 h-4 mr-2" />
+                                {t.admin.attendancePage.exportReport}
+                            </Button>
+                        )}
+                        {can('attendance.edit') && (
+                            <Button className="bg-cyan-500 hover:bg-cyan-600 text-white font-semibold shadow-lg shadow-cyan-500/20">
+                                <Plus className="w-4 h-4 mr-2" />
+                                {t.admin.attendancePage.manualEntry}
+                            </Button>
+                        )}
                     </div>
                 </div>
             </div>

@@ -106,7 +106,7 @@ export default function CreateEmployeeDialog() {
                 role_id: roleId
             });
 
-            if (result.error) {
+            if ('error' in result) {
                 toast.error(result.error);
             } else {
                 toast.success(t.admin.employeeManagement.create.success);

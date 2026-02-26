@@ -29,10 +29,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getActivities, approveActivity, rejectActivity, ActivityItem } from '@/app/actions/approvals'
 import { format } from 'date-fns'
+import { vi, enUS } from 'date-fns/locale'
 import { useI18n } from '@/contexts/i18n-context'
+import { usePermissions } from '@/contexts/permission-context'
 
 export default function ApprovalsClientPage() {
     const { t, locale } = useI18n()
+    const { can } = usePermissions()
+    const dateLocale = locale === 'vi' ? vi : enUS
     const [activities, setActivities] = useState<ActivityItem[]>([])
     const [loading, setLoading] = useState(true)
     const [processing, setProcessing] = useState<string | null>(null)
@@ -281,8 +285,8 @@ export default function ApprovalsClientPage() {
 
                                                         {/* Time */}
                                                         <div className="col-span-2">
-                                                            <p className="text-sm font-medium text-white">{format(date, 'dd/MM/yyyy')}</p>
-                                                            <p className="text-xs text-slate-500">{format(date, 'HH:mm')}</p>
+                                                            <p className="text-sm font-medium text-white">{format(date, 'dd/MM/yyyy', { locale: dateLocale })}</p>
+                                                            <p className="text-xs text-slate-500">{format(date, 'HH:mm', { locale: dateLocale })}</p>
                                                         </div>
 
                                                         {/* Summary */}
@@ -295,7 +299,7 @@ export default function ApprovalsClientPage() {
                                                             </p>
                                                             {item.payload?.leave_date && (
                                                                 <p className="text-[10px] text-slate-400 mt-1 font-mono">
-                                                                    {t.admin.approvalsPage.messages.date}: {format(new Date(item.payload.leave_date), 'dd/MM/yyyy')}
+                                                                    {t.admin.approvalsPage.messages.date}: {format(new Date(item.payload.leave_date), 'dd/MM/yyyy', { locale: dateLocale })}
                                                                 </p>
                                                             )}
                                                         </div>
@@ -444,7 +448,7 @@ export default function ApprovalsClientPage() {
                             <div>
                                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{t.admin.approvalsPage.dialog.time}</p>
                                 <p className="text-sm font-medium text-white">
-                                    {selectedItem && format(new Date(selectedItem.created_at), 'HH:mm - dd/MM/yyyy')}
+                                    {selectedItem && format(new Date(selectedItem.created_at), 'HH:mm - dd/MM/yyyy', { locale: dateLocale })}
                                 </p>
                             </div>
                         </div>
@@ -461,7 +465,7 @@ export default function ApprovalsClientPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="p-3 bg-slate-900 rounded-lg border border-slate-800">
                                     <p className="text-xs text-slate-500 mb-1">{t.admin.approvalsPage.dialog.leaveDate}</p>
-                                    <p className="text-sm font-bold text-white">{format(new Date(selectedItem.payload.leave_date), 'dd/MM/yyyy')}</p>
+                                    <p className="text-sm font-bold text-white">{format(new Date(selectedItem.payload.leave_date), 'dd/MM/yyyy', { locale: dateLocale })}</p>
                                 </div>
                                 {selectedItem.payload.image_url && (
                                     <div className="col-span-2">
@@ -491,7 +495,7 @@ export default function ApprovalsClientPage() {
                             <div className="grid grid-cols-2 gap-4 text-sm">
                                 <div className="p-3 bg-slate-900 rounded-lg border border-slate-800">
                                     <p className="text-xs text-slate-500 mb-1">{t.admin.approvalsPage.dialog.workDate}</p>
-                                    <p className="text-sm font-bold text-white">{format(new Date(selectedItem.payload.work_date), 'dd/MM/yyyy')}</p>
+                                    <p className="text-sm font-bold text-white">{format(new Date(selectedItem.payload.work_date), 'dd/MM/yyyy', { locale: dateLocale })}</p>
                                 </div>
                                 <div className="p-3 bg-slate-900 rounded-lg border border-slate-800">
                                     <p className="text-xs text-slate-500 mb-1">{t.admin.approvalsPage.dialog.newShift}</p>
@@ -507,7 +511,7 @@ export default function ApprovalsClientPage() {
                             <div className="grid grid-cols-2 gap-4 text-sm">
                                 <div className="p-3 bg-slate-900 rounded-lg border border-slate-800">
                                     <p className="text-xs text-slate-500 mb-1">Ngày tăng ca</p>
-                                    <p className="text-sm font-bold text-white">{format(new Date(selectedItem.payload.request_date), 'dd/MM/yyyy')}</p>
+                                    <p className="text-sm font-bold text-white">{format(new Date(selectedItem.payload.request_date), 'dd/MM/yyyy', { locale: dateLocale })}</p>
                                 </div>
                                 <div className="p-3 bg-slate-900 rounded-lg border border-slate-800">
                                     <p className="text-xs text-slate-500 mb-1">Số giờ dự kiến</p>
@@ -527,7 +531,7 @@ export default function ApprovalsClientPage() {
                         <Button variant="outline" className="text-slate-400 hover:text-white border-slate-700 hover:bg-slate-800" onClick={() => setIsDetailOpen(false)}>
                             {t.admin.approvalsPage.actions.close}
                         </Button>
-                        {selectedItem?.status === 'pending' && (
+                        {selectedItem?.status === 'pending' && can('approvals.approve') && (
                             <>
                                 <Button variant="destructive" className="bg-red-600 hover:bg-red-700 text-white border-none shadow-lg shadow-red-900/20" onClick={handleRejectInit}>
                                     {t.admin.approvalsPage.actions.reject}

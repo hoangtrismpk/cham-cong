@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { requirePermission } from '@/utils/auth-guard'
 
 export default async function MyTeamPage() {
-    await requirePermission('users.view', '/admin')
+    await requirePermission('my_team.view', '/admin')
 
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()

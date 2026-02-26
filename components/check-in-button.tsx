@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { calculateDistance } from '@/utils/geo'
 import { checkIn, checkOut } from '@/app/actions/attendance'
 import { createOvertimeRequest } from '@/app/actions/overtime'
 import { useRouter } from 'next/navigation'
@@ -38,110 +37,114 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
     const [isSubmittingOT, setIsSubmittingOT] = useState(false)
 
     const router = useRouter()
-    const autoCheckedRef = useRef(false)
+    const isRunningRef = useRef(false) // Synchronous lock to prevent race condition
 
     const isComplete = isCheckedIn && isCheckedOut
 
+    // Helper: Find next working day (skip off-days from admin settings)
+    const getNextWorkingDay = (): Date => {
+        const offDays: number[] = workSettings?.work_off_days || [6, 0] // Default: Sat, Sun
+        const next = new Date()
+        // Start from tomorrow
+        next.setDate(next.getDate() + 1)
+        // Skip off-days (max 7 iterations to avoid infinite loop)
+        let safety = 0
+        while (offDays.includes(next.getDay()) && safety < 7) {
+            next.setDate(next.getDate() + 1)
+            safety++
+        }
+        return next
+    }
+
     const handleAction = () => {
-        // Prevent double actions
-        if (loading || isProcessing) return
+        // Prevent double actions - isRunningRef is synchronous (vs loading state which is async)
+        if (isRunningRef.current || loading || isProcessing) return
+        isRunningRef.current = true
 
         setLoading(true)
         setError(null)
-
         setSuccess(null)
 
+        // Helper to show success after attendance action
+        const onSuccess = () => {
+            isRunningRef.current = false
+            if (isCheckedIn) checkLateClockOut()
+            const baseMsg = isCheckedIn ? t.messages.checkOutSuccess : t.messages.checkInSuccess
+            if (isCheckedIn) {
+                const nextDay = getNextWorkingDay()
+                const dateStr = new Intl.DateTimeFormat('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }).format(nextDay)
+                setSuccess(`${baseMsg}\n(${dateStr})`)
+            } else {
+                const now = new Date()
+                const dateStr = new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(now)
+                setSuccess(`${baseMsg} (${dateStr})`)
+            }
+            setIsProcessing(true)
+            router.refresh()
+            setTimeout(() => { setSuccess(null); setIsProcessing(false) }, 5000)
+        }
+
         if (!navigator.geolocation) {
-            setError(t.messages.positionUnavailable)
-            setLoading(false)
+            // No GPS API → try IP-only directly
+            ; (async () => {
+                try {
+                    const result = isCheckedIn ? await checkOut() : await checkIn()
+                    if (result.error) { isRunningRef.current = false; setError(result.error); setLoading(false) }
+                    else onSuccess()
+                } catch (e) { isRunningRef.current = false; setError(t.common.error); setLoading(false) }
+            })()
             return
         }
 
         navigator.geolocation.getCurrentPosition(
+            // GPS success → try with GPS coords
             async (position) => {
                 try {
                     const { latitude, longitude } = position.coords
+                    const result = isCheckedIn
+                        ? await checkOut(latitude, longitude)
+                        : await checkIn(latitude, longitude)
 
-                    let result
-                    if (isCheckedIn) {
-                        result = await checkOut(latitude, longitude)
+                    if (!result.error) {
+                        onSuccess()
                     } else {
-                        result = await checkIn(latitude, longitude)
-                    }
-
-                    if (result.error) {
-                        setError(result.error)
-                        setLoading(false)
-                    } else {
-                        // After successful checkout, check for late clock-out (> 30 mins)
-                        if (isCheckedIn) {
-                            checkLateClockOut()
-                        }
-
-                        // Add date time to success message
-                        const now = new Date()
-                        const dateStr = new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(now)
-                        const baseMsg = isCheckedIn ? t.messages.checkOutSuccess : t.messages.checkInSuccess
-                        setSuccess(`${baseMsg} (${dateStr})`)
-                        setIsProcessing(true)
-                        router.refresh()
-                        setTimeout(() => {
-                            setSuccess(null)
-                            setIsProcessing(false)
-                        }, 5000)
+                        // GPS location rejected by server → fallback to IP-only
+                        console.log('📍 GPS rejected by server, trying IP...', result.error)
+                        try {
+                            const ipResult = isCheckedIn ? await checkOut() : await checkIn()
+                            if (ipResult.error) { isRunningRef.current = false; setError(ipResult.error); setLoading(false) }
+                            else onSuccess()
+                        } catch (e) { isRunningRef.current = false; setError(t.common.error); setLoading(false) }
                     }
                 } catch (e) {
-
-                    console.error('❌ [CheckInButton] Action error:', e)
+                    console.error('❌ [CheckInButton] GPS action error:', e)
+                    isRunningRef.current = false
                     setError(t.common.error)
                     setLoading(false)
                 }
             },
+            // GPS failed/blocked → try IP-only
             async (err) => {
                 try {
-                    console.log('GPS failed, trying IP verification...', err.message)
-                    let result
-                    if (isCheckedIn) {
-                        result = await checkOut()
-                    } else {
-                        result = await checkIn()
-                    }
-
-                    if (result.error) {
-                        setError(result.error)
-                        setLoading(false)
-                    } else {
-                        // After successful checkout, check for late clock-out (> 30 mins)
-                        if (isCheckedIn) {
-                            checkLateClockOut()
-                        }
-
-                        // Add date time to success message
-                        const now = new Date()
-                        const dateStr = new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(now)
-                        const baseMsg = isCheckedIn ? t.messages.checkOutSuccess : t.messages.checkInSuccess
-                        setSuccess(`${baseMsg} (${dateStr})`)
-                        setIsProcessing(true)
-                        router.refresh()
-                        setTimeout(() => {
-                            setSuccess(null)
-                            setIsProcessing(false)
-                        }, 5000)
-                    }
+                    console.log('📍 GPS unavailable, trying IP-only...', err.message)
+                    const result = isCheckedIn ? await checkOut() : await checkIn()
+                    if (result.error) { isRunningRef.current = false; setError(result.error); setLoading(false) }
+                    else onSuccess()
                 } catch (e) {
-
-                    console.error('❌ [CheckInButton] IP Fallback error:', e)
+                    console.error('❌ [CheckInButton] IP fallback error:', e)
+                    isRunningRef.current = false
                     setError(t.common.error)
                     setLoading(false)
                 }
             },
             {
-                enableHighAccuracy: true,
-                timeout: 10000, // Increased to 10s for better stability on Windows
-                maximumAge: 0
+                enableHighAccuracy: false, // Less aggressive → works better with Brave
+                timeout: 8000,
+                maximumAge: 60000  // Accept 60s cached position → Brave-friendly
             }
         )
     }
+
 
     // Logic to detect if user clocks out late (> 30 mins)
     const checkLateClockOut = () => {
@@ -187,52 +190,16 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
         }
     }
 
-    // Auto Clock-in Logic (Keep simple, mostly for GPS area)
-    useEffect(() => {
-        if (isCheckedIn || isCheckedOut || autoCheckedRef.current) return
-
-        // Also try an immediate IP-based auto check-in if GPS is slow
-        const tryIpCheckIn = async () => {
-            // We can't easily "check" IP on client, so we just try calling the action
-            // If we want to avoid double calls or noise, we can wait.
-            // For now, let's keep the GPS auto-check as it's more specific.
-        }
-
-        const triggerAutoCheckIn = () => {
-            if (!navigator.geolocation) return
-
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const { latitude, longitude } = position.coords
-                    const distance = calculateDistance(
-                        latitude,
-                        longitude,
-                        parseFloat(workSettings.office_latitude),
-                        parseFloat(workSettings.office_longitude)
-                    )
-
-                    if (distance <= workSettings.max_distance_meters) {
-                        console.log('Auto clock-in triggered: User in range')
-                        autoCheckedRef.current = true
-                        handleAction()
-                    }
-                },
-                (err) => console.log('Auto check-in location error:', err),
-                { enableHighAccuracy: true, timeout: 5000 }
-            )
-        }
-
-        // Delay slightly for better UX/stability
-        const timer = setTimeout(triggerAutoCheckIn, 2000)
-        return () => clearTimeout(timer)
-    }, [isCheckedIn, isCheckedOut])
+    // NOTE: Auto Clock-in is handled by useAutoCheckIn hook (hooks/use-auto-check-in.ts)
+    // The old auto check-in logic was removed to prevent race conditions where
+    // the old code would show an error toast even after successful auto check-in.
 
     // Reset state when props change (Server data updated)
     useEffect(() => {
         setLoading(false)
         setIsProcessing(false)
         setSuccess(null)
-
+        setError(null)
     }, [isCheckedIn, isCheckedOut])
 
     // Neon Circular Button Design
@@ -294,7 +261,7 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
                 </div>
             )}
             {success && (
-                <div className="p-3 text-sm text-green-400 bg-green-900/20 border border-green-900/50 rounded-lg text-center max-w-sm">
+                <div className="p-3 text-sm text-green-400 bg-green-900/20 border border-green-900/50 rounded-lg text-center max-w-sm whitespace-pre-line">
                     {success}
                 </div>
             )}

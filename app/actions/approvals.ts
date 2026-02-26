@@ -4,6 +4,128 @@ import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { addDays, parseISO, format } from 'date-fns'
 import { createAuditLog } from './audit-logs'
+import { checkPermission } from '@/utils/permissions'
+import { getDescendantIds } from './my-team'
+
+/**
+ * Determine the scope of approvals the current user can see.
+ * - Admin/Super Admin → sees ALL requests (returns null = no filter)
+ * - Manager/Leader with approvals.view → sees only requests from their team (returns user_id[])
+ * - Others → sees nothing (returns empty array)
+ */
+async function getApprovalScope(): Promise<{ isAdmin: boolean, teamIds: string[] | null }> {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { isAdmin: false, teamIds: [] }
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, roles(name, permissions)')
+        .eq('id', user.id)
+        .single()
+
+    const roles = profile?.roles as any
+    const roleName = Array.isArray(roles) ? roles[0]?.name : roles?.name
+    const permissions: string[] = (Array.isArray(roles) ? roles[0]?.permissions : roles?.permissions) || []
+
+    // Admin sees everything
+    const isAdmin = profile?.role === 'admin' || roleName === 'admin' || permissions.includes('*')
+    if (isAdmin) return { isAdmin: true, teamIds: null }
+
+    // Check if user has approvals.view permission
+    const hasApprovalView = permissions.includes('approvals.view') ||
+        permissions.includes('approvals.*')
+    if (!hasApprovalView) return { isAdmin: false, teamIds: [] }
+
+    // Get all team member IDs (subordinates only, NOT including self)
+    const allDescendants = await getDescendantIds(user.id, false)
+    // Remove self from the list - we don't approve our own requests
+    const teamIds = allDescendants.filter(id => id !== user.id)
+
+    return { isAdmin: false, teamIds }
+}
+
+/**
+ * Get all user IDs that should be notified when an employee creates a request.
+ * Includes:
+ *   1. All managers up the hierarchy chain (who have approvals.view or approvals.approve)
+ *   2. All admin users
+ * Excludes the employee themselves.
+ * 
+ * @param employeeUserId - The user who created the request
+ * @param excludeUserId - Optional user to exclude (e.g., the approver themselves)
+ */
+export async function getApproverIds(employeeUserId: string, excludeUserId?: string): Promise<string[]> {
+    const supabase = await createClient()
+
+    // 1. Get all profiles with manager_id, role_id, and role
+    const { data: allProfiles } = await supabase
+        .from('profiles')
+        .select('id, manager_id, role, role_id')
+
+    if (!allProfiles) return []
+
+    // 2. Walk UP the management chain from the employee
+    const managerIds = new Set<string>()
+    let currentId = employeeUserId
+    const visited = new Set<string>()
+
+    while (currentId) {
+        const profile = allProfiles.find(p => p.id === currentId)
+        if (!profile || !profile.manager_id || visited.has(profile.manager_id)) break
+
+        visited.add(profile.manager_id)
+        managerIds.add(profile.manager_id)
+        currentId = profile.manager_id
+    }
+
+    // 3. Fetch role permissions for all managers to check who has approval access
+    const managerArray = Array.from(managerIds)
+    const approverIds = new Set<string>()
+
+    if (managerArray.length > 0) {
+        // Get the role_ids for managers
+        const managerProfiles = allProfiles.filter(p => managerArray.includes(p.id))
+        const roleIds = [...new Set(managerProfiles.map(p => p.role_id).filter(Boolean))]
+
+        if (roleIds.length > 0) {
+            const { data: roles } = await supabase
+                .from('roles')
+                .select('id, permissions')
+                .in('id', roleIds)
+
+            const approvalRoleIds = new Set<string>()
+            roles?.forEach(r => {
+                const perms: string[] = r.permissions || []
+                if (perms.includes('*') || perms.includes('approvals.view') ||
+                    perms.includes('approvals.approve') || perms.includes('approvals.*')) {
+                    approvalRoleIds.add(r.id)
+                }
+            })
+
+            // Add managers who have approval permissions
+            managerProfiles.forEach(mp => {
+                if (mp.role_id && approvalRoleIds.has(mp.role_id)) {
+                    approverIds.add(mp.id)
+                }
+                // Also include if legacy role is admin
+                if (mp.role === 'admin') {
+                    approverIds.add(mp.id)
+                }
+            })
+        }
+    }
+
+    // 4. Include ALL admin users (they always see everything)
+    const adminProfiles = allProfiles.filter(p => p.role === 'admin')
+    adminProfiles.forEach(a => approverIds.add(a.id))
+
+    // 5. Remove the employee themselves and the excludeUserId
+    approverIds.delete(employeeUserId)
+    if (excludeUserId) approverIds.delete(excludeUserId)
+
+    return Array.from(approverIds)
+}
 
 export interface ActivityItem {
     id: string
@@ -310,6 +432,10 @@ export async function getActivities(
 
 // Approve Activity
 export async function approveActivity(id: string, type: string): Promise<{ success: boolean, message?: string }> {
+    // Server-side permission check
+    const hasAccess = await checkPermission('approvals.approve')
+    if (!hasAccess) return { success: false, message: 'Permission denied' }
+
     const supabase = await createClient()
 
     try {
@@ -483,13 +609,41 @@ export async function approveActivity(id: string, type: string): Promise<{ succe
 
         if (userId) {
             const { sendNotification } = await import('@/app/actions/notification-system')
+            const { data: { user: approver } } = await supabase.auth.getUser()
+
+            // 1. Notify the employee
             await sendNotification({
                 userId,
                 title: notificationTitle,
                 message: notificationBody,
                 type: 'success',
-                priority: 'high'
+                priority: 'high',
+                link: '/admin/approvals'
             })
+
+            // 2. Notify other managers in the hierarchy (excluding the approver)
+            try {
+                const managerIds = await getApproverIds(userId, approver?.id)
+                if (managerIds.length > 0) {
+                    // Get employee name
+                    const { data: empProfile } = await supabase
+                        .from('profiles')
+                        .select('full_name')
+                        .eq('id', userId)
+                        .single()
+                    const empName = empProfile?.full_name || 'Nhân viên'
+
+                    await sendNotification({
+                        userIds: managerIds,
+                        title: 'Yêu cầu đã được duyệt',
+                        message: `Yêu cầu của ${empName} đã được phê duyệt.`,
+                        type: 'info',
+                        link: '/admin/approvals'
+                    })
+                }
+            } catch (e) {
+                console.error('[Approve] Manager notification error:', e)
+            }
         }
 
         revalidatePath('/admin/approvals')
@@ -501,6 +655,10 @@ export async function approveActivity(id: string, type: string): Promise<{ succe
 
 // Reject Activity
 export async function rejectActivity(id: string, type: string, note: string): Promise<{ success: boolean, message?: string }> {
+    // Server-side permission check
+    const hasAccess = await checkPermission('approvals.approve')
+    if (!hasAccess) return { success: false, message: 'Permission denied' }
+
     const supabase = await createClient()
 
     try {
@@ -625,13 +783,40 @@ export async function rejectActivity(id: string, type: string, note: string): Pr
 
         if (userId) {
             const { sendNotification } = await import('@/app/actions/notification-system')
+            const { data: { user: rejecter } } = await supabase.auth.getUser()
+
+            // 1. Notify the employee
             await sendNotification({
                 userId,
                 title: notificationTitle,
                 message: notificationBody,
                 type: 'error',
-                priority: 'high'
+                priority: 'high',
+                link: '/admin/approvals'
             })
+
+            // 2. Notify other managers in the hierarchy (excluding the rejecter)
+            try {
+                const managerIds = await getApproverIds(userId, rejecter?.id)
+                if (managerIds.length > 0) {
+                    const { data: empProfile } = await supabase
+                        .from('profiles')
+                        .select('full_name')
+                        .eq('id', userId)
+                        .single()
+                    const empName = empProfile?.full_name || 'Nhân viên'
+
+                    await sendNotification({
+                        userIds: managerIds,
+                        title: 'Yêu cầu bị từ chối',
+                        message: `Yêu cầu của ${empName} đã bị từ chối. Lý do: ${note}`,
+                        type: 'warning',
+                        link: '/admin/approvals'
+                    })
+                }
+            } catch (e) {
+                console.error('[Reject] Manager notification error:', e)
+            }
         }
 
         revalidatePath('/admin/approvals')

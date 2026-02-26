@@ -60,7 +60,12 @@ interface Options {
     employees: { id: string, full_name: string, employee_code: string, department: string }[]
 }
 
+import { usePermissions } from '@/contexts/permission-context'
+
 export default function NotificationsPage() {
+    const { can } = usePermissions()
+    const canSend = can('notifications.send')
+
     const [campaigns, setCampaigns] = useState<Campaign[]>([])
     const [loading, setLoading] = useState(true)
     const [isOpen, setIsOpen] = useState(false)
@@ -185,10 +190,12 @@ export default function NotificationsPage() {
                     </h1>
                     <p className="text-slate-400 mt-1 text-sm">Quản lý và gửi thông báo hàng loạt đến nhân viên</p>
                 </div>
-                <Button onClick={() => setIsOpen(true)} className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Tạo Thông Báo Mới
-                </Button>
+                {canSend && (
+                    <Button onClick={() => setIsOpen(true)} className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Tạo Thông Báo Mới
+                    </Button>
+                )}
             </div>
 
             {/* Campaign List */}
