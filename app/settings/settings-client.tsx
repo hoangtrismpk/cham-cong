@@ -86,33 +86,61 @@ export function SettingsClient({ user }: SettingsClientProps) {
     const isScrollingProgrammatically = useRef(false)
     const scrollContainerRef = useRef<HTMLDivElement>(null)
 
+    const [isLoadingData, setIsLoadingData] = useState(true)
+
     useEffect(() => {
-        getAutoCheckInSetting().then(enabled => setAutoCheckInEnabled(enabled))
-        getAutoCheckOutSetting().then(enabled => setAutoCheckOutSetting(enabled))
-        getPushNotificationSetting().then(enabled => {
-            // Only show as enabled if both DB says enabled AND browser permission is granted
-            if (enabled && 'Notification' in window && Notification.permission === 'granted') {
-                setPushEnabled(true)
-            } else {
-                setPushEnabled(false)
+        const fetchInitialData = async () => {
+            try {
+                // Execute all 6 API calls in parallel using Promise.all
+                const [
+                    autoCheckIn,
+                    autoCheckOut,
+                    pushEnabledServer,
+                    clockSettings,
+                    factors,
+                    profileResponse
+                ] = await Promise.all([
+                    getAutoCheckInSetting(),
+                    getAutoCheckOutSetting(),
+                    getPushNotificationSetting(),
+                    getClockSettings(),
+                    getMFAFactors(),
+                    getMyProfile()
+                ])
+
+                setAutoCheckInEnabled(autoCheckIn)
+                setAutoCheckOutSetting(autoCheckOut)
+
+                if (pushEnabledServer && 'Notification' in window && Notification.permission === 'granted') {
+                    setPushEnabled(true)
+                } else {
+                    setPushEnabled(false)
+                }
+
+                setClockInMinutes(clockSettings.clockInRemindMinutes)
+                setClockOutMode(clockSettings.clockOutRemindMode)
+                setClockOutMinutes(clockSettings.clockOutRemindMinutes)
+
+                const verifiedFactor = factors?.find((f: any) => f.factor_type === 'totp' && f.status === 'verified')
+                if (verifiedFactor) {
+                    setMfaFactorId(verifiedFactor.id)
+                }
+
+                if (profileResponse.profile) {
+                    setProfile(profileResponse.profile)
+                    if (profileResponse.profile.avatar_url) setCurrentAvatar(profileResponse.profile.avatar_url)
+                    if (profileResponse.profile.skills) setSkillsInput(profileResponse.profile.skills.join(', '))
+                } else if (profileResponse.error) {
+                    console.error('Error fetching profile:', profileResponse.error)
+                }
+            } catch (err) {
+                console.error("Failed to load settings data:", err)
+            } finally {
+                setIsLoadingData(false)
             }
-        })
+        }
 
-        getClockSettings().then(settings => {
-            setClockInMinutes(settings.clockInRemindMinutes)
-            setClockOutMode(settings.clockOutRemindMode)
-            setClockOutMinutes(settings.clockOutRemindMinutes)
-        })
-
-        // Fetch MFA Status
-        getMFAFactors().then(factors => {
-            const verifiedFactor = factors?.find((f: any) => f.factor_type === 'totp' && f.status === 'verified')
-            if (verifiedFactor) {
-                setMfaFactorId(verifiedFactor.id)
-            }
-        })
-
-        loadMyProfile()
+        fetchInitialData()
     }, [])
 
     // --- SCROLL SPY LOGIC (ELEMENT FROM POINT) ---
@@ -176,16 +204,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
     }, [activeTab, profile])
 
 
-    const loadMyProfile = async () => {
-        const { profile, error } = await getMyProfile()
-        if (profile) {
-            setProfile(profile)
-            if (profile.avatar_url) setCurrentAvatar(profile.avatar_url)
-            if (profile.skills) setSkillsInput(profile.skills.join(', '))
-        } else {
-            console.error(error)
-        }
-    }
+
 
     const scrollToSection = (section: 'general' | 'security' | 'notifications' | 'preferences') => {
         setActiveTab(section)
@@ -475,7 +494,55 @@ export function SettingsClient({ user }: SettingsClientProps) {
         }
     }
 
-    if (!profile) return <div className="p-10 text-white text-center flex items-center justify-center h-screen"><span className="material-symbols-outlined animate-spin text-4xl text-primary">progress_activity</span></div>
+    if (isLoadingData || !profile) {
+        return (
+            <div className="w-full max-w-[1600px] mx-auto bg-background-dark min-h-screen animate-pulse">
+                {/* Mobile Skeleton */}
+                <div className="flex flex-col xl:hidden px-6 pt-10">
+                    <div className="h-8 w-1/3 bg-white/10 rounded mb-2"></div>
+                    <div className="h-4 w-1/2 bg-white/5 rounded mb-8"></div>
+
+                    <div className="flex gap-4 mb-8">
+                        <div className="size-16 rounded-full bg-white/10"></div>
+                        <div className="flex flex-col gap-2 justify-center flex-1">
+                            <div className="h-5 w-2/3 bg-white/10 rounded"></div>
+                            <div className="h-4 w-1/2 bg-white/5 rounded"></div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="h-16 w-full bg-white/5 rounded-2xl"></div>
+                        <div className="h-16 w-full bg-white/5 rounded-2xl"></div>
+                        <div className="h-16 w-full bg-white/5 rounded-2xl"></div>
+                        <div className="h-16 w-full bg-white/5 rounded-2xl"></div>
+                    </div>
+                </div>
+
+                {/* Desktop Skeleton */}
+                <div className="hidden xl:flex h-screen overflow-hidden">
+                    <div className="w-80 border-r border-white/5 px-8 pt-[72px] flex flex-col gap-4">
+                        <div className="h-12 w-full bg-white/10 rounded-xl"></div>
+                        <div className="h-12 w-full bg-white/5 rounded-xl"></div>
+                        <div className="h-12 w-full bg-white/5 rounded-xl"></div>
+                        <div className="h-12 w-full bg-white/5 rounded-xl"></div>
+                    </div>
+                    <div className="flex-1 p-16 space-y-8">
+                        <div className="flex gap-6 items-center border-b border-white/5 pb-8">
+                            <div className="size-24 rounded-full bg-white/10"></div>
+                            <div className="space-y-3">
+                                <div className="h-8 w-64 bg-white/10 rounded"></div>
+                                <div className="h-4 w-40 bg-white/5 rounded"></div>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-8">
+                            <div className="h-[200px] bg-white/5 rounded-3xl"></div>
+                            <div className="h-[200px] bg-white/5 rounded-3xl"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="w-full max-w-[1600px] mx-auto bg-background-dark min-h-screen">
