@@ -69,7 +69,7 @@ export default async function AdminLayout({
                         {children}
                     </PermissionProvider>
                 </main>
-                <AdminBottomNav />
+                <AdminBottomNav permissions={permissions} profile={profile} />
             </div>
         </div>
     )

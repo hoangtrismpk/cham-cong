@@ -8,6 +8,7 @@ import { LanguageSwitcher } from './language-switcher'
 import { NotificationBell } from './notification-bell'
 import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context'
 import { useI18n } from '@/contexts/i18n-context'
+import { UserBottomNav } from './user-bottom-nav'
 
 interface DashboardLayoutProps {
     user: any
@@ -77,9 +78,12 @@ function DashboardLayoutContent({ user, children }: DashboardLayoutProps) {
                     </div>
                 </header>
 
-                <div className="flex-1 w-full relative">
+                <div className="flex-1 w-full relative pb-20 lg:pb-0">
                     {children}
                 </div>
+
+                {/* Mobile Bottom Navigation */}
+                <UserBottomNav />
             </main>
         </div>
     )
