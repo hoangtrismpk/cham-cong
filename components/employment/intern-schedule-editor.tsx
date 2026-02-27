@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import WeeklyScheduleBuilder, { ScheduleItem } from './weekly-schedule-builder';
 import { toast } from 'sonner';
+import { useI18n } from '@/contexts/i18n-context';
 
 interface Props {
     employeeId: string;
@@ -17,8 +18,10 @@ interface Props {
 
 export default function InternScheduleEditor({ employeeId, disabled }: Props) {
     const [initialSchedules, setInitialSchedules] = useState<any[]>([]);
-    const [companyConfig, setCompanyConfig] = useState<any>(null); // Store full config
+    const [companyConfig, setCompanyConfig] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const { t } = useI18n();
+    const sb = t.admin.employeeManagement.employment.scheduleBuilder;
 
     useEffect(() => {
         Promise.all([
@@ -36,7 +39,7 @@ export default function InternScheduleEditor({ employeeId, disabled }: Props) {
             }
         } catch (error) {
             console.error('Error fetching schedule:', error);
-            toast.error('Không thể tải lịch làm việc của thực tập sinh');
+            toast.error(sb.loadError);
         }
     };
 
@@ -61,7 +64,7 @@ export default function InternScheduleEditor({ employeeId, disabled }: Props) {
             });
 
             if (!res.ok) {
-                throw new Error('Lỗi khi lưu lịch làm việc thực tập sinh');
+                throw new Error(sb.saveError);
             }
 
             const data = await res.json();
@@ -75,10 +78,9 @@ export default function InternScheduleEditor({ employeeId, disabled }: Props) {
     return (
         <div className="space-y-6">
             <div className="flex flex-col space-y-2">
-                <h3 className="text-lg font-bold text-white">Cấu hình lịch Thực tập sinh</h3>
+                <h3 className="text-lg font-bold text-white">{sb.internTitle}</h3>
                 <p className="text-slate-400 text-sm">
-                    Thiết lập các ca làm việc cụ thể.
-                    Hệ thống sẽ dựa vào lịch này để theo dõi chuyên cần.
+                    {sb.internDesc}
                 </p>
             </div>
 
