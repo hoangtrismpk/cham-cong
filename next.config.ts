@@ -1,7 +1,15 @@
 import type { NextConfig } from "next";
+import withSerwistInit from "@serwist/next";
+
+const withSerwist = withSerwistInit({
+  swSrc: "app/sw.ts",
+  swDest: "public/sw.js",
+  disable: false, // Enable caching locally for testing payload and PWA load
+});
 
 const nextConfig: NextConfig = {
   /* config options here */
+  turbopack: {}, // Silence turbopack + webpack plugin conflict warning
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -41,4 +49,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSerwist(nextConfig);

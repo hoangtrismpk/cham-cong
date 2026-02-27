@@ -121,7 +121,12 @@ export function FCMManager() {
                         });
                     });
 
-                    const currentToken = await getToken(msg, { vapidKey: VAPID_KEY });
+                    // Ensure we pass the service worker registration so FCM doesn't manually guess "firebase-messaging-sw.js"
+                    const registration = await navigator.serviceWorker.ready;
+                    const currentToken = await getToken(msg, {
+                        vapidKey: VAPID_KEY,
+                        serviceWorkerRegistration: registration
+                    });
 
                     if (currentToken) {
                         console.log('[FCMManager] FCM Token obtained, device:', getDeviceType());
