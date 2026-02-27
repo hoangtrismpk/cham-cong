@@ -28,7 +28,7 @@ import {
 import { toast } from 'sonner';
 import { useI18n } from '@/contexts/i18n-context';
 import CreateEmployeeDialog from '@/components/admin/employees/create-employee-dialog';
-import { getDepartments, getRoles } from '@/app/actions/employees';
+import { getDepartments, getRoles, deleteEmployee, restoreEmployee } from '@/app/actions/employees';
 import { usePermissions } from '@/contexts/permission-context';
 
 
@@ -484,8 +484,23 @@ export default function EmployeesClientPage() {
                                                         {can('users.delete') && (
                                                             <>
                                                                 <DropdownMenuSeparator className="bg-slate-700/50" />
-                                                                <DropdownMenuItem className="text-red-400 hover:bg-red-500/10 focus:bg-red-500/10 cursor-pointer py-2.5 px-3 rounded-md m-1 transition-colors">
-                                                                    {t.admin.employeeManagement.actions.deactivate}
+                                                                <DropdownMenuItem
+                                                                    className={`${employee.status === 'active' ? 'text-red-400 hover:bg-red-500/10 focus:bg-red-500/10' : 'text-emerald-400 hover:bg-emerald-500/10 focus:bg-emerald-500/10'} cursor-pointer py-2.5 px-3 rounded-md m-1 transition-colors`}
+                                                                    onClick={async () => {
+                                                                        const isDeactivating = employee.status === 'active';
+                                                                        if (confirm(`Bạn có chắc muốn ${isDeactivating ? 'vô hiệu hóa' : 'kích hoạt lại'} nhân viên này?`)) {
+                                                                            const loadingToast = toast.loading('Đang xử lý...');
+                                                                            const res = isDeactivating ? await deleteEmployee(displayId) : await restoreEmployee(displayId);
+                                                                            if (res && 'error' in res) {
+                                                                                toast.error(res.error, { id: loadingToast });
+                                                                            } else {
+                                                                                toast.success(`Đã ${isDeactivating ? 'vô hiệu hóa' : 'kích hoạt'} thành công!`, { id: loadingToast });
+                                                                                loadEmployees(); // Reload data
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    {employee.status === 'active' ? 'Vô hiệu hóa' : 'Kích hoạt lại'}
                                                                 </DropdownMenuItem>
                                                             </>
                                                         )}

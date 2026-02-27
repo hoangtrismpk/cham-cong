@@ -538,3 +538,43 @@ export async function deleteEmployee(employeeId: string | number) {
     revalidatePath('/admin/employees')
     return { success: true }
 }
+
+// Restore (reactivate)
+export async function restoreEmployee(employeeId: string | number) {
+    // 1. Check permissions (granular: users.delete)
+    const denied = await requirePermissionForAction('users.delete')
+    if (denied) return denied
+
+    const supabaseAdmin = createAdminClient()
+
+    // 2. Convert numeric ID to UUID if needed
+    const isNumeric = typeof employeeId === 'number' || /^\d+$/.test(employeeId.toString())
+    let actualEmployeeId = employeeId.toString()
+
+    if (isNumeric) {
+        const { data: employee, error: fetchError } = await supabaseAdmin
+            .from('profiles')
+            .select('id')
+            .eq('numeric_id', parseInt(employeeId.toString()))
+            .single()
+
+        if (fetchError || !employee) {
+            return { error: 'Không tìm thấy nhân viên' }
+        }
+
+        actualEmployeeId = employee.id
+    }
+
+    // 3. Soft restore profile
+    const { error } = await supabaseAdmin
+        .from('profiles')
+        .update({ status: 'active' })
+        .eq('id', actualEmployeeId)
+
+    // 4. Unban user in Auth
+    await supabaseAdmin.auth.admin.updateUserById(actualEmployeeId, { ban_duration: 'none' })
+
+    if (error) return { error: error.message }
+    revalidatePath('/admin/employees')
+    return { success: true }
+}
