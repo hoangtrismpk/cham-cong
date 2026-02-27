@@ -256,6 +256,33 @@ export const en: Translations = {
                 of: 'of',
                 employees: 'employees',
                 page: 'Page'
+            },
+            employment: {
+                title: 'Select Employment Type',
+                subtitle: 'Choose the contract type and work mode',
+                required: 'Required',
+                scheduleTitle: 'Setup Work Schedule',
+                scheduleSubtitle: 'Configure detailed working hours per week',
+                scheduleOptional: 'Optional',
+                helpTitle: 'Work schedule is used for:',
+                help1: 'Daily work hours calculation',
+                help2: 'Attendance reminder notifications',
+                help3: 'Automatic payroll calculation',
+                discardChanges: 'Discard Changes',
+                saveSchedule: 'Save Schedule',
+                saving: 'Saving...',
+                back: 'Back to Employees',
+                notFound: 'Employee not found',
+                loadError: 'Failed to load employee details',
+                saveSuccess: 'Schedule saved successfully!',
+                saveError: 'Could not update employee type',
+                discardSuccess: 'Changes discarded',
+                selector: {
+                    warning: 'Note: Employment type determines how work schedule and hours are calculated.',
+                    fullTime: { label: 'Full-time Employee', enLabel: 'Full-time', desc: 'Fixed schedule 8:30-18:00, full working hours' },
+                    partTime: { label: 'Part-time Employee', enLabel: 'Part-time', desc: 'Morning or afternoon shift, flexible per day' },
+                    intern: { label: 'Intern', enLabel: 'Intern', desc: 'Flexible schedule, custom working hours' }
+                }
             }
         },
 

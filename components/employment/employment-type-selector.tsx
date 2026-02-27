@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react';
 import type { EmploymentType } from '@/types/employment';
 import { Briefcase, Clock, GraduationCap, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
+import { useI18n } from '@/contexts/i18n-context';
 
 interface EmploymentTypeSelectorProps {
     value: EmploymentType;
@@ -17,45 +17,48 @@ interface EmploymentTypeSelectorProps {
     disabled?: boolean;
 }
 
-const employmentTypes = [
-    {
-        id: 'full-time',
-        label: 'Nhân viên Chính thức',
-        enLabel: 'Full-time',
-        description: 'Làm việc toàn thời gian, lịch cố định 8:30-18:00',
-        icon: Briefcase,
-        activeColor: 'text-blue-400',
-        iconBg: 'bg-blue-500/10',
-        borderColor: 'border-blue-500',
-    },
-    {
-        id: 'part-time',
-        label: 'Nhân viên Bán thời gian',
-        enLabel: 'Part-time',
-        description: 'Làm việc ca sáng hoặc ca chiều, linh hoạt theo từng ngày',
-        icon: Clock,
-        activeColor: 'text-orange-400',
-        iconBg: 'bg-orange-500/10',
-        borderColor: 'border-orange-500',
-    },
-    {
-        id: 'intern',
-        label: 'Thực tập sinh',
-        enLabel: 'Intern',
-        description: 'Lịch làm việc linh hoạt, tự do tùy chỉnh giờ làm',
-        icon: GraduationCap,
-        activeColor: 'text-purple-400',
-        iconBg: 'bg-purple-500/10',
-        borderColor: 'border-purple-500',
-    }
-];
-
 export default function EmploymentTypeSelector({
     value,
     onChange,
     disabled = false
 }: EmploymentTypeSelectorProps) {
     const [selected, setSelected] = useState<EmploymentType>(value);
+    const { t } = useI18n();
+
+    const sel = t.admin.employeeManagement.employment.selector;
+
+    const employmentTypes = [
+        {
+            id: 'full-time',
+            label: sel.fullTime.label,
+            enLabel: sel.fullTime.enLabel,
+            description: sel.fullTime.desc,
+            icon: Briefcase,
+            activeColor: 'text-blue-400',
+            iconBg: 'bg-blue-500/10',
+            borderColor: 'border-blue-500',
+        },
+        {
+            id: 'part-time',
+            label: sel.partTime.label,
+            enLabel: sel.partTime.enLabel,
+            description: sel.partTime.desc,
+            icon: Clock,
+            activeColor: 'text-orange-400',
+            iconBg: 'bg-orange-500/10',
+            borderColor: 'border-orange-500',
+        },
+        {
+            id: 'intern',
+            label: sel.intern.label,
+            enLabel: sel.intern.enLabel,
+            description: sel.intern.desc,
+            icon: GraduationCap,
+            activeColor: 'text-purple-400',
+            iconBg: 'bg-purple-500/10',
+            borderColor: 'border-purple-500',
+        }
+    ];
 
     useEffect(() => {
         setSelected(value);
@@ -127,7 +130,7 @@ export default function EmploymentTypeSelector({
             <div className="mt-4 p-3 bg-[#2a1f18] border border-[#4d3220] rounded-lg flex items-center gap-3">
                 <span className="text-orange-400 text-lg">💡</span>
                 <span className="text-orange-200/80 text-sm">
-                    Lưu ý: Loại nhân viên sẽ xác định cách thiết lập lịch làm việc và tính toán giờ công.
+                    {sel.warning}
                 </span>
             </div>
         </div>

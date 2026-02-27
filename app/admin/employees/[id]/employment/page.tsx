@@ -15,6 +15,7 @@ import ScheduleTemplateEditor from '@/components/employment/schedule-template-ed
 import { Button } from '@/components/ui/button';
 import { Loader2, ChevronLeft, HelpCircle } from 'lucide-react';
 import type { EmploymentType } from '@/types/employment';
+import { useI18n } from '@/contexts/i18n-context';
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -23,6 +24,7 @@ interface PageProps {
 export default function EmployeeEmploymentPage({ params }: PageProps) {
     const { id: employeeId } = use(params);
     const router = useRouter();
+    const { t } = useI18n();
 
     const [employee, setEmployee] = useState<any>(null);
     const [employmentType, setEmploymentType] = useState<EmploymentType>('full-time');
@@ -50,10 +52,10 @@ export default function EmployeeEmploymentPage({ params }: PageProps) {
                 setOriginalType(type);
             } else {
                 const errorData = await response.json();
-                toast.error(errorData.error || 'Không tìm thấy nhân viên');
+                toast.error(errorData.error || t.admin.employeeManagement.employment.notFound);
             }
         } catch (err: any) {
-            toast.error('Có lỗi xảy ra khi tải thông tin nhân viên');
+            toast.error(t.admin.employeeManagement.employment.loadError);
         } finally {
             setLoading(false);
         }
@@ -67,7 +69,7 @@ export default function EmployeeEmploymentPage({ params }: PageProps) {
     const handleDiscard = () => {
         setEmploymentType(originalType);
         setHasChanges(false);
-        toast.info('Đã hủy thay đổi');
+        toast.info(t.admin.employeeManagement.employment.discardSuccess);
     };
 
     const handleSave = async () => {
@@ -82,17 +84,17 @@ export default function EmployeeEmploymentPage({ params }: PageProps) {
 
             if (!response.ok) {
                 const errData = await response.json();
-                throw new Error(errData.error || errData.message || 'Không thể cập nhật loại nhân viên');
+                throw new Error(errData.error || errData.message || t.admin.employeeManagement.employment.saveError);
             }
 
             // 2. Schedule details are managed by the child components and saved individually
 
             setOriginalType(employmentType);
             setHasChanges(false);
-            toast.success('✅ Đã lưu lịch làm việc thành công!');
+            toast.success('✅ ' + t.admin.employeeManagement.employment.saveSuccess);
         } catch (err: any) {
             console.error('Failed to save:', err);
-            toast.error(err.message || 'Có lỗi xảy ra');
+            toast.error(err.message || t.common.error);
         } finally {
             setSaving(false);
         }
@@ -110,8 +112,8 @@ export default function EmployeeEmploymentPage({ params }: PageProps) {
         return (
             <div className="min-h-screen flex items-center justify-center p-6 bg-[#0b101a]">
                 <div className="text-center text-slate-400">
-                    <p>Không tìm thấy nhân viên</p>
-                    <Button onClick={() => router.back()} className="mt-4">Quay lại</Button>
+                    <p>{t.admin.employeeManagement.employment.notFound}</p>
+                    <Button onClick={() => router.back()} className="mt-4">{t.common.back}</Button>
                 </div>
             </div>
         );
@@ -127,7 +129,7 @@ export default function EmployeeEmploymentPage({ params }: PageProps) {
                         className="flex items-center text-slate-400 hover:text-white mb-6 text-sm transition-colors group"
                     >
                         <ChevronLeft className="w-4 h-4 mr-1 group-hover:-translate-x-1 transition-transform" />
-                        Back to Employees
+                        {t.admin.employeeManagement.employment.back}
                     </button>
 
                     <div className="flex items-center space-x-4">
@@ -156,15 +158,15 @@ export default function EmployeeEmploymentPage({ params }: PageProps) {
                             </div>
                             <div>
                                 <h2 className="text-lg font-bold text-white">
-                                    Select Employment Type
+                                    {t.admin.employeeManagement.employment.title}
                                 </h2>
                                 <p className="text-sm text-slate-400">
-                                    Choose the contract type and work mode
+                                    {t.admin.employeeManagement.employment.subtitle}
                                 </p>
                             </div>
                         </div>
                         <span className="px-3 py-1 bg-[#1e2532] text-blue-400 border border-blue-500/20 rounded text-[10px] font-bold uppercase tracking-wider">
-                            Required
+                            {t.admin.employeeManagement.employment.required}
                         </span>
                     </div>
 
@@ -186,15 +188,15 @@ export default function EmployeeEmploymentPage({ params }: PageProps) {
                             </div>
                             <div>
                                 <h2 className="text-lg font-bold text-white">
-                                    Setup Work Schedule
+                                    {t.admin.employeeManagement.employment.scheduleTitle}
                                 </h2>
                                 <p className="text-sm text-slate-400">
-                                    Configure detailed working hours per week
+                                    {t.admin.employeeManagement.employment.scheduleSubtitle}
                                 </p>
                             </div>
                         </div>
                         <span className="px-3 py-1 bg-[#252b3b] text-slate-400 border border-slate-700/50 rounded text-[10px] font-bold uppercase tracking-wider">
-                            Optional
+                            {t.admin.employeeManagement.employment.scheduleOptional}
                         </span>
                     </div>
 
@@ -214,19 +216,19 @@ export default function EmployeeEmploymentPage({ params }: PageProps) {
                         <HelpCircle className="w-6 h-6 text-blue-500" />
                     </div>
                     <div>
-                        <h4 className="text-sm font-bold text-white mb-2">Work schedule is used for:</h4>
+                        <h4 className="text-sm font-bold text-white mb-2">{t.admin.employeeManagement.employment.helpTitle}</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
                             <div className="flex items-center text-sm text-slate-400">
                                 <div className="w-1.5 h-1.5 rounded-full border border-slate-500 mr-2"></div>
-                                Daily work hours calculation
+                                {t.admin.employeeManagement.employment.help1}
                             </div>
                             <div className="flex items-center text-sm text-slate-400">
                                 <div className="w-1.5 h-1.5 rounded-full border border-slate-500 mr-2"></div>
-                                Attendance reminder notifications
+                                {t.admin.employeeManagement.employment.help2}
                             </div>
                             <div className="flex items-center text-sm text-slate-400">
                                 <div className="w-1.5 h-1.5 rounded-full border border-slate-500 mr-2"></div>
-                                Automatic payroll calculation
+                                {t.admin.employeeManagement.employment.help3}
                             </div>
                         </div>
                     </div>
@@ -242,7 +244,7 @@ export default function EmployeeEmploymentPage({ params }: PageProps) {
                         disabled={!hasChanges || saving}
                         className="text-slate-400 hover:text-white"
                     >
-                        Discard Changes
+                        {t.admin.employeeManagement.employment.discardChanges}
                     </Button>
                     <Button
                         onClick={handleSave}
@@ -252,10 +254,10 @@ export default function EmployeeEmploymentPage({ params }: PageProps) {
                         {saving ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Saving...
+                                {t.admin.employeeManagement.employment.saving}
                             </>
                         ) : (
-                            'Save Schedule'
+                            t.admin.employeeManagement.employment.saveSchedule
                         )}
                     </Button>
                 </div>

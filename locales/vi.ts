@@ -254,6 +254,33 @@ export const vi = {
                 of: '/',
                 employees: 'nhân viên',
                 page: 'Trang'
+            },
+            employment: {
+                title: 'Chọn hình thức làm việc',
+                subtitle: 'Chọn loại hợp đồng và chế độ làm việc',
+                required: 'Bắt buộc',
+                scheduleTitle: 'Thiết lập thời gian làm việc',
+                scheduleSubtitle: 'Cấu hình chi tiết giờ làm việc mỗi tuần',
+                scheduleOptional: 'Tùy chọn',
+                helpTitle: 'Lịch làm việc được sử dụng cho:',
+                help1: 'Tính toán số giờ làm việc thực tế hàng ngày',
+                help2: 'Nhắc nhở tự động chấm công',
+                help3: 'Hệ thống tự động tính lương',
+                discardChanges: 'Hủy thay đổi',
+                saveSchedule: 'Lưu lịch làm việc',
+                saving: 'Đang lưu...',
+                back: 'Quay lại danh sách',
+                notFound: 'Không tìm thấy nhân viên',
+                loadError: 'Không thể tải thông tin nhân viên',
+                saveSuccess: 'Đã lưu lịch làm việc thành công!',
+                saveError: 'Không thể cập nhật loại nhân viên',
+                discardSuccess: 'Đã hủy thay đổi',
+                selector: {
+                    warning: 'Lưu ý: Loại nhân viên sẽ xác định cách thiết lập lịch làm việc và tính toán giờ công.',
+                    fullTime: { label: 'Nhân viên Chính thức', enLabel: 'Full-time', desc: 'Làm việc toàn thời gian, lịch cố định 8:30-18:00' },
+                    partTime: { label: 'Nhân viên Bán thời gian', enLabel: 'Part-time', desc: 'Làm việc ca sáng hoặc ca chiều, linh hoạt theo từng ngày' },
+                    intern: { label: 'Thực tập sinh', enLabel: 'Intern', desc: 'Lịch làm việc linh hoạt, tự do tùy chỉnh giờ làm' }
+                }
             }
         },
 
