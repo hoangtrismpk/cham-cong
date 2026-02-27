@@ -52,7 +52,7 @@ export function AdminBottomNav({ permissions = [], profile }: AdminBottomNavProp
     const gridCols = `grid-cols-${Math.min(links.length, 5)}`
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-[2147483647] bg-[#0d131a] backdrop-blur-xl border-t border-[#1e293b] lg:hidden pb-safe">
+        <div className="fixed bottom-0 left-0 right-0 z-30 bg-[#0d131a] backdrop-blur-xl border-t border-[#1e293b] lg:hidden pb-safe">
             <div className={`grid ${gridCols} gap-1 items-center h-16 px-2`}
                 style={{ gridTemplateColumns: `repeat(${links.length}, minmax(0, 1fr))` }}
             >

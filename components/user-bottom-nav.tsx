@@ -18,7 +18,7 @@ export function UserBottomNav() {
     ]
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-[2147483647] bg-[#0d131a]/95 backdrop-blur-xl border-t border-[#1e293b] lg:hidden pb-safe">
+        <div className="fixed bottom-0 left-0 right-0 z-30 bg-[#0d131a]/95 backdrop-blur-xl border-t border-[#1e293b] lg:hidden pb-safe">
             <div className="grid grid-cols-5 gap-1 items-center h-16 px-2">
                 {links.map((link) => {
                     let isActive = false
