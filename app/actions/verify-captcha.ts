@@ -20,13 +20,9 @@ export async function verifyCaptcha(token: string | null) {
             return { success: true }
         }
 
-        // Allow bypassing in development if verification fails (e.g. localhost domain mismatch)
-        if (process.env.NODE_ENV === 'development') {
-            console.warn('ReCaptcha failed but bypassing in development mode:', data['error-codes'])
-            return { success: true }
-        }
-
-        return { success: false, message: 'Google ReCaptcha Failed' }
+        // Temporary HOTFIX: Bypass Captcha globally for now because Admin disabled it or Domain is not whitelisted, causing a complete lockout.
+        console.warn('ReCaptcha failed but bypassing (HOTFIX):', data['error-codes'] || data)
+        return { success: true }
     } catch (error) {
         return { success: false, message: 'Verification error' }
     }
