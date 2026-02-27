@@ -44,6 +44,7 @@
     "firebase": "^12.8.0",
     "firebase-admin": "^13.6.0",
     "lucide-react": "^0.563.0",
+    "material-symbols": "^0.40.2",
     "next": "16.1.6",
     "pg": "^8.18.0",
     "qrcode.react": "^4.2.0",
