@@ -210,7 +210,8 @@ export const vi = {
                 noData: 'Không tìm thấy nhân viên',
                 tryAdjust: 'Thử điều chỉnh tìm kiếm hoặc bộ lọc',
                 loading: 'Đang tải dữ liệu...',
-                active: 'Hoạt động'
+                active: 'Hoạt động',
+                inactive: 'Ngừng hoạt động'
             },
             actions: {
                 title: 'Thao tác',
@@ -1017,6 +1018,8 @@ export const vi = {
                 save: 'Lưu thay đổi',
                 saving: 'Đang lưu...',
                 saveSuccess: 'Đã cập nhật quyền hạn',
+                edit: 'Chỉnh sửa',
+                delete: 'Xóa',
                 loadError: 'Không truy cập được dữ liệu phân quyền',
                 permissionDenied: 'Bạn không có quyền truy cập trang này.',
             },

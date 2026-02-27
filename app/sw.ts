@@ -7,9 +7,12 @@ declare global {
         __SW_MANIFEST: (PrecacheEntry | string)[] | undefined;
     }
 }
-declare const self: ServiceWorkerGlobalScope;
+// @ts-ignore
+declare const self: ServiceWorkerGlobalScope | any;
 
 // ========== Firebase Push Notification Logic ==========
+declare function importScripts(...urls: string[]): void;
+
 importScripts('https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging-compat.js');
 
@@ -44,6 +47,7 @@ messaging.onBackgroundMessage((payload: any) => {
         body: data.body || 'Bạn có thông báo mới!',
         icon: '/iconapp.png',
         badge: '/iconapp.png',
+        // @ts-ignore image is valid in service worker notifications
         image: imageUrl,
         // Action buttons — visible on Chrome Android
         // @ts-ignore actions is valid in Web Push notifications

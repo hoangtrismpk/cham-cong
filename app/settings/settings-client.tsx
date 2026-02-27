@@ -219,7 +219,7 @@ export function SettingsClient({ user, initialData }: SettingsClientProps) {
                     dob: profile.dob,
                     gender: profile.gender,
                     emergency_contact: profile.emergency_contact,
-                    skills: skillsInput.split(',').map(s => s.trim()).filter(Boolean)
+                    skills: skillsInput.split(',').map((s: string) => s.trim()).filter(Boolean)
                 }
 
                 await supabase.auth.updateUser({

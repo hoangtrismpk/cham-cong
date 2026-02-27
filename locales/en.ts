@@ -212,7 +212,8 @@ export const en: Translations = {
                 noData: 'No employees found',
                 tryAdjust: 'Try adjusting your search or filters',
                 loading: 'Loading employees...',
-                active: 'Active'
+                active: 'Active',
+                inactive: 'Inactive'
             },
             actions: {
                 title: 'User Actions',
@@ -1019,6 +1020,8 @@ export const en: Translations = {
                 save: 'Save Changes',
                 saving: 'Saving...',
                 saveSuccess: 'Permissions updated',
+                edit: 'Edit',
+                delete: 'Delete',
                 loadError: 'Cannot access permission data',
                 permissionDenied: 'You do not have permission to access this page.',
             },
