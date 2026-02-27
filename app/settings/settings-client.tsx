@@ -286,11 +286,20 @@ export function SettingsClient({ user, initialData }: SettingsClientProps) {
                                 if (/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(ua)) return 'mobile'
                                 return 'desktop'
                             }
+                            // First: Remove this token from ANY other user (handles account switching)
+                            // The token is unique per device, so if another user had it, transfer ownership
+                            await supabase.from('fcm_tokens')
+                                .delete()
+                                .eq('token', currentToken)
+                                .neq('user_id', user.id)
+
+                            // Then: Upsert for current user (using token as conflict key)
                             await supabase.from('fcm_tokens').upsert({
                                 user_id: user.id,
                                 token: currentToken,
-                                device_type: getDeviceType()
-                            }, { onConflict: 'user_id, token' })
+                                device_type: getDeviceType(),
+                                updated_at: new Date().toISOString()
+                            }, { onConflict: 'token' })
                         }
                     }
                 }
@@ -580,7 +589,18 @@ export function SettingsClient({ user, initialData }: SettingsClientProps) {
 
                     {/* Group 3: Danger Zone */}
                     <div className="px-6 mt-8 pb-10">
-                        <button onClick={() => createClient().auth.signOut().then(() => window.location.href = '/login')} className="w-full flex items-center justify-center gap-2 py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold rounded-xl transition-colors cursor-pointer border border-red-500/20">
+                        <button onClick={async () => {
+                            try {
+                                const supabase = createClient()
+                                // Remove FCM tokens for this user on this device before signing out
+                                const { data: { user: currentUser } } = await supabase.auth.getUser()
+                                if (currentUser) {
+                                    await supabase.from('fcm_tokens').delete().eq('user_id', currentUser.id)
+                                }
+                                await supabase.auth.signOut()
+                            } catch (e) { /* ignore */ }
+                            window.location.href = '/login'
+                        }} className="w-full flex items-center justify-center gap-2 py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold rounded-xl transition-colors cursor-pointer border border-red-500/20">
                             <span className="material-symbols-outlined">logout</span> Đăng xuất
                         </button>
                         <p className="text-center text-[10px] text-slate-600 mt-4 font-mono">v1.0.2-beta • Build 20240209</p>

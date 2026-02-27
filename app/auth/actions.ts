@@ -76,6 +76,11 @@ export async function login(previousState: any, formData: FormData) {
 
 export async function signout() {
     const supabase = await createClient()
+    // Remove FCM tokens for this user before signing out
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+        await supabase.from('fcm_tokens').delete().eq('user_id', user.id)
+    }
     await supabase.auth.signOut()
     revalidatePath('/', 'layout')
     redirect('/login')
