@@ -33,7 +33,7 @@ export function useLocalNotifications() {
                 const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
 
                 // Fetch schedules and user preferences
-                const [schedulesRes, profileRes] = await Promise.all([
+                const [schedulesRes, profileRes, leavesRes, settingsRes] = await Promise.all([
                     supabase
                         .from('work_schedules')
                         .select('id, work_date, start_time, end_time, title')
@@ -44,6 +44,17 @@ export function useLocalNotifications() {
                         .from('profiles')
                         .select('clock_in_remind_minutes, clock_out_remind_mode, clock_out_remind_minutes')
                         .eq('id', user.id)
+                        .single(),
+                    supabase
+                        .from('leave_requests')
+                        .select('leave_date')
+                        .eq('user_id', user.id)
+                        .in('leave_date', [today, tomorrow])
+                        .eq('status', 'approved'),
+                    supabase
+                        .from('system_settings')
+                        .select('value')
+                        .eq('key', 'work_off_days')
                         .single()
                 ])
 
@@ -60,9 +71,25 @@ export function useLocalNotifications() {
                 const clockOutMode = profile?.clock_out_remind_mode ?? 'after'
                 const clockOutMins = profile?.clock_out_remind_minutes ?? 10
 
+                const approvedLeaveDates = new Set((leavesRes.data || []).map(l => l.leave_date))
+                let offDays: number[] = [6, 0] // Default Sat, Sun
+                if (settingsRes.data && settingsRes.data.value) {
+                    try {
+                        offDays = JSON.parse(settingsRes.data.value)
+                    } catch (e) { }
+                }
+
                 // Schedule local notifications for each shift
                 schedules.forEach((schedule) => {
+                    // Skip if taking approved leave on this day
+                    if (approvedLeaveDates.has(schedule.work_date)) return;
+
                     const [y, m, d] = schedule.work_date.split('-');
+
+                    // Skip if it's a company off day
+                    const scheduleDate = new Date(`${schedule.work_date}T00:00:00`)
+                    if (offDays.includes(scheduleDate.getDay())) return;
+
                     const dateDisplay = `${d}/${m}/${y}`;
                     const now = new Date()
 
@@ -84,6 +111,7 @@ export function useLocalNotifications() {
                                                 icon: '/iconapp.png',
                                                 badge: '/iconapp.png',
                                                 tag: `shift-in-${schedule.id}`,
+                                                // @ts-ignore: image is valid in service worker notification options
                                                 image: '/clockin.jpg',
                                                 actions: [
                                                     { action: 'checkin', title: '✅ Chấm Công' },
@@ -142,6 +170,7 @@ export function useLocalNotifications() {
                                                 icon: '/iconapp.png',
                                                 badge: '/iconapp.png',
                                                 tag: `shift-out-${schedule.id}`,
+                                                // @ts-ignore: image is valid in service worker notification options
                                                 image: '/clockin.jpg',
                                                 actions: [
                                                     { action: 'checkin', title: '✅ Chấm Công Ra' },

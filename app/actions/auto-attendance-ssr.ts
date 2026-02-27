@@ -49,7 +49,7 @@ export async function ssrAutoAttendance(): Promise<SSRAutoCheckResult> {
             year: 'numeric', month: '2-digit', day: '2-digit'
         }).format(new Date())
 
-        const [profileRes, activeLogsRes, schedulesRes] = await Promise.all([
+        const [profileRes, activeLogsRes, schedulesRes, leaveRes] = await Promise.all([
             supabase
                 .from('profiles')
                 .select('auto_checkin_enabled, auto_checkout_enabled, clock_in_remind_minutes, clock_out_remind_mode, clock_out_remind_minutes')
@@ -66,7 +66,14 @@ export async function ssrAutoAttendance(): Promise<SSRAutoCheckResult> {
                 .from('work_schedules')
                 .select('id, start_time, end_time, title')
                 .eq('user_id', user.id)
-                .eq('work_date', today)
+                .eq('work_date', today),
+            supabase
+                .from('leave_requests')
+                .select('id')
+                .eq('user_id', user.id)
+                .eq('leave_date', today)
+                .eq('status', 'approved')
+                .limit(1)
         ])
 
         const profile = profileRes.data
@@ -75,6 +82,19 @@ export async function ssrAutoAttendance(): Promise<SSRAutoCheckResult> {
 
         if (!profile || schedules.length === 0) {
             return { action: 'none', reason: 'no_profile_or_schedule' }
+        }
+
+        // ─── Guard: Skip on approved leave ───
+        const approvedLeaves = leaveRes.data || []
+        if (approvedLeaves.length > 0) {
+            return { action: 'none', reason: 'on_approved_leave' }
+        }
+
+        // ─── Guard: Skip on company off days (Sat/Sun etc) ───
+        const offDays: number[] = settings.work_off_days || [6, 0]
+        const vnNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }))
+        if (offDays.includes(vnNow.getDay())) {
+            return { action: 'none', reason: 'company_off_day' }
         }
 
         // ─── 3. IP Verification ───

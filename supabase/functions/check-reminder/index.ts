@@ -71,12 +71,13 @@ Deno.serve(async (req) => {
         log(`🕒 Time: ${currentTimeVN} -> ${windowEndTimeVN} | Date: ${todayStr} (DOW: ${dayOfWeek})`);
 
         // 4. Fetch Core Data
-        const [{ data: sysSettings }, { data: overrides }, { data: templates }, { data: tokenUsers }, { data: profileSettings }] = await Promise.all([
+        const [{ data: sysSettings }, { data: overrides }, { data: templates }, { data: tokenUsers }, { data: profileSettings }, { data: leaves }] = await Promise.all([
             supabase.from('system_settings').select('key, value').in('key', ['work_start_time', 'work_end_time', 'work_off_days']),
             supabase.from('work_schedules').select('user_id, start_time, end_time, title, id').eq('work_date', todayStr),
             supabase.from('employee_default_schedules').select('employee_id, custom_start_time, custom_end_time, shift_type').eq('day_of_week', dayOfWeek).eq('is_template', true).neq('shift_type', 'off'),
             supabase.from('fcm_tokens').select('user_id, token'),
-            supabase.from('profiles').select('id, clock_in_remind_minutes, clock_out_remind_mode, clock_out_remind_minutes')
+            supabase.from('profiles').select('id, clock_in_remind_minutes, clock_out_remind_mode, clock_out_remind_minutes'),
+            supabase.from('leave_requests').select('user_id').eq('leave_date', todayStr).eq('status', 'approved')
         ]);
 
         let globalStart = '08:30', globalEnd = '17:30', globalOff = [0, 6];
@@ -108,8 +109,13 @@ Deno.serve(async (req) => {
         const isOffDay = globalOff.includes(dayOfWeek);
         const targets: any[] = [];
 
+        const leaveUserIds = new Set((leaves || []).map(l => l.user_id));
+
         // 5. Evaluate Schedules
         for (const userId of Object.keys(userTokensMap)) {
+            // Skip users on approved leave
+            if (leaveUserIds.has(userId)) continue;
+
             let startT: string | null = null, endT: string | null = null, title = 'Ca Làm Việc', shiftId: string | null = null;
 
             const override = overrides?.find(o => o.user_id === userId);

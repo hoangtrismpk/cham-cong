@@ -48,7 +48,7 @@ export async function attemptAutoCheckIn(
             year: 'numeric', month: '2-digit', day: '2-digit'
         }).format(new Date())
 
-        const [profileRes, activeLogsRes, schedulesRes] = await Promise.all([
+        const [profileRes, activeLogsRes, schedulesRes, leaveRes] = await Promise.all([
             supabase
                 .from('profiles')
                 .select('auto_checkin_enabled, clock_in_remind_minutes')
@@ -63,12 +63,20 @@ export async function attemptAutoCheckIn(
                 .from('work_schedules')
                 .select('*')
                 .eq('user_id', user.id)
-                .eq('work_date', today)
+                .eq('work_date', today),
+            supabase
+                .from('leave_requests')
+                .select('id')
+                .eq('user_id', user.id)
+                .eq('leave_date', today)
+                .eq('status', 'approved')
+                .limit(1)
         ])
 
         const profile = profileRes.data
         const activeLogs = activeLogsRes.data
         const schedules = schedulesRes.data
+        const approvedLeaves = leaveRes.data || []
 
         // ─── 3. Early bailouts ───
         if (!profile || !profile.auto_checkin_enabled) {
@@ -81,6 +89,16 @@ export async function attemptAutoCheckIn(
 
         if (!schedules || schedules.length === 0) {
             return { status: 'skipped', reason: 'no_schedule' }
+        }
+
+        if (approvedLeaves.length > 0) {
+            return { status: 'skipped', reason: 'on_approved_leave' }
+        }
+
+        const offDays: number[] = settings.work_off_days || [6, 0]
+        const vnNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }))
+        if (offDays.includes(vnNow.getDay())) {
+            return { status: 'skipped', reason: 'company_off_day' }
         }
 
         // ─── 4. Find matching shift ───
@@ -243,7 +261,7 @@ export async function attemptAutoCheckOut(
             year: 'numeric', month: '2-digit', day: '2-digit'
         }).format(new Date())
 
-        const [profileRes, activeLogsRes, schedulesRes] = await Promise.all([
+        const [profileRes, activeLogsRes, schedulesRes, leaveRes] = await Promise.all([
             supabase
                 .from('profiles')
                 .select('auto_checkout_enabled, clock_out_remind_mode, clock_out_remind_minutes')
@@ -260,12 +278,20 @@ export async function attemptAutoCheckOut(
                 .from('work_schedules')
                 .select('*')
                 .eq('user_id', user.id)
-                .eq('work_date', today)
+                .eq('work_date', today),
+            supabase
+                .from('leave_requests')
+                .select('id')
+                .eq('user_id', user.id)
+                .eq('leave_date', today)
+                .eq('status', 'approved')
+                .limit(1)
         ])
 
         const profile = profileRes.data
         const activeLogs = activeLogsRes.data
         const schedules = schedulesRes.data
+        const approvedLeaves = leaveRes.data || []
 
         // ─── 3. Early bailouts ───
         if (!profile || !profile.auto_checkout_enabled) {
@@ -278,6 +304,16 @@ export async function attemptAutoCheckOut(
 
         if (!schedules || schedules.length === 0) {
             return { status: 'skipped', reason: 'no_schedule' }
+        }
+
+        if (approvedLeaves.length > 0) {
+            return { status: 'skipped', reason: 'on_approved_leave' }
+        }
+
+        const offDays: number[] = settings.work_off_days || [6, 0]
+        const vnNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }))
+        if (offDays.includes(vnNow.getDay())) {
+            return { status: 'skipped', reason: 'company_off_day' }
         }
 
         const activeLog = activeLogs[0]
