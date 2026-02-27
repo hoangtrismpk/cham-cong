@@ -10,9 +10,21 @@ export async function login(previousState: any, formData: FormData) {
     const remember = formData.get('remember') === 'on'
     const token = formData.get('g-recaptcha-response') as string
 
-    const captchaRes = await verifyCaptcha(token)
-    if (!captchaRes.success) {
-        return { error: 'Phát hiện truy cập bất thường (Captcha Failed)' }
+    // Check if reCAPTCHA is explicitly required from security settings
+    const supabaseSettings = await createClient()
+    const { data: securitySettings } = await supabaseSettings
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'security_settings')
+        .single()
+
+    const isCaptchaEnabled = securitySettings?.value?.recaptcha_enabled === true
+
+    if (isCaptchaEnabled) {
+        const captchaRes = await verifyCaptcha(token)
+        if (!captchaRes.success) {
+            return { error: 'Phát hiện truy cập bất thường (Captcha Failed)' }
+        }
     }
 
     const supabase = await createClient({ forceSession: !remember })
