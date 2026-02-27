@@ -84,14 +84,23 @@ export function useAutoCheckOut(workSettings: any) {
                     }
 
                     console.log(`🤖 Auto-CheckOut: GPS ready, retrying...`)
-                    toast.info('📍 Đang xác thực vị trí ra (GPS)...')
+                    toast.info('📍 Đang xác thực vị trí ra (GPS)...', { id: 'auto-checkout-gps' })
 
                     const gpsResult = await attemptAutoCheckOut(gpsData.lat, gpsData.lng)
 
                     if (gpsResult.status === 'success') {
+                        toast.dismiss('auto-checkout-gps')
                         celebrate()
                         router.refresh()
+                    } else if (gpsResult.status === 'skipped' && gpsResult.reason?.startsWith('too_far')) {
+                        console.log('🤖 Auto-CheckOut: GPS location too far from office.')
+                        const dist = gpsResult.reason.split('|')[1] || 'không xác định'
+                        toast.warning(`Không thể tự động ra ca do vị trí lệch ${dist} so với Công ty`, {
+                            id: 'auto-checkout-gps',
+                            duration: 5000
+                        })
                     } else {
+                        toast.dismiss('auto-checkout-gps')
                         console.log('🤖 Auto-CheckOut: GPS result -', gpsResult.status, gpsResult.reason)
                     }
                 }

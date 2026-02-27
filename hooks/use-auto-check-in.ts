@@ -89,16 +89,23 @@ export function useAutoCheckIn(workSettings: any) {
                     }
 
                     console.log(`🤖 Auto-CheckIn: GPS ready, retrying with (${gpsData.lat}, ${gpsData.lng})...`)
-                    toast.info('📍 Đang xác thực vị trí (GPS)...')
+                    toast.info('📍 Đang xác thực vị trí (GPS)...', { id: 'auto-checkin-gps' })
 
                     const gpsResult = await attemptAutoCheckIn(gpsData.lat, gpsData.lng)
 
                     if (gpsResult.status === 'success') {
+                        toast.dismiss('auto-checkin-gps')
                         celebrate('check-in', 'gps')
                         router.refresh()
-                    } else if (gpsResult.status === 'skipped' && gpsResult.reason === 'too_far') {
+                    } else if (gpsResult.status === 'skipped' && gpsResult.reason?.startsWith('too_far')) {
                         console.log('🤖 Auto-CheckIn: GPS location too far from office.')
+                        const dist = gpsResult.reason.split('|')[1] || 'không xác định'
+                        toast.warning(`Không thể tự động vào ca do vị trí lệch ${dist} so với Công ty`, {
+                            id: 'auto-checkin-gps',
+                            duration: 5000
+                        })
                     } else {
+                        toast.dismiss('auto-checkin-gps')
                         console.log('🤖 Auto-CheckIn: GPS attempt result -', gpsResult.status, gpsResult.reason)
                     }
                 }

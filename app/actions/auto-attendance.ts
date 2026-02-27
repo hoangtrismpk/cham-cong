@@ -15,6 +15,16 @@ interface AutoCheckResult {
     error?: string
 }
 
+// Helper to get VN Time in Minutes explicitly
+function getVnTimeInMinutes(): number {
+    const vnTimeStr = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Ho_Chi_Minh',
+        hour: '2-digit', minute: '2-digit', hour12: false
+    }).format(new Date())
+    const [h, m] = vnTimeStr.split(':').map(Number)
+    return h * 60 + m
+}
+
 // ──────────────────────────────────────────────
 // attemptAutoCheckIn - Server-side consolidated
 // Replaces 6 waterfall client queries with 1 call
@@ -76,16 +86,15 @@ export async function attemptAutoCheckIn(
         // ─── 4. Find matching shift ───
         const remindMinutes = profile.clock_in_remind_minutes ?? 5
         let targetSchedule = null
+        const nowMins = getVnTimeInMinutes()
 
         for (const schedule of schedules) {
             if (!schedule.start_time) continue
 
-            const startTimeParts = schedule.start_time.split(':')
-            const shiftStart = new Date()
-            shiftStart.setHours(parseInt(startTimeParts[0]), parseInt(startTimeParts[1]), 0, 0)
+            const [startH, startM] = schedule.start_time.split(':').map(Number)
+            const shiftStartMins = startH * 60 + startM
 
-            const now = new Date()
-            const diffMins = (shiftStart.getTime() - now.getTime()) / 60000
+            const diffMins = shiftStartMins - nowMins
 
             // Within window: not too early AND up to 10 hours late
             if (diffMins <= remindMinutes && diffMins > -600) {
@@ -129,7 +138,7 @@ export async function attemptAutoCheckIn(
                 // No GPS provided yet, IP failed → tell client to retry with GPS
                 return { status: 'need_gps', reason: `ip_failed:${userIp}` }
             } else {
-                return { status: 'skipped', reason: 'location_invalid' }
+                return { status: 'skipped', reason: `too_far|${gpsDistance}` }
             }
         } else {
             if (isIpValid) {
@@ -140,7 +149,7 @@ export async function attemptAutoCheckIn(
                 // No GPS provided, IP failed → tell client to retry with GPS
                 return { status: 'need_gps', reason: `ip_failed:${userIp}` }
             } else {
-                return { status: 'skipped', reason: 'too_far' }
+                return { status: 'skipped', reason: `too_far|${gpsDistance.toFixed(1)}m` }
             }
         }
 
@@ -277,16 +286,14 @@ export async function attemptAutoCheckOut(
 
         // ─── 4. Find matching shift for checkout ───
         let shouldCheckOut = false
+        const nowMins = getVnTimeInMinutes()
 
         for (const schedule of schedules) {
             if (!schedule.end_time) continue
 
-            const endTimeParts = schedule.end_time.split(':')
-            const shiftEnd = new Date()
-            shiftEnd.setHours(parseInt(endTimeParts[0]), parseInt(endTimeParts[1]), 0, 0)
-
-            const now = new Date()
-            const diffMins = (now.getTime() - shiftEnd.getTime()) / 60000
+            const [endH, endM] = schedule.end_time.split(':').map(Number)
+            const shiftEndMins = endH * 60 + endM
+            const diffMins = nowMins - shiftEndMins
 
             if (remindMode === 'before') {
                 if (diffMins >= -remindMinutes && diffMins <= 480) {
@@ -334,7 +341,7 @@ export async function attemptAutoCheckOut(
             } else if (!isIpValid && !isGpsValid && gpsLatitude === undefined) {
                 return { status: 'need_gps', reason: `ip_failed:${userIp}` }
             } else {
-                return { status: 'skipped', reason: 'location_invalid' }
+                return { status: 'skipped', reason: `too_far|${gpsDistance}` }
             }
         } else {
             if (isIpValid) {
@@ -344,7 +351,7 @@ export async function attemptAutoCheckOut(
             } else if (gpsLatitude === undefined) {
                 return { status: 'need_gps', reason: `ip_failed:${userIp}` }
             } else {
-                return { status: 'skipped', reason: 'too_far' }
+                return { status: 'skipped', reason: `too_far|${gpsDistance.toFixed(1)}m` }
             }
         }
 
