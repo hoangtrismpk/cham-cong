@@ -70,7 +70,7 @@ export async function GET(request: Request) {
                     name,
                     display_name
                 ),
-                manager:profiles!manager_id (
+                manager:manager_id (
                     full_name
                 )
             `, { count: 'exact' });

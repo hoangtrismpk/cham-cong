@@ -182,7 +182,7 @@ export default function EmployeesClientPage() {
                     job: emp.job_title || 'N/A',
                     dept: emp.department || 'N/A',
                     role: (t.adminSettings.roleSettings as any).roleLabels?.[emp.roles?.name as string] || emp.roles?.display_name || 'Thành viên',
-                    manager: emp.manager ? emp.manager.full_name : 'N/A',
+                    manager: emp.manager ? (Array.isArray(emp.manager) ? emp.manager[0]?.full_name : emp.manager.full_name) || 'N/A' : 'N/A',
                     status: emp.status === 'active' ? 'Active' : 'Inactive',
                     dob: emp.dob || 'N/A',
                     gender: emp.gender === 'male' ? 'Nam' : (emp.gender === 'female' ? 'Nữ' : 'Khác'),
