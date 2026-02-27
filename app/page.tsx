@@ -14,8 +14,8 @@ import { DashboardLayout } from '@/components/dashboard-layout'
 import { DashboardHeader, LocationBadge } from '@/components/dashboard-header'
 import { HomeMobileHeader } from '@/components/home-mobile-header'
 import { LocalNotificationsSetup } from '@/components/local-notifications-setup'
-import { AutoCheckInSetup } from '@/components/auto-check-in-setup'
-import { AutoCheckOutSetup } from '@/components/auto-check-out-setup'
+import { AutoAttendanceHandler } from '@/components/auto-attendance-handler'
+import { ssrAutoAttendance } from '@/app/actions/auto-attendance-ssr'
 
 
 export const dynamic = 'force-dynamic'
@@ -39,7 +39,7 @@ export default async function DashboardPage() {
   const dateStr = format(today, 'EEEE, MMM d, yyyy', { locale: dateLocale })
 
   // Fetch ALL data in parallel (Promise.all) instead of sequential awaits
-  // This reduces load time from ~1.2s to ~400ms (only waits for the slowest query)
+  // SSR Auto Attendance runs IN PARALLEL - no extra latency!
   const [
     todayLog,
     history,
@@ -47,7 +47,8 @@ export default async function DashboardPage() {
     monthlyStats,
     todayShift,
     workSettings,
-    profileSettingsResult
+    profileSettingsResult,
+    ssrAutoResult
   ] = await Promise.all([
     getTodayStatus(),
     getAttendanceHistory(),
@@ -59,7 +60,8 @@ export default async function DashboardPage() {
       .from('profiles')
       .select('clock_in_remind_minutes, require_password_change')
       .eq('id', user.id)
-      .single()
+      .single(),
+    ssrAutoAttendance()
   ])
 
   const profileSettings = profileSettingsResult.data
@@ -70,9 +72,12 @@ export default async function DashboardPage() {
 
   const clockInRemindMinutes = profileSettings?.clock_in_remind_minutes ?? 5
 
-  // Multi-session Logic
-  const isCheckedIn = !!todayLog?.check_in_time && !todayLog?.check_out_time
-  const isCheckedOut = !!todayLog?.check_out_time
+  // Multi-session Logic — account for SSR auto result
+  const ssrJustCheckedIn = ssrAutoResult.action === 'checked_in'
+  const ssrJustCheckedOut = ssrAutoResult.action === 'checked_out'
+
+  const isCheckedIn = ssrJustCheckedIn || (!!todayLog?.check_in_time && !todayLog?.check_out_time)
+  const isCheckedOut = ssrJustCheckedOut || !!todayLog?.check_out_time
 
   return (
     <DashboardLayout user={user}>
@@ -118,8 +123,10 @@ export default async function DashboardPage() {
 
       {/* Setup local notifications (invisible component) */}
       <LocalNotificationsSetup />
-      <AutoCheckInSetup workSettings={workSettings} />
-      <AutoCheckOutSetup workSettings={workSettings} />
+
+      {/* Unified Auto Attendance: SSR result → Client animation/GPS fallback */}
+      <AutoAttendanceHandler ssrResult={ssrAutoResult} />
     </DashboardLayout>
   )
 }
+
