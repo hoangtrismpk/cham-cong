@@ -35,10 +35,24 @@ messaging.onBackgroundMessage((payload: any) => {
 
     const data = payload.data || {};
     const notificationTitle = data.title || 'Thông báo mới';
-    const notificationOptions = {
+
+    // Determine image URL: use data.image if provided, otherwise fallback to clockin.jpg for shift-type notifications
+    const isShiftNotif = ['clock_in_reminder', 'clock_out_reminder', 'shift_reminder', 'attendance'].includes(data.type || '');
+    const imageUrl = data.image || (isShiftNotif ? `${self.location.origin}/clockin.jpg` : undefined);
+
+    const notificationOptions: NotificationOptions = {
         body: data.body || 'Bạn có thông báo mới!',
         icon: '/iconapp.png',
         badge: '/iconapp.png',
+        image: imageUrl,
+        // Action buttons — visible on Chrome Android
+        // @ts-ignore actions is valid in Web Push notifications
+        actions: isShiftNotif
+            ? [
+                { action: 'checkin', title: '✅ Chấm Công' },
+                { action: 'dismiss', title: '❌ Bỏ qua' }
+            ]
+            : [],
         data: {
             url: data.url || '/',
             campaignId: data.campaignId || '',
@@ -50,13 +64,20 @@ messaging.onBackgroundMessage((payload: any) => {
     self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
-// Handle notification click 
+// Handle notification click (including action button clicks)
 self.addEventListener('notificationclick', (event: any) => {
-    console.log('[serwist-sw] Notification clicked', event);
+    console.log('[serwist-sw] Notification clicked', event, 'action:', event.action);
     event.notification.close();
 
+    // If user clicked 'dismiss' action button → do nothing
+    if (event.action === 'dismiss') return;
+
     const notificationData = event.notification.data || {};
-    let urlToOpen = notificationData.url || '/';
+
+    // If 'checkin' action → open attendance page directly
+    let urlToOpen = event.action === 'checkin'
+        ? `${self.location.origin}/attendance`
+        : (notificationData.url || '/');
 
     try {
         urlToOpen = new URL(urlToOpen, self.location.origin).href;

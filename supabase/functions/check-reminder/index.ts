@@ -190,15 +190,23 @@ Deno.serve(async (req) => {
             if (exists) continue;
 
             const isIn = target.type === 'clock_in';
+            // Determine the Supabase project URL to build an absolute image URL
+            const supabaseUrl = Deno.env.get('NEXT_PUBLIC_SUPABASE_URL') || Deno.env.get('SUPABASE_URL') || '';
+            // Extract app origin from NEXT_PUBLIC_SITE_URL env or derive from Supabase URL
+            const appOrigin = Deno.env.get('NEXT_PUBLIC_SITE_URL') || 'https://cham-cong-fhb.vercel.app';
+
             const message = {
                 data: {
                     title: isIn ? '⏰ Sắp đến giờ làm việc!' : '🏠 Hết giờ làm việc rồi!',
                     body: isIn
                         ? `Ca "${target.title}" ngày ${viewDate} bắt đầu lúc ${target.time}. Đừng quên chấm công vào nhé!`
                         : `Ca "${target.title}" ngày ${viewDate} kết thúc lúc ${target.time}. Đừng quên chấm công ra trước khi về nhé!`,
-                    url: '/',
-                    type: `shift_reminder_${target.type}`,
-                    shiftId: target.shiftId || ''
+                    url: '/attendance',
+                    // type tells the Service Worker to show rich notification (image + action buttons)
+                    type: isIn ? 'clock_in_reminder' : 'clock_out_reminder',
+                    shiftId: target.shiftId || '',
+                    // Banner image — hosted in /public, accessible via app origin
+                    image: `${appOrigin}/clockin.jpg`
                 },
                 tokens: target.tokens,
             };

@@ -8,13 +8,15 @@ interface Payload {
     userIds?: string[];
     role?: string;
     departmentId?: string;
-    targetType?: 'all' | 'role' | 'department' | 'specific_users'; // New field
+    targetType?: 'all' | 'role' | 'department' | 'specific_users';
     title: string;
     body: string;
     link?: string;
+    image?: string;        // Banner image URL (optional, auto-set for shift notifications)
+    notifType?: string;    // e.g. 'clock_in_reminder' | 'clock_out_reminder' | 'attendance'
     campaignId?: string;
-    saveToDb?: boolean; // Save to 'notifications' table?
-    type?: 'info' | 'success' | 'warning' | 'error'; // For 'notifications' table
+    saveToDb?: boolean;
+    type?: 'info' | 'success' | 'warning' | 'error';
 }
 
 Deno.serve(async (req) => {
@@ -56,7 +58,7 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400 });
     }
 
-    const { userIds, role, departmentId, targetType, title, body, link, campaignId, saveToDb = true, type = 'info' } = payload;
+    const { userIds, role, departmentId, targetType, title, body, link, image, notifType, campaignId, saveToDb = true, type = 'info' } = payload;
     const logs: string[] = [];
     const log = (msg: string) => {
         console.log(`${LOG_PREFIX} ${msg}`);
@@ -162,7 +164,9 @@ Deno.serve(async (req) => {
                             body: String(body),
                             url: String(link || '/'),
                             campaignId: String(campaignId || ''),
-                            type: 'campaign_msg'
+                            type: String(notifType || 'campaign_msg'),
+                            // Include image URL so SW can render the banner
+                            image: String(image || '')
                         },
                         tokens: tokens
                     };
