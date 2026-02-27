@@ -12,27 +12,30 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Handle background messages
-// Handle background messages
+// Handle background messages (all messages are data-only now)
 messaging.onBackgroundMessage((payload) => {
     console.log('[firebase-messaging-sw.js] Received background message ', payload);
 
-    // If the payload already has 'notification', Firebase's internal SDK will automatically show it.
-    // We only need to manually show it if it's a data-only message.
-    if (!payload.notification) {
-        const notificationTitle = `[FHB] ${payload.data?.title || 'Nhắc nhở Chấm công'}`;
-        const notificationOptions = {
-            body: payload.data?.body || 'Bạn có thông báo mới!',
-            icon: '/iconapp.png',
-            badge: '/iconapp.png',
-            data: payload.data || { url: '/' }
-        };
+    // Always show notification manually from data payload
+    const data = payload.data || {};
+    const notificationTitle = data.title || 'Thông báo mới';
+    const notificationOptions = {
+        body: data.body || 'Bạn có thông báo mới!',
+        icon: '/iconapp.png',
+        badge: '/iconapp.png',
+        // IMPORTANT: Store url in data so notificationclick handler can read it
+        data: {
+            url: data.url || '/',
+            campaignId: data.campaignId || '',
+            shiftId: data.shiftId || '',
+            type: data.type || 'general'
+        }
+    };
 
-        self.registration.showNotification(notificationTitle, notificationOptions);
-    }
+    self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
-// Also handle notification click
+// Handle notification click - opens the link from data.url
 self.addEventListener('notificationclick', (event) => {
     console.log('Notification clicked', event);
     event.notification.close();
@@ -70,7 +73,7 @@ self.addEventListener('notificationclick', (event) => {
                 body: JSON.stringify({
                     shiftId: event.notification.data?.shiftId,
                     campaignId: event.notification.data?.campaignId,
-                    type: 'server_push'
+                    type: event.notification.data?.type || 'server_push'
                 })
             }).catch(e => console.error('Tracking error:', e))
         ])

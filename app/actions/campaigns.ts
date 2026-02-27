@@ -78,8 +78,8 @@ export async function createReviewCampaign(formData: FormData) {
         targetValueJson = targetValue
     }
 
-    // If scheduled_at is provided, status is 'scheduled'
-    const status = scheduledAt ? 'scheduled' : 'draft'
+    // If scheduled_at is provided, status is 'scheduled'; otherwise 'pending' (ready to send now)
+    const status = scheduledAt ? 'scheduled' : 'pending'
 
     const { data, error } = await supabase.from('notification_campaigns').insert({
         title,
@@ -109,6 +109,11 @@ export async function sendCampaign(campaignId: string) {
 
     if (!campaign) return { error: 'Campaign not found' }
 
+    // 2. Update status to processing immediately
+    await supabase.from('notification_campaigns')
+        .update({ status: 'processing' })
+        .eq('id', campaignId)
+
     const payload: any = {
         title: campaign.title,
         body: campaign.message,
@@ -118,7 +123,7 @@ export async function sendCampaign(campaignId: string) {
         targetType: campaign.target_type
     }
 
-    // 2. Configure Payload based on Type
+    // 3. Configure Payload based on Type
     if (campaign.target_type === 'all') {
         // payload.targetType = 'all' is sufficient
     } else if (campaign.target_type === 'role') {
@@ -129,12 +134,12 @@ export async function sendCampaign(campaignId: string) {
         payload.userIds = campaign.target_value
     }
 
-    // 3. Call Edge Function
+    // 4. Call Edge Function (fire and don't wait - dispatcher will update campaign status)
     try {
         const functionUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/notify-dispatcher`
         const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-        await fetch(functionUrl, {
+        const response = await fetch(functionUrl, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${serviceKey}`,
@@ -143,8 +148,21 @@ export async function sendCampaign(campaignId: string) {
             body: JSON.stringify(payload)
         })
 
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}))
+            // Mark campaign as failed
+            await supabase.from('notification_campaigns')
+                .update({ status: 'failed', metadata: { error: errData?.error || `HTTP ${response.status}` } })
+                .eq('id', campaignId)
+            return { error: errData?.error || `Dispatcher returned ${response.status}` }
+        }
+
         return { success: true }
     } catch (e: any) {
+        // Mark campaign as failed on network error
+        await supabase.from('notification_campaigns')
+            .update({ status: 'failed', metadata: { error: e.message } })
+            .eq('id', campaignId)
         return { error: e.message }
     }
 }

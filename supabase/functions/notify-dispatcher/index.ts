@@ -149,12 +149,13 @@ Deno.serve(async (req) => {
             const tokens = tokensMap[userId];
             if (tokens && tokens.length > 0) {
                 try {
+                    // Use DATA-ONLY message (no 'notification' field)
+                    // This ensures our Service Worker controls the display
+                    // and can properly attach URL data for click handling
                     const message = {
-                        notification: {
-                            title,
-                            body,
-                        },
                         data: {
+                            title: title,
+                            body: body,
                             url: link || '/',
                             campaignId: campaignId || '',
                             type: 'campaign_msg'

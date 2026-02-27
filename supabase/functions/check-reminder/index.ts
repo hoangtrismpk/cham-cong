@@ -191,13 +191,15 @@ Deno.serve(async (req) => {
 
             const isIn = target.type === 'clock_in';
             const message = {
-                notification: {
+                data: {
                     title: isIn ? '⏰ Sắp đến giờ làm việc!' : '🏠 Hết giờ làm việc rồi!',
                     body: isIn
                         ? `Ca "${target.title}" ngày ${viewDate} bắt đầu lúc ${target.time}. Đừng quên chấm công vào nhé!`
                         : `Ca "${target.title}" ngày ${viewDate} kết thúc lúc ${target.time}. Đừng quên chấm công ra trước khi về nhé!`,
+                    url: '/',
+                    type: `shift_reminder_${target.type}`,
+                    shiftId: target.shiftId || ''
                 },
-                data: { url: '/', type: `shift_reminder_${target.type}` },
                 tokens: target.tokens,
             };
 

@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect } from 'react'
-import { messaging, VAPID_KEY, getToken, onMessage } from '@/utils/firebase'
 import { createClient } from '@/utils/supabase/client'
 import { toast } from 'sonner'
 
@@ -31,10 +30,23 @@ export function FCMManager() {
         });
 
         if (error) {
-            console.error('Error saving FCM token:', error.message, error.details, error.hint);
-            toast.error(`Lỗi lưu Token: ${error.message}`);
+            console.error('[FCMManager] Error saving FCM token:', error.message);
+            // Fallback: try direct upsert if RPC fails
+            const { error: fallbackErr } = await supabase.from('fcm_tokens')
+                .upsert({
+                    user_id: user.id,
+                    token: token,
+                    device_type: getDeviceType(),
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'token' })
+
+            if (fallbackErr) {
+                console.error('[FCMManager] Fallback upsert also failed:', fallbackErr.message);
+            } else {
+                console.log('[FCMManager] FCM token saved via fallback for user:', user.id, '| device:', getDeviceType());
+            }
         } else {
-            console.log('FCM token saved successfully for user:', user.id);
+            console.log('[FCMManager] FCM token saved for user:', user.id, '| device:', getDeviceType());
         }
     };
 
@@ -43,7 +55,7 @@ export function FCMManager() {
             try {
                 // 0. Check if browser supports notifications
                 if (!('Notification' in window)) {
-                    console.log('This browser does not support desktop notification');
+                    console.log('[FCMManager] This browser does not support notifications');
                     return;
                 }
 
@@ -68,7 +80,7 @@ export function FCMManager() {
                 let permission = Notification.permission;
 
                 if (permission === 'denied') {
-                    console.log('Notification permission denied');
+                    console.log('[FCMManager] Notification permission denied');
                     return;
                 }
 
@@ -77,47 +89,58 @@ export function FCMManager() {
                 }
 
                 if (permission !== 'granted') {
-                    console.log('Notification permission not granted after request');
+                    console.log('[FCMManager] Notification permission not granted');
                     return;
                 }
 
-                // 3. Get Token & Listen
+                // 3. Dynamically import Firebase (avoid blocking main thread, especially on mobile)
                 try {
+                    const { messaging, VAPID_KEY, getToken, onMessage } = await import('@/utils/firebase')
                     const msg = await messaging();
                     if (!msg) {
-                        console.log('Firebase Messaging not supported');
+                        console.log('[FCMManager] Firebase Messaging not supported');
                         return;
                     }
 
-                    // Foreground listener
+                    // Foreground listener (data-only messages)
                     onMessage(msg, (payload) => {
-                        console.log('Foreground message received:', payload);
-                        toast(payload.notification?.title || 'Thông báo', {
-                            description: payload.notification?.body,
-                            duration: 5000,
+                        console.log('[FCMManager] Foreground message received:', payload);
+                        // Read from data field (data-only payloads)
+                        const data = payload.data || {};
+                        const title = data.title || payload.notification?.title || 'Thông báo';
+                        const body = data.body || payload.notification?.body || '';
+                        const url = data.url || '/';
+
+                        toast(title, {
+                            description: body,
+                            duration: 8000,
+                            action: url && url !== '/' ? {
+                                label: 'Xem',
+                                onClick: () => window.location.href = url
+                            } : undefined
                         });
                     });
 
                     const currentToken = await getToken(msg, { vapidKey: VAPID_KEY });
 
                     if (currentToken) {
-                        console.log('FCM Token:', currentToken);
+                        console.log('[FCMManager] FCM Token obtained, device:', getDeviceType());
                         await saveTokenToDatabase(currentToken);
                     } else {
-                        console.log('No registration token available. Request permission to generate one.');
+                        console.log('[FCMManager] No FCM token available');
                     }
                 } catch (err) {
-                    console.log('An error occurred while retrieving token. ', err);
+                    console.warn('[FCMManager] Firebase init error:', err);
                 }
             } catch (err) {
-                console.warn('⚠️ [FCMManager] Setup failed:', err);
+                console.warn('[FCMManager] Setup failed:', err);
             }
         };
 
-        setupFCM();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // Delay setup slightly to not block initial page render
+        const timer = setTimeout(setupFCM, 2000);
+        return () => clearTimeout(timer);
     }, []);
 
     return null; // This component renders nothing
 }
-
