@@ -561,10 +561,10 @@ export function SettingsClient({ user }: SettingsClientProps) {
                                 <span className="material-symbols-outlined text-white">arrow_back</span>
                             </button>
                             <h2 className="text-lg font-bold text-white flex-1 truncate">
-                                {activeTabMobile === 'general-mobile' && t.settings?.tabs?.general || 'Hồ sơ cá nhân'}
-                                {activeTabMobile === 'security-mobile' && 'Bảo mật'}
-                                {activeTabMobile === 'notifications-mobile' && 'Cài đặt thông báo'}
-                                {activeTabMobile === 'preferences-mobile' && 'Cài đặt chung'}
+                                {activeTabMobile === 'general-mobile' ? (t.settings?.tabs?.general || 'Hồ sơ cá nhân') : null}
+                                {activeTabMobile === 'security-mobile' ? 'Bảo mật' : null}
+                                {activeTabMobile === 'notifications-mobile' ? 'Cài đặt thông báo' : null}
+                                {activeTabMobile === 'preferences-mobile' ? 'Cài đặt chung' : null}
                             </h2>
                             {(activeTabMobile === 'general-mobile' || activeTabMobile === 'security-mobile') && (
                                 <button onClick={() => { handleSave(); setActiveTabMobile('none'); }} className="text-primary font-bold text-sm px-3 py-1.5 bg-primary/10 rounded-lg active:scale-95 transition-transform">

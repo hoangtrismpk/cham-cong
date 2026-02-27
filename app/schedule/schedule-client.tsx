@@ -14,6 +14,8 @@ import { toast } from 'sonner'
 import { NotificationBell } from '@/components/notification-bell'
 import { MobileHeader } from '@/components/mobile-header'
 
+const formatHM = (t?: string | null) => t && t.length >= 5 ? t.slice(0, 5) : (t || '')
+
 
 interface ScheduleClientProps {
     user: any
@@ -43,8 +45,8 @@ export function ScheduleClient({ user, departmentCount, workSettings }: Schedule
     // Leave Request Modal State
     const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false)
     const [leaveDate, setLeaveDate] = useState<Date | undefined>(new Date())
-    const [leaveStartTime, setLeaveStartTime] = useState(workSettings.work_start_time)
-    const [leaveEndTime, setLeaveEndTime] = useState(workSettings.work_end_time)
+    const [leaveStartTime, setLeaveStartTime] = useState(formatHM(workSettings.work_start_time))
+    const [leaveEndTime, setLeaveEndTime] = useState(formatHM(workSettings.work_end_time))
     const [leaveHours, setLeaveHours] = useState(0)
     const [leaveType, setLeaveType] = useState('Nghỉ phép năm')
     const [timeError, setTimeError] = useState('')
@@ -55,8 +57,8 @@ export function ScheduleClient({ user, departmentCount, workSettings }: Schedule
 
     // Form states
     const [shiftType, setShiftType] = useState('full_day')
-    const [startTime, setStartTime] = useState(workSettings.work_start_time)
-    const [endTime, setEndTime] = useState(workSettings.work_end_time)
+    const [startTime, setStartTime] = useState(formatHM(workSettings.work_start_time))
+    const [endTime, setEndTime] = useState(formatHM(workSettings.work_end_time))
     const [location, setLocation] = useState(workSettings.company_name)
 
     const dateLocale = locale === 'vi' ? vi : undefined
@@ -240,6 +242,9 @@ export function ScheduleClient({ user, departmentCount, workSettings }: Schedule
                 if (Array.isArray(dayEvents)) {
                     mappedShifts[key] = dayEvents.map(s => ({
                         ...s,
+                        start_time: formatHM(s.start_time),
+                        end_time: formatHM(s.end_time),
+                        time: s.time ? s.time.split(' - ').map(formatHM).join(' - ') : '',
                         colorClass: s.colorClass || getShiftColor(s.type || s.shift_type),
                         members: s.members_count || departmentCount
                     }))
@@ -304,7 +309,9 @@ export function ScheduleClient({ user, departmentCount, workSettings }: Schedule
             const newShift = {
                 ...savedShift,
                 type: savedShift.shift_type,
-                time: `${savedShift.start_time} - ${savedShift.end_time}`,
+                time: `${formatHM(savedShift.start_time)} - ${formatHM(savedShift.end_time)}`,
+                start_time: formatHM(savedShift.start_time),
+                end_time: formatHM(savedShift.end_time),
                 colorClass: baseColor,
                 members: departmentCount,
                 source: 'schedule',
@@ -385,14 +392,14 @@ export function ScheduleClient({ user, departmentCount, workSettings }: Schedule
     const handleShiftTypeChange = (type: string) => {
         setShiftType(type)
         if (type === 'full_day') {
-            setStartTime(workSettings.work_start_time)
-            setEndTime(workSettings.work_end_time)
+            setStartTime(formatHM(workSettings.work_start_time))
+            setEndTime(formatHM(workSettings.work_end_time))
         } else if (type === 'morning') {
-            setStartTime(workSettings.work_start_time)
-            setEndTime(workSettings.lunch_start_time)
+            setStartTime(formatHM(workSettings.work_start_time))
+            setEndTime(formatHM(workSettings.lunch_start_time))
         } else if (type === 'afternoon') {
-            setStartTime(workSettings.lunch_end_time)
-            setEndTime(workSettings.work_end_time)
+            setStartTime(formatHM(workSettings.lunch_end_time))
+            setEndTime(formatHM(workSettings.work_end_time))
         }
     }
 
@@ -428,18 +435,18 @@ export function ScheduleClient({ user, departmentCount, workSettings }: Schedule
 
             if (existing.time && existing.time.includes(' - ')) {
                 const [s, e] = existing.time.split(' - ')
-                setStartTime(s || workSettings.work_start_time)
-                setEndTime(e || workSettings.work_end_time)
+                setStartTime(formatHM(s || workSettings.work_start_time))
+                setEndTime(formatHM(e || workSettings.work_end_time))
             } else {
-                setStartTime(existing.start_time || workSettings.work_start_time)
-                setEndTime(existing.end_time || workSettings.work_end_time)
+                setStartTime(formatHM(existing.start_time || workSettings.work_start_time))
+                setEndTime(formatHM(existing.end_time || workSettings.work_end_time))
             }
             setLocation(existing.location || workSettings.company_name)
         } else {
             // New Mode
             setShiftType('full_day')
-            setStartTime(workSettings.work_start_time)
-            setEndTime(workSettings.work_end_time)
+            setStartTime(formatHM(workSettings.work_start_time))
+            setEndTime(formatHM(workSettings.work_end_time))
             setLocation(workSettings.company_name)
         }
 
@@ -691,7 +698,7 @@ export function ScheduleClient({ user, departmentCount, workSettings }: Schedule
                                                 <div className={`flex flex-col items-center justify-center rounded-2xl border w-[5.5rem] h-[5.5rem] shrink-0 shadow-inner ${isLeave ? 'bg-rose-500/10 border-rose-500/20' : 'bg-[#0d0e10] border-white/5'}`}>
                                                     <span className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isLeave ? 'text-rose-500/50' : 'text-cyan-500/50'}`}>{isLeave ? 'NGHỈ' : 'BẮT ĐẦU'}</span>
                                                     <span className={`text-2xl font-black tracking-tighter ${isLeave ? 'text-rose-400' : 'text-cyan-400'}`}>
-                                                        {selectedShift.start_time || workSettings.work_start_time}
+                                                        {formatHM(selectedShift.start_time || workSettings.work_start_time)}
                                                     </span>
                                                 </div>
 
@@ -744,7 +751,7 @@ export function ScheduleClient({ user, departmentCount, workSettings }: Schedule
                                             <div className="mt-5 pt-4 border-t border-white/5 flex items-center justify-between">
                                                 <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wide">
                                                     <span className="material-symbols-outlined text-[16px]">timer_off</span>
-                                                    <span className="italic">KẾT THÚC: <span className="text-slate-300">{selectedShift.end_time || workSettings.work_end_time}</span></span>
+                                                    <span className="italic">KẾT THÚC: <span className="text-slate-300">{formatHM(selectedShift.end_time || workSettings.work_end_time)}</span></span>
                                                 </div>
                                                 {!isLeave && (
                                                     <div className="flex items-center gap-2 text-xs font-black text-cyan-400 uppercase tracking-widest">
