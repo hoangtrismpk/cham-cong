@@ -95,13 +95,18 @@ export function useLocalNotifications() {
                                         } catch (err) { }
                                     } else {
                                         try {
-                                            new Notification('⏰ Sắp đến giờ làm việc!', {
+                                            const n = new Notification('⏰ Sắp đến giờ làm việc!', {
                                                 body: `Ca làm "${schedule.title || 'của bạn'}" ngày ${dateDisplay} bắt đầu lúc ${schedule.start_time}. Hãy vào app chấm công!`,
                                                 icon: '/iconapp.png',
                                                 tag: `shift-in-${schedule.id}`,
                                                 requireInteraction: true,
-                                                data: { shiftId: schedule.id, type: 'clock_in_reminder' }
+                                                data: { shiftId: schedule.id, type: 'clock_in_reminder', url: '/' }
                                             })
+                                            n.onclick = function () {
+                                                window.focus()
+                                                window.location.href = '/'
+                                                this.close()
+                                            }
                                         } catch (err) { }
                                     }
 
@@ -148,13 +153,18 @@ export function useLocalNotifications() {
                                         } catch (err) { }
                                     } else {
                                         try {
-                                            new Notification('🏠 Hết giờ làm việc rồi!', {
+                                            const n = new Notification('🏠 Hết giờ làm việc rồi!', {
                                                 body: `Ca làm "${schedule.title || 'của bạn'}" đã kết thúc lúc ${schedule.end_time}. Chấm công ra ngay nhé!`,
                                                 icon: '/iconapp.png',
                                                 tag: `shift-out-${schedule.id}`,
                                                 requireInteraction: true,
-                                                data: { shiftId: schedule.id, type: 'clock_out_reminder' }
+                                                data: { shiftId: schedule.id, type: 'clock_out_reminder', url: '/' }
                                             })
+                                            n.onclick = function () {
+                                                window.focus()
+                                                window.location.href = '/'
+                                                this.close()
+                                            }
                                         } catch (err) { }
                                     }
 
