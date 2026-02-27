@@ -1060,106 +1060,99 @@ export function ScheduleClient({ user, departmentCount, workSettings }: Schedule
                 </button>
             </div>
 
-            {/* Work Info Popup */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-background/80 backdrop-blur-md" onClick={() => setIsModalOpen(false)}></div>
-                    <div className="bg-card w-full max-w-lg rounded-[2.5rem] border border-border shadow-2xl relative z-10 overflow-hidden neon-border animate-in fade-in zoom-in duration-300">
-                        <div className="p-8">
-                            <div className="flex items-center justify-between mb-8">
-                                <div className="space-y-1">
-                                    <h3 className="text-2xl font-black text-white">{t.schedule.addWorkInfo}</h3>
-                                    <p className="text-primary font-bold uppercase tracking-widest text-xs" suppressHydrationWarning>
-                                        {modalDate && format(modalDate, 'EEEE, dd MMMM yyyy', { locale: dateLocale })}
-                                    </p>
-                                </div>
-                                <button onClick={() => setIsModalOpen(false)} className="size-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
-                                    <span className="material-symbols-outlined">close</span>
-                                </button>
-                            </div>
+            {/* Work Info Popup - Bottom Sheet on Mobile, Modal on Desktop */}
+            <ResponsiveModal open={isModalOpen} onOpenChange={setIsModalOpen}>
+                <div className="flex items-center justify-between mb-6 md:mb-8">
+                    <div className="space-y-1">
+                        <h3 className="text-xl md:text-2xl font-black text-white">{t.schedule.addWorkInfo}</h3>
+                        <p className="text-primary font-bold uppercase tracking-widest text-xs" suppressHydrationWarning>
+                            {modalDate && format(modalDate, 'EEEE, dd MMMM yyyy', { locale: dateLocale })}
+                        </p>
+                    </div>
+                    <button onClick={() => setIsModalOpen(false)} className="size-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+                        <span className="material-symbols-outlined">close</span>
+                    </button>
+                </div>
 
-                            <form className="space-y-6" onSubmit={handleSave}>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.schedule.shiftName}</label>
-                                    <div className="relative">
-                                        <select
-                                            value={shiftType}
-                                            onChange={(e) => handleShiftTypeChange(e.target.value)}
-                                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-primary/50 transition-all font-bold appearance-none cursor-pointer"
-                                        >
-                                            <option value="full_day" className="bg-slate-900">{t.schedule.fullDay}</option>
-                                            <option value="morning" className="bg-slate-900">{t.schedule.morningShift}</option>
-                                            <option value="afternoon" className="bg-slate-900">{t.schedule.afternoonShift}</option>
-                                            <option value="custom" className="bg-slate-900">{t.schedule.custom}</option>
-                                        </select>
-                                        <span className="material-symbols-outlined absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">expand_more</span>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.schedule.startTime}</label>
-                                        <input
-                                            type="time"
-                                            value={startTime}
-                                            onChange={(e) => setStartTime(e.target.value)}
-                                            disabled={shiftType !== 'custom'}
-                                            className={`w-full bg-white/5 border border-white/10 rounded-2xl px-3 py-4 text-white text-sm md:text-base focus:outline-none focus:border-primary/50 transition-all font-bold [&::-webkit-calendar-picker-indicator]:hidden ${shiftType !== 'custom' ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.schedule.endTime}</label>
-                                        <input
-                                            type="time"
-                                            value={endTime}
-                                            onChange={(e) => setEndTime(e.target.value)}
-                                            disabled={shiftType !== 'custom'}
-                                            className={`w-full bg-white/5 border border-white/10 rounded-2xl px-3 py-4 text-white text-sm md:text-base focus:outline-none focus:border-primary/50 transition-all font-bold [&::-webkit-calendar-picker-indicator]:hidden ${shiftType !== 'custom' ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.schedule.location}</label>
-                                    <div className="relative">
-                                        <span className="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-primary/60">location_on</span>
-                                        <input
-                                            type="text"
-                                            value={location}
-                                            onChange={(e) => setLocation(e.target.value)}
-                                            className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-white focus:outline-none focus:border-primary/50 transition-all font-bold placeholder:text-slate-700"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-3 pt-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsModalOpen(false)}
-                                        className="flex-1 px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-slate-400 font-black uppercase tracking-widest text-xs hover:bg-white/10 transition-all"
-                                    >
-                                        {t.schedule.cancel}
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={isSavingShift}
-                                        className="flex-[2] px-8 py-4 rounded-2xl bg-primary text-black font-black uppercase tracking-widest text-xs shadow-lg shadow-primary/20 hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                                    >
-                                        {isSavingShift ? (
-                                            <>
-                                                <span className="size-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></span>
-                                                ĐANG XỬ LÝ...
-                                            </>
-                                        ) : (
-                                            'LƯU'
-                                        )}
-                                    </button>
-                                </div>
-                            </form>
+                <form className="space-y-5 md:space-y-6" onSubmit={handleSave}>
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.schedule.shiftName}</label>
+                        <div className="relative">
+                            <select
+                                value={shiftType}
+                                onChange={(e) => handleShiftTypeChange(e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 md:py-4 text-white focus:outline-none focus:border-primary/50 transition-all font-bold appearance-none cursor-pointer"
+                            >
+                                <option value="full_day" className="bg-slate-900">{t.schedule.fullDay}</option>
+                                <option value="morning" className="bg-slate-900">{t.schedule.morningShift}</option>
+                                <option value="afternoon" className="bg-slate-900">{t.schedule.afternoonShift}</option>
+                                <option value="custom" className="bg-slate-900">{t.schedule.custom}</option>
+                            </select>
+                            <span className="material-symbols-outlined absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">expand_more</span>
                         </div>
                     </div>
-                </div>
-            )}
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.schedule.startTime}</label>
+                            <input
+                                type="time"
+                                value={startTime}
+                                onChange={(e) => setStartTime(e.target.value)}
+                                disabled={shiftType !== 'custom'}
+                                className={`w-full bg-white/5 border border-white/10 rounded-2xl px-3 py-3.5 md:py-4 text-white text-sm md:text-base focus:outline-none focus:border-primary/50 transition-all font-bold [&::-webkit-calendar-picker-indicator]:hidden ${shiftType !== 'custom' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.schedule.endTime}</label>
+                            <input
+                                type="time"
+                                value={endTime}
+                                onChange={(e) => setEndTime(e.target.value)}
+                                disabled={shiftType !== 'custom'}
+                                className={`w-full bg-white/5 border border-white/10 rounded-2xl px-3 py-3.5 md:py-4 text-white text-sm md:text-base focus:outline-none focus:border-primary/50 transition-all font-bold [&::-webkit-calendar-picker-indicator]:hidden ${shiftType !== 'custom' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.schedule.location}</label>
+                        <div className="relative">
+                            <span className="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-primary/60">location_on</span>
+                            <input
+                                type="text"
+                                value={location}
+                                onChange={(e) => setLocation(e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-5 py-3.5 md:py-4 text-white focus:outline-none focus:border-primary/50 transition-all font-bold placeholder:text-slate-700"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-2 md:pt-4">
+                        <button
+                            type="button"
+                            onClick={() => setIsModalOpen(false)}
+                            className="flex-1 px-6 md:px-8 py-3.5 md:py-4 rounded-2xl bg-white/5 border border-white/10 text-slate-400 font-black uppercase tracking-widest text-xs hover:bg-white/10 transition-all"
+                        >
+                            {t.schedule.cancel}
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={isSavingShift}
+                            className="flex-[2] px-6 md:px-8 py-3.5 md:py-4 rounded-2xl bg-primary text-black font-black uppercase tracking-widest text-xs shadow-lg shadow-primary/20 hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                        >
+                            {isSavingShift ? (
+                                <>
+                                    <span className="size-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></span>
+                                    ĐANG XỬ LÝ...
+                                </>
+                            ) : (
+                                'LƯU'
+                            )}
+                        </button>
+                    </div>
+                </form>
+            </ResponsiveModal>
 
             {/* Leave Request Popup - Bottom Sheet on Mobile, Modal on Desktop */}
             <ResponsiveModal open={isLeaveModalOpen} onOpenChange={setIsLeaveModalOpen}>
