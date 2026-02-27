@@ -30,9 +30,35 @@ export const viewport: Viewport = {
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getWorkSettings()
+  const title = settings?.company_name || 'Chấm Công FHB Vietnam'
+  const description = 'Hệ thống Quản lý Nhân sự thông minh và Chấm công tự động'
+
   return {
-    title: settings?.company_name || 'Chấm Công FHB Vietnam',
-    description: 'Smart Human Resource Management',
+    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://chamcong.fhbvietnam.com'),
+    title: {
+      default: title,
+      template: `%s | ${title}`,
+    },
+    description: description,
+    keywords: ['chấm công', 'quản lý nhân sự', 'nhân sự', 'HR system', 'attendance', 'FHB Vietnam'],
+    authors: [{ name: 'FHB Vietnam' }],
+    openGraph: {
+      type: 'website',
+      locale: 'vi_VN',
+      url: '/',
+      title: title,
+      description: description,
+      siteName: title,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: title,
+      description: description,
+    },
+    robots: {
+      index: true,
+      follow: true,
+    }
   }
 }
 
@@ -81,6 +107,25 @@ export default async function RootLayout({
             <RecaptchaProvider siteKey={siteKey} enabled={enabled}>
               <NotificationProvider>
                 <FCMManager />
+
+                {/* JSON-LD Schema Markup */}
+                <script
+                  type="application/ld+json"
+                  dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                      "@context": "https://schema.org",
+                      "@type": "SoftwareApplication",
+                      "name": "Hệ thống Quản lý Nhân sự",
+                      "applicationCategory": "BusinessApplication",
+                      "operatingSystem": "All",
+                      "provider": {
+                        "@type": "Organization",
+                        "name": "FHB Vietnam",
+                        "url": "https://fhbvietnam.com"
+                      }
+                    })
+                  }}
+                />
 
                 {children}
               </NotificationProvider>
