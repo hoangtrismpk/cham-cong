@@ -13,6 +13,7 @@ import { DatePicker } from '@/components/ui/date-picker'
 import { toast } from 'sonner'
 import { NotificationBell } from '@/components/notification-bell'
 import { MobileHeader } from '@/components/mobile-header'
+import { ResponsiveModal } from '@/components/ui/responsive-modal'
 
 const formatHM = (t?: string | null) => t && t.length >= 5 ? t.slice(0, 5) : (t || '')
 
@@ -1160,164 +1161,157 @@ export function ScheduleClient({ user, departmentCount, workSettings }: Schedule
                 </div>
             )}
 
-            {/* Leave Request Popup */}
-            {isLeaveModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-background/80 backdrop-blur-md" onClick={() => setIsLeaveModalOpen(false)}></div>
-                    <div className="bg-card w-full max-w-lg rounded-[2.5rem] border border-border shadow-2xl relative z-10 overflow-hidden neon-border animate-in fade-in zoom-in duration-300">
-                        <div className="p-8">
-                            <div className="flex items-center justify-between mb-8">
-                                <div className="space-y-1">
-                                    <h3 className="text-2xl font-black text-white">{t.schedule.requestLeaveTitle}</h3>
-                                </div>
-                                <button onClick={() => setIsLeaveModalOpen(false)} className="size-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
-                                    <span className="material-symbols-outlined">close</span>
-                                </button>
-                            </div>
+            {/* Leave Request Popup - Bottom Sheet on Mobile, Modal on Desktop */}
+            <ResponsiveModal open={isLeaveModalOpen} onOpenChange={setIsLeaveModalOpen}>
+                <div className="flex items-center justify-between mb-6 md:mb-8">
+                    <div className="space-y-1">
+                        <h3 className="text-xl md:text-2xl font-black text-white">{t.schedule.requestLeaveTitle}</h3>
+                    </div>
+                    <button onClick={() => setIsLeaveModalOpen(false)} className="size-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+                        <span className="material-symbols-outlined">close</span>
+                    </button>
+                </div>
 
-                            <div className="space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Loại nghỉ phép</label>
-                                    <div className="relative">
-                                        <select
-                                            value={leaveType}
-                                            onChange={(e) => setLeaveType(e.target.value)}
-                                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-primary/50 transition-all font-bold appearance-none cursor-pointer"
-                                        >
-                                            <option value="Nghỉ phép năm" className="bg-slate-900">Nghỉ phép năm</option>
-                                            <option value="Nghỉ ốm" className="bg-slate-900">Nghỉ ốm</option>
-                                            <option value="Nghỉ việc riêng" className="bg-slate-900">Nghỉ việc riêng</option>
-                                            <option value="Nghỉ không lương" className="bg-slate-900">Nghỉ không lương</option>
-                                            <option value="Khác" className="bg-slate-900">Khác</option>
-                                        </select>
-                                        <span className="material-symbols-outlined absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">expand_more</span>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.schedule.selectDate}</label>
-                                    <DatePicker
-                                        date={leaveDate}
-                                        setDate={setLeaveDate}
-                                        placeholder="Chọn ngày nghỉ"
-                                        className="rounded-2xl"
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Bắt đầu</label>
-                                        <input
-                                            type="time"
-                                            value={leaveStartTime}
-                                            onChange={(e) => setLeaveStartTime(e.target.value)}
-                                            className={`w-full bg-white/5 border rounded-2xl px-5 py-4 text-white focus:outline-none transition-all font-bold ${timeError && (leaveStartTime < '08:30' || leaveStartTime > '18:00')
-                                                ? 'border-red-500/50 bg-red-500/10'
-                                                : 'border-white/10 focus:border-primary/50'
-                                                }`}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Kết thúc</label>
-                                        <input
-                                            type="time"
-                                            value={leaveEndTime}
-                                            onChange={(e) => setLeaveEndTime(e.target.value)}
-                                            className={`w-full bg-white/5 border rounded-2xl px-5 py-4 text-white focus:outline-none transition-all font-bold ${timeError && (leaveEndTime < '08:30' || leaveEndTime > '18:00')
-                                                ? 'border-red-500/50 bg-red-500/10'
-                                                : 'border-white/10 focus:border-primary/50'
-                                                }`}
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Error Validation Message */}
-                                {timeError && (
-                                    <div className="flex items-center gap-2 text-red-400 px-2 animate-pulse">
-                                        <span className="material-symbols-outlined text-sm">warning</span>
-                                        <span className="text-[10px] font-bold uppercase">{timeError}</span>
-                                    </div>
-                                )}
-
-                                <div className="bg-primary/5 rounded-xl p-3 border border-primary/10 flex justify-between items-center">
-                                    <span className="text-xs text-primary/80 font-bold uppercase tracking-wider">Số giờ nghỉ dự kiến:</span>
-                                    <span className="text-xl font-black text-primary">{leaveHours}h</span>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.schedule.reason}</label>
-                                    <textarea
-                                        value={leaveReason}
-                                        onChange={(e) => setLeaveReason(e.target.value)}
-                                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-primary/50 transition-all font-bold placeholder:text-slate-700 min-h-[100px]"
-                                        placeholder="Enter reason..."
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.schedule.uploadImage}</label>
-                                    <div className="relative">
-                                        <input
-                                            type="file"
-                                            id="leave-image"
-                                            accept="image/*"
-                                            onChange={handleFileUpload}
-                                            className="hidden"
-                                        />
-                                        <label
-                                            htmlFor="leave-image"
-                                            className="w-full flex items-center justify-center gap-2 bg-white/5 border border-white/10 border-dashed rounded-2xl px-5 py-6 text-slate-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer font-bold"
-                                        >
-                                            <UploadCloud className="w-5 h-5" />
-                                            <span>{isUploading ? t.schedule.uploading : t.schedule.uploadImage}</span>
-                                        </label>
-                                    </div>
-                                    {leaveImage && (
-                                        <div className="mt-4 relative rounded-2xl overflow-hidden border border-white/10 group">
-                                            <img
-                                                src={leaveImage}
-                                                alt="Evidence"
-                                                className="w-full h-48 object-cover"
-                                            />
-                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setLeaveImage(null)
-                                                        setLeaveFile(null)
-                                                    }}
-                                                    className="bg-red-500/80 hover:bg-red-500 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider backdrop-blur-sm transition-all transform translate-y-2 group-hover:translate-y-0"
-                                                >
-                                                    Remove Image
-                                                </button>
-                                            </div>
-                                            <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/90 to-transparent">
-                                                <p className="text-[10px] text-white/80 truncate px-2 font-mono">{leaveImage.split('/').pop()}</p>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="flex gap-3 pt-4">
-                                    <button
-                                        onClick={() => setIsLeaveModalOpen(false)}
-                                        className="flex-1 px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-slate-400 font-black uppercase tracking-widest text-xs hover:bg-white/10 transition-all"
-                                    >
-                                        {t.schedule.cancel}
-                                    </button>
-                                    <button
-                                        onClick={submitLeave}
-                                        disabled={isUploading}
-                                        className="flex-[2] px-8 py-4 rounded-2xl bg-primary text-black font-black uppercase tracking-widest text-xs shadow-lg shadow-primary/20 hover:opacity-90 transition-all"
-                                    >
-                                        {t.schedule.submitRequest}
-                                    </button>
-                                </div>
-                            </div>
+                <div className="space-y-5 md:space-y-6">
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Loại nghỉ phép</label>
+                        <div className="relative">
+                            <select
+                                value={leaveType}
+                                onChange={(e) => setLeaveType(e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 md:py-4 text-white focus:outline-none focus:border-primary/50 transition-all font-bold appearance-none cursor-pointer"
+                            >
+                                <option value="Nghỉ phép năm" className="bg-slate-900">Nghỉ phép năm</option>
+                                <option value="Nghỉ ốm" className="bg-slate-900">Nghỉ ốm</option>
+                                <option value="Nghỉ việc riêng" className="bg-slate-900">Nghỉ việc riêng</option>
+                                <option value="Nghỉ không lương" className="bg-slate-900">Nghỉ không lương</option>
+                                <option value="Khác" className="bg-slate-900">Khác</option>
+                            </select>
+                            <span className="material-symbols-outlined absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">expand_more</span>
                         </div>
                     </div>
+
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.schedule.selectDate}</label>
+                        <DatePicker
+                            date={leaveDate}
+                            setDate={setLeaveDate}
+                            placeholder="Chọn ngày nghỉ"
+                            className="rounded-2xl"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Bắt đầu</label>
+                            <input
+                                type="time"
+                                value={leaveStartTime}
+                                onChange={(e) => setLeaveStartTime(e.target.value)}
+                                className={`w-full bg-white/5 border rounded-2xl px-4 md:px-5 py-3.5 md:py-4 text-white focus:outline-none transition-all font-bold ${timeError && (leaveStartTime < '08:30' || leaveStartTime > '18:00')
+                                    ? 'border-red-500/50 bg-red-500/10'
+                                    : 'border-white/10 focus:border-primary/50'
+                                    }`}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Kết thúc</label>
+                            <input
+                                type="time"
+                                value={leaveEndTime}
+                                onChange={(e) => setLeaveEndTime(e.target.value)}
+                                className={`w-full bg-white/5 border rounded-2xl px-4 md:px-5 py-3.5 md:py-4 text-white focus:outline-none transition-all font-bold ${timeError && (leaveEndTime < '08:30' || leaveEndTime > '18:00')
+                                    ? 'border-red-500/50 bg-red-500/10'
+                                    : 'border-white/10 focus:border-primary/50'
+                                    }`}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Error Validation Message */}
+                    {timeError && (
+                        <div className="flex items-center gap-2 text-red-400 px-2 animate-pulse">
+                            <span className="material-symbols-outlined text-sm">warning</span>
+                            <span className="text-[10px] font-bold uppercase">{timeError}</span>
+                        </div>
+                    )}
+
+                    <div className="bg-primary/5 rounded-xl p-3 border border-primary/10 flex justify-between items-center">
+                        <span className="text-xs text-primary/80 font-bold uppercase tracking-wider">Số giờ nghỉ dự kiến:</span>
+                        <span className="text-xl font-black text-primary">{leaveHours}h</span>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.schedule.reason}</label>
+                        <textarea
+                            value={leaveReason}
+                            onChange={(e) => setLeaveReason(e.target.value)}
+                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 md:py-4 text-white focus:outline-none focus:border-primary/50 transition-all font-bold placeholder:text-slate-700 min-h-[80px] md:min-h-[100px]"
+                            placeholder="Enter reason..."
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t.schedule.uploadImage}</label>
+                        <div className="relative">
+                            <input
+                                type="file"
+                                id="leave-image"
+                                accept="image/*"
+                                onChange={handleFileUpload}
+                                className="hidden"
+                            />
+                            <label
+                                htmlFor="leave-image"
+                                className="w-full flex items-center justify-center gap-2 bg-white/5 border border-white/10 border-dashed rounded-2xl px-5 py-4 md:py-6 text-slate-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer font-bold"
+                            >
+                                <UploadCloud className="w-5 h-5" />
+                                <span>{isUploading ? t.schedule.uploading : t.schedule.uploadImage}</span>
+                            </label>
+                        </div>
+                        {leaveImage && (
+                            <div className="mt-3 relative rounded-2xl overflow-hidden border border-white/10 group">
+                                <img
+                                    src={leaveImage}
+                                    alt="Evidence"
+                                    className="w-full h-36 md:h-48 object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setLeaveImage(null)
+                                            setLeaveFile(null)
+                                        }}
+                                        className="bg-red-500/80 hover:bg-red-500 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider backdrop-blur-sm transition-all transform translate-y-2 group-hover:translate-y-0"
+                                    >
+                                        Remove Image
+                                    </button>
+                                </div>
+                                <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/90 to-transparent">
+                                    <p className="text-[10px] text-white/80 truncate px-2 font-mono">{leaveImage.split('/').pop()}</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex gap-3 pt-2 md:pt-4">
+                        <button
+                            onClick={() => setIsLeaveModalOpen(false)}
+                            className="flex-1 px-6 md:px-8 py-3.5 md:py-4 rounded-2xl bg-white/5 border border-white/10 text-slate-400 font-black uppercase tracking-widest text-xs hover:bg-white/10 transition-all"
+                        >
+                            {t.schedule.cancel}
+                        </button>
+                        <button
+                            onClick={submitLeave}
+                            disabled={isUploading}
+                            className="flex-[2] px-6 md:px-8 py-3.5 md:py-4 rounded-2xl bg-primary text-black font-black uppercase tracking-widest text-xs shadow-lg shadow-primary/20 hover:opacity-90 transition-all"
+                        >
+                            {t.schedule.submitRequest}
+                        </button>
+                    </div>
                 </div>
-            )}
+            </ResponsiveModal>
         </div>
     )
 }
