@@ -153,22 +153,16 @@ Deno.serve(async (req) => {
             const tokens = tokensMap[userId];
             if (tokens && tokens.length > 0) {
                 try {
-                    // We include 'notification' so FCM handles background OS notification display safely.
-                    // We also pass 'webpush.fcmOptions.link' so OS notifications open the Web URL automatically.
+                    // Use DATA-ONLY message so our Service Worker takes 100% control
+                    // of displaying the notification and handling the click event.
+                    // FCM data values MUST be strings.
                     const message = {
-                        notification: {
-                            title: title,
-                            body: body,
-                        },
                         data: {
-                            url: link || '/',
-                            campaignId: campaignId || '',
+                            title: String(title),
+                            body: String(body),
+                            url: String(link || '/'),
+                            campaignId: String(campaignId || ''),
                             type: 'campaign_msg'
-                        },
-                        webpush: {
-                            fcmOptions: {
-                                link: link && link.startsWith('http') ? link : (link ? `https://chamcong.app${link}` : 'https://chamcong.app/')
-                            }
                         },
                         tokens: tokens
                     };
