@@ -18,24 +18,28 @@ interface Payload {
 }
 
 Deno.serve(async (req) => {
-    // 1. Auth Check: Accept Service Role Key OR valid JWT
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
-
-    // Accept Service Role Key directly for internal calls (from campaign-scheduler)
+    // 1. Auth Check: Accept Service Role Key (via custom header or Bearer) OR valid JWT
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-    const token = authHeader.replace('Bearer ', '');
+    const customAdminSecret = req.headers.get('x-notify-secret');
 
-    // If token is NOT the service role key, verify it as JWT
-    if (token !== serviceKey) {
-        // Verify JWT using Supabase client
-        const supabaseAuth = createClient(
-            Deno.env.get('SUPABASE_URL') ?? '',
-            Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-        );
-        const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
-        if (authError || !user) {
-            return new Response(JSON.stringify({ error: 'Unauthorized: Invalid JWT' }), { status: 401 });
+    // Fast path: if custom header matches service key, allow immediately
+    if (customAdminSecret !== serviceKey) {
+        const authHeader = req.headers.get('Authorization');
+        if (!authHeader) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+
+        const token = authHeader.replace('Bearer ', '');
+
+        // If Bearer token is NOT the service role key, verify it as JWT
+        if (token !== serviceKey) {
+            // Verify JWT using Supabase client
+            const supabaseAuth = createClient(
+                Deno.env.get('SUPABASE_URL') ?? '',
+                Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+            );
+            const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
+            if (authError || !user) {
+                return new Response(JSON.stringify({ error: 'Unauthorized: Invalid JWT' }), { status: 401 });
+            }
         }
     }
 

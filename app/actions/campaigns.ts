@@ -142,7 +142,11 @@ export async function sendCampaign(campaignId: string) {
     // 4. Call Edge Function using Supabase client (handles auth properly)
     try {
         const { data, error } = await supabaseAdmin.functions.invoke('notify-dispatcher', {
-            body: payload
+            body: payload,
+            headers: {
+                // Pass Service key directly as custom header to ensure Edge Function verifies it easily
+                'x-notify-secret': process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+            }
         })
 
         if (error) {
