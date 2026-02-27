@@ -166,13 +166,22 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                 // 4. Process Data Mappings
                 const logsMap = new Map(logsRes.data?.map((l: any) => [l.user_id, l]))
                 const notifMap = new Map(notifRes.data?.map((n: any) => [n.user_id, n]))
-                const deviceMap = new Map(tokensRes.data?.map((t: any) => [t.user_id, t.device_type]))
+
+                const deviceMap = new Map<string, string[]>()
+                tokensRes.data?.forEach((t: any) => {
+                    if (!t.device_type) return;
+                    const devices = deviceMap.get(t.user_id) || []
+                    if (!devices.includes(t.device_type)) {
+                        devices.push(t.device_type)
+                    }
+                    deviceMap.set(t.user_id, devices)
+                })
 
                 // 5. Construct Final List
                 const combinedDetails: LogEntry[] = recipients.map(user => {
                     const log = logsMap.get(user.id)
                     const notif = notifMap.get(user.id)
-                    const device = deviceMap.get(user.id)
+                    const userDevices = deviceMap.get(user.id)
 
                     // Default Status
                     // If log exists, use its status
@@ -186,12 +195,16 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                     } else {
                         if (campaignInfo.status === 'completed') {
                             status = 'failed' // Or 'no_token' specifically
-                            if (!device) failureReason = 'Không tìm thấy Token thiết bị'
+                            if (!userDevices || userDevices.length === 0) failureReason = 'Không tìm thấy Token thiết bị'
                             else failureReason = 'Lỗi không xác định (Không có log)'
                         } else if (campaignInfo.status === 'failed') {
                             status = 'failed'
                         }
                     }
+
+                    const deviceString = userDevices && userDevices.length > 0
+                        ? userDevices.join(', ')
+                        : (status === 'sent' ? 'Thiết bị không xác định' : 'N/A')
 
                     return {
                         user_id: user.id,
@@ -200,7 +213,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
                         sent_at: log?.sent_at,
                         clicked_at: log?.clicked_at || notif?.clicked_at,
                         viewed_at: notif?.is_read ? notif.created_at : undefined, // Proxy read time
-                        device: device || (status === 'sent' ? 'Mobile App' : 'N/A'),
+                        device: deviceString,
                         failure_reason: failureReason
                     }
                 })
