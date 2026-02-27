@@ -60,6 +60,12 @@ export async function GET(request: Request) {
                 department, 
                 status, 
                 avatar_url,
+                gender,
+                dob,
+                address,
+                city,
+                manager_id,
+                emergency_contact,
                 roles (
                     name,
                     display_name

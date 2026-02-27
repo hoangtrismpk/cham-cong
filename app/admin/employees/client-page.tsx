@@ -182,22 +182,36 @@ export default function EmployeesClientPage() {
                     job: emp.job_title || 'N/A',
                     dept: emp.department || 'N/A',
                     role: (t.adminSettings.roleSettings as any).roleLabels?.[emp.roles?.name as string] || emp.roles?.display_name || 'Thành viên',
-                    manager: emp.manager ? `${emp.manager.full_name}` : 'N/A',
+                    manager: emp.manager ? emp.manager.full_name : 'N/A',
                     status: emp.status === 'active' ? 'Active' : 'Inactive',
+                    dob: emp.dob || 'N/A',
+                    gender: emp.gender === 'male' ? 'Nam' : (emp.gender === 'female' ? 'Nữ' : 'Khác'),
+                    address: emp.address || 'N/A',
+                    city: emp.city || 'N/A',
+                    emergencyName: emergency.name || 'N/A',
+                    emergencyPhone: emergency.phone || 'N/A',
+                    emergencyRelation: emergency.relationship || 'N/A'
                 };
             });
 
             const columns = [
+                { header: 'Mã nhân viên', key: 'empCode', width: 15 },
                 { header: 'Họ', key: 'firstName', width: 20 },
                 { header: 'Tên', key: 'lastName', width: 20 },
                 { header: 'Email', key: 'email', width: 30 },
                 { header: 'Số điện thoại', key: 'phone', width: 15 },
-                { header: 'Mã nhân viên', key: 'empCode', width: 15 },
+                { header: 'Giới tính', key: 'gender', width: 15 },
+                { header: 'Ngày sinh', key: 'dob', width: 15 },
+                { header: 'Địa chỉ', key: 'address', width: 30 },
+                { header: 'Thành phố', key: 'city', width: 15 },
                 { header: 'Chức danh', key: 'job', width: 20 },
                 { header: 'Phòng ban', key: 'dept', width: 20 },
                 { header: 'Vai trò', key: 'role', width: 15 },
                 { header: 'Người quản lý trực tiếp', key: 'manager', width: 25 },
-                { header: 'Trạng thái', key: 'status', width: 10 }
+                { header: 'Trạng thái', key: 'status', width: 10 },
+                { header: 'Người liên hệ khẩn cấp', key: 'emergencyName', width: 25 },
+                { header: 'SĐT khẩn cấp', key: 'emergencyPhone', width: 15 },
+                { header: 'Quan hệ', key: 'emergencyRelation', width: 15 }
             ]
 
             import('@/lib/export-utils').then(({ exportToExcel }) => {
