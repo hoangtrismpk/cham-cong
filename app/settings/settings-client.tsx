@@ -33,11 +33,12 @@ import {
     updateMyProfile,
     updateMyAvatar
 } from '@/app/actions/profile'
-import { messaging, VAPID_KEY, getToken } from '@/utils/firebase'
+// Firebase import removed to prevent main-thread blocking, dynamically imported on toggle
 import { useSidebar } from '@/contexts/sidebar-context'
 import { Badge } from '@/components/ui/badge'
 import { MobileHeader } from '@/components/mobile-header'
-import { QRCodeSVG } from 'qrcode.react'
+import dynamic from 'next/dynamic'
+const QRCodeSVG = dynamic(() => import('qrcode.react').then(mod => mod.QRCodeSVG), { ssr: false })
 import { enrollMFA, challengeMFA, verifyMFA, unenrollMFA, getMFAFactors } from '@/app/actions/mfa'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -45,26 +46,33 @@ import { notifyPasswordChanged } from '@/app/actions/email-triggers'
 
 interface SettingsClientProps {
     user: any
+    initialData?: {
+        profile: any
+        mfaFactors: any[]
+    }
 }
 
-export function SettingsClient({ user }: SettingsClientProps) {
+export function SettingsClient({ user, initialData }: SettingsClientProps) {
     const { t, locale, setLocale } = useI18n()
     const { setIsOpen } = useSidebar()
     const [activeTab, setActiveTab] = useState<'general' | 'security' | 'notifications' | 'preferences'>('general')
     const [activeTabMobile, setActiveTabMobile] = useState<string>('none')
+
+    // Initialize properties directly from server-fetched initialData
     const [pushEnabled, setPushEnabled] = useState(false)
-    const [autoCheckInEnabled, setAutoCheckInEnabled] = useState(false)
-    const [autoCheckOutSetting, setAutoCheckOutSetting] = useState(false)
-    const [clockInMinutes, setClockInMinutes] = useState(5)
-    const [clockOutMode, setClockOutMode] = useState<'before' | 'after'>('before')
-    const [clockOutMinutes, setClockOutMinutes] = useState(5)
+    const [autoCheckInEnabled, setAutoCheckInEnabled] = useState(initialData?.profile?.auto_checkin_enabled || false)
+    const [autoCheckOutSetting, setAutoCheckOutSetting] = useState(initialData?.profile?.auto_checkout_enabled || false)
+    const [clockInMinutes, setClockInMinutes] = useState(initialData?.profile?.clock_in_remind_minutes ?? 5)
+    const [clockOutMode, setClockOutMode] = useState<'before' | 'after'>(initialData?.profile?.clock_out_remind_mode ?? 'before')
+    const [clockOutMinutes, setClockOutMinutes] = useState(initialData?.profile?.clock_out_remind_minutes ?? 5)
+
     const clockInSaveTimer = useRef<NodeJS.Timeout | null>(null)
     const clockOutSaveTimer = useRef<NodeJS.Timeout | null>(null)
-    const [currentAvatar, setCurrentAvatar] = useState(user?.user_metadata?.avatar_url || getDefaultAvatar(user?.id))
+    const [currentAvatar, setCurrentAvatar] = useState(initialData?.profile?.avatar_url || user?.user_metadata?.avatar_url || getDefaultAvatar(user?.id))
     const [isAvatarOpen, setIsAvatarOpen] = useState(false)
 
-    const [profile, setProfile] = useState<any>(null)
-    const [skillsInput, setSkillsInput] = useState('')
+    const [profile, setProfile] = useState<any>(initialData?.profile || null)
+    const [skillsInput, setSkillsInput] = useState(initialData?.profile?.skills?.join(', ') || '')
 
     const [password, setPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
@@ -72,7 +80,9 @@ export function SettingsClient({ user }: SettingsClientProps) {
     const [isUploading, setIsUploading] = useState(false)
 
     // MFA State
-    const [mfaFactorId, setMfaFactorId] = useState<string | null>(null)
+    const verifiedFactor = initialData?.mfaFactors?.find((f: any) => f.factor_type === 'totp' && f.status === 'verified')
+    const [mfaFactorId, setMfaFactorId] = useState<string | null>(verifiedFactor ? verifiedFactor.id : null)
+
     const [isMfaModalOpen, setIsMfaModalOpen] = useState(false)
     const [mfaEnrollData, setMfaEnrollData] = useState<any>(null)
     const [mfaCode, setMfaCode] = useState('')
@@ -86,62 +96,18 @@ export function SettingsClient({ user }: SettingsClientProps) {
     const isScrollingProgrammatically = useRef(false)
     const scrollContainerRef = useRef<HTMLDivElement>(null)
 
-    const [isLoadingData, setIsLoadingData] = useState(true)
+    // Remove the Skeleton loading state since data is ready instantly
+    const [isLoadingData, setIsLoadingData] = useState(false)
 
     useEffect(() => {
-        const fetchInitialData = async () => {
-            try {
-                // Execute all 6 API calls in parallel using Promise.all
-                const [
-                    autoCheckIn,
-                    autoCheckOut,
-                    pushEnabledServer,
-                    clockSettings,
-                    factors,
-                    profileResponse
-                ] = await Promise.all([
-                    getAutoCheckInSetting(),
-                    getAutoCheckOutSetting(),
-                    getPushNotificationSetting(),
-                    getClockSettings(),
-                    getMFAFactors(),
-                    getMyProfile()
-                ])
-
-                setAutoCheckInEnabled(autoCheckIn)
-                setAutoCheckOutSetting(autoCheckOut)
-
-                if (pushEnabledServer && 'Notification' in window && Notification.permission === 'granted') {
-                    setPushEnabled(true)
-                } else {
-                    setPushEnabled(false)
-                }
-
-                setClockInMinutes(clockSettings.clockInRemindMinutes)
-                setClockOutMode(clockSettings.clockOutRemindMode)
-                setClockOutMinutes(clockSettings.clockOutRemindMinutes)
-
-                const verifiedFactor = factors?.find((f: any) => f.factor_type === 'totp' && f.status === 'verified')
-                if (verifiedFactor) {
-                    setMfaFactorId(verifiedFactor.id)
-                }
-
-                if (profileResponse.profile) {
-                    setProfile(profileResponse.profile)
-                    if (profileResponse.profile.avatar_url) setCurrentAvatar(profileResponse.profile.avatar_url)
-                    if (profileResponse.profile.skills) setSkillsInput(profileResponse.profile.skills.join(', '))
-                } else if (profileResponse.error) {
-                    console.error('Error fetching profile:', profileResponse.error)
-                }
-            } catch (err) {
-                console.error("Failed to load settings data:", err)
-            } finally {
-                setIsLoadingData(false)
-            }
+        // Only run client side validations that require browser APIs
+        const pushEnabledServer = initialData?.profile?.push_enabled ?? true
+        if (pushEnabledServer && 'Notification' in window && Notification.permission === 'granted') {
+            setPushEnabled(true)
+        } else {
+            setPushEnabled(false)
         }
-
-        fetchInitialData()
-    }, [])
+    }, [initialData])
 
     // --- SCROLL SPY LOGIC (ELEMENT FROM POINT) ---
     // This is the most robust method: what element is physically under the "reading point"?
@@ -304,6 +270,8 @@ export function SettingsClient({ user }: SettingsClientProps) {
 
             // Step 3: Register FCM token
             try {
+                // Dynamically import Firebase only when user actually interacts with push toggle
+                const { messaging, VAPID_KEY, getToken } = await import('@/utils/firebase')
                 const msg = await messaging()
                 if (msg) {
                     const currentToken = await getToken(msg, { vapidKey: VAPID_KEY })
