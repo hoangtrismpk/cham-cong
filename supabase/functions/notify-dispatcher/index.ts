@@ -18,17 +18,31 @@ interface Payload {
 }
 
 Deno.serve(async (req) => {
-    // 1. Auth Check (Must be Service Role OR Admin)
+    // 1. Auth Check: Accept Service Role Key OR valid JWT
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+
+    // Accept Service Role Key directly for internal calls (from campaign-scheduler)
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    const token = authHeader.replace('Bearer ', '');
+
+    // If token is NOT the service role key, verify it as JWT
+    if (token !== serviceKey) {
+        // Verify JWT using Supabase client
+        const supabaseAuth = createClient(
+            Deno.env.get('SUPABASE_URL') ?? '',
+            Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+        );
+        const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
+        if (authError || !user) {
+            return new Response(JSON.stringify({ error: 'Unauthorized: Invalid JWT' }), { status: 401 });
+        }
+    }
 
     const supabase = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
-
-    // Verify token (if not service role)
-    // For simplicity, we assume caller has valid JWT or is triggered by server action using Service Key
 
     // 2. Parse Body
     let payload: Payload;
@@ -70,9 +84,6 @@ Deno.serve(async (req) => {
         } else if (userIds && userIds.length > 0) {
             targets = userIds;
         } else if (role) {
-            // Fetch users by role
-            // This requires joining profiles and roles tables, complex.
-            // Simplified: Fetch all profiles with role X
             const { data } = await supabase.from('profiles').select('id').eq('role', role);
             targets = data?.map(u => u.id) || [];
         } else if (departmentId) {
@@ -82,6 +93,12 @@ Deno.serve(async (req) => {
 
         if (targets.length === 0) {
             log('No targets found');
+            // If campaign exists, mark as completed with 0 recipients
+            if (campaignId) {
+                await supabase.from('notification_campaigns')
+                    .update({ status: 'completed', total_recipients: 0, success_count: 0, failure_count: 0 })
+                    .eq('id', campaignId);
+            }
             return new Response(JSON.stringify({ message: 'No targets', logs }), { status: 200 });
         }
 
@@ -131,38 +148,68 @@ Deno.serve(async (req) => {
             // B. Send Push
             const tokens = tokensMap[userId];
             if (tokens && tokens.length > 0) {
-                const message = {
-                    notification: {
-                        title,
-                        body,
-                    },
-                    data: {
-                        url: link || '/',
-                        campaignId: campaignId || '',
-                        type: 'campaign_msg'
-                    },
-                    tokens: tokens
-                };
+                try {
+                    const message = {
+                        notification: {
+                            title,
+                            body,
+                        },
+                        data: {
+                            url: link || '/',
+                            campaignId: campaignId || '',
+                            type: 'campaign_msg'
+                        },
+                        tokens: tokens
+                    };
 
-                const response = await admin.messaging().sendEachForMulticast(message);
+                    const response = await admin.messaging().sendEachForMulticast(message);
 
-                // If at least one device received it, we consider the user "reached"
-                if (response.successCount > 0) {
-                    successCount++;
-                } else {
+                    // If at least one device received it, we consider the user "reached"
+                    if (response.successCount > 0) {
+                        successCount++;
+                    } else {
+                        failureCount++;
+                        log(`User ${userId}: All ${tokens.length} tokens failed`);
+                    }
+
+                    // Clean up invalid tokens
+                    response.responses.forEach(async (resp: any, idx: number) => {
+                        if (!resp.success && resp.error?.code === 'messaging/registration-token-not-registered') {
+                            log(`Removing stale token for user ${userId}`);
+                            await supabase.from('fcm_tokens').delete().eq('token', tokens[idx]);
+                        }
+                    });
+
+                    // Log outcome
+                    await supabase.from('notification_logs').insert({
+                        user_id: userId,
+                        campaign_id: campaignId,
+                        notification_type: 'campaign_push',
+                        status: response.successCount > 0 ? 'sent' : 'failed',
+                        sent_at: new Date().toISOString()
+                    });
+                } catch (pushErr: any) {
                     failureCount++;
+                    log(`Push error for user ${userId}: ${pushErr.message}`);
+                    await supabase.from('notification_logs').insert({
+                        user_id: userId,
+                        campaign_id: campaignId,
+                        notification_type: 'campaign_push',
+                        status: 'failed',
+                        sent_at: new Date().toISOString()
+                    });
                 }
-
-                // Log outcome
+            } else {
+                failureCount++; // No token = fail to push
+                log(`User ${userId}: No FCM token found`);
+                // Still log the failure
                 await supabase.from('notification_logs').insert({
                     user_id: userId,
                     campaign_id: campaignId,
                     notification_type: 'campaign_push',
-                    status: response.successCount > 0 ? 'sent' : 'failed',
+                    status: 'failed',
                     sent_at: new Date().toISOString()
                 });
-            } else {
-                failureCount++; // No token = fail to push
             }
         }
 

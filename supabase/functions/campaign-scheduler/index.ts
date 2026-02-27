@@ -16,22 +16,39 @@ Deno.serve(async (req) => {
     const log = (msg: string) => console.log(`${LOG_PREFIX} ${msg}`);
 
     try {
-        // 2. Find Due Campaigns
-        const now = new Date().toISOString();
-        const { data: campaigns, error } = await supabase
+        // 2. Find Due Campaigns (both 'scheduled' AND stuck 'processing' for > 5 mins)
+        const now = new Date();
+        const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString();
+
+        // Query scheduled campaigns that are due
+        const { data: scheduledCampaigns, error: schErr } = await supabase
             .from('notification_campaigns')
             .select('*')
             .eq('status', 'scheduled')
-            .lte('scheduled_at', now);
+            .lte('scheduled_at', now.toISOString());
 
-        if (error) throw error;
+        if (schErr) throw schErr;
 
-        if (!campaigns || campaigns.length === 0) {
-            log('No scheduled campaigns due.');
+        // Also find stuck processing campaigns (stuck for more than 5 minutes)
+        const { data: stuckCampaigns, error: stuckErr } = await supabase
+            .from('notification_campaigns')
+            .select('*')
+            .eq('status', 'processing')
+            .eq('total_recipients', 0)
+            .lte('created_at', fiveMinutesAgo);
+
+        // Combine both lists
+        const campaigns = [
+            ...(scheduledCampaigns || []),
+            ...(stuckCampaigns || [])
+        ];
+
+        if (campaigns.length === 0) {
+            log('No scheduled or stuck campaigns found.');
             return new Response(JSON.stringify({ message: 'No campaigns due' }), { status: 200 });
         }
 
-        log(`Found ${campaigns.length} campaigns due.`);
+        log(`Found ${campaigns.length} campaigns to process (${scheduledCampaigns?.length || 0} scheduled, ${stuckCampaigns?.length || 0} stuck).`);
 
         const results = [];
 
@@ -57,10 +74,6 @@ Deno.serve(async (req) => {
             } else if (type === 'department') {
                 payload.departmentId = value;
             } else if (type === 'specific_users') {
-                // value is JSON array of IDs (or should be)
-                // In DB it's stored as jsonb. Supabase client parses it? Yes.
-                // If it's stored as string in older versions, might need check.
-                // But my create logic stores it as array if specific_users.
                 payload.userIds = Array.isArray(value) ? value : [];
             }
 
@@ -70,26 +83,45 @@ Deno.serve(async (req) => {
                 .eq('id', campaign.id);
 
             // 5. Call Dispatcher
-            // We call it via fetch to the other Edge Function
             const functionUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/notify-dispatcher`;
             const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-            // Fire and forget? Or wait?
-            // Better to wait to log result. Dispatcher should return quickly after kicking off or finishing.
-            // Actually dispatcher loops through users. If thousands, it might take time.
-            // But usually edge function has limits.
+            try {
+                const response = await fetch(functionUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${serviceKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
 
-            const response = await fetch(functionUrl, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${serviceKey}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
+                const resJson = await response.json();
 
-            const resJson = await response.json();
-            results.push({ id: campaign.id, status: response.status, data: resJson });
+                // Check if dispatcher actually succeeded
+                if (!response.ok) {
+                    log(`Dispatcher returned error ${response.status} for campaign ${campaign.id}: ${JSON.stringify(resJson)}`);
+                    // Mark campaign as failed so it doesn't stay stuck in processing
+                    await supabase.from('notification_campaigns')
+                        .update({
+                            status: 'failed',
+                            metadata: { error: `Dispatcher returned ${response.status}: ${resJson?.error || 'Unknown error'}` }
+                        })
+                        .eq('id', campaign.id);
+                }
+
+                results.push({ id: campaign.id, status: response.status, data: resJson });
+            } catch (fetchErr: any) {
+                log(`Failed to call dispatcher for campaign ${campaign.id}: ${fetchErr.message}`);
+                // Mark campaign as failed
+                await supabase.from('notification_campaigns')
+                    .update({
+                        status: 'failed',
+                        metadata: { error: `Fetch error: ${fetchErr.message}` }
+                    })
+                    .eq('id', campaign.id);
+                results.push({ id: campaign.id, status: 'error', error: fetchErr.message });
+            }
         }
 
         return new Response(JSON.stringify({ success: true, processed: results }), { status: 200 });
