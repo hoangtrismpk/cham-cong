@@ -78,8 +78,8 @@ export async function createReviewCampaign(formData: FormData) {
         targetValueJson = targetValue
     }
 
-    // If scheduled_at is provided, status is 'scheduled'; otherwise 'pending' (ready to send now)
-    const status = scheduledAt ? 'scheduled' : 'pending'
+    // If scheduled_at is provided, status is 'scheduled'; otherwise 'draft' (will be sent immediately)
+    const status = scheduledAt ? 'scheduled' : 'draft'
 
     const { data, error } = await supabase.from('notification_campaigns').insert({
         title,
