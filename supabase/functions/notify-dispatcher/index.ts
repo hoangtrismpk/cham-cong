@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
         if (targetType === 'all') {
             const { data } = await supabase.from('profiles').select('id').eq('status', 'active');
             targets = data?.map(u => u.id) || [];
-            log(`Resolved ALL active users: ${targets.length}`);
+            log("Resolved ALL active users: " + targets.length);
         } else if (userIds && userIds.length > 0) {
             targets = userIds;
         } else if (role) {
@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
             return new Response(JSON.stringify({ message: 'No targets', logs }), { status: 200 });
         }
 
-        log(`Targeting ${targets.length} users`);
+        log("Targeting " + targets.length + " users");
 
         // 5. Update Campaign (if exists)
         if (campaignId) {
@@ -178,13 +178,13 @@ Deno.serve(async (req) => {
                         successCount++;
                     } else {
                         failureCount++;
-                        log(`User ${userId}: All ${tokens.length} tokens failed`);
+                        log("User " + userId + ": All " + tokens.length + " tokens failed");
                     }
 
                     // Clean up invalid tokens
                     response.responses.forEach(async (resp: any, idx: number) => {
                         if (!resp.success && resp.error?.code === 'messaging/registration-token-not-registered') {
-                            log(`Removing stale token for user ${userId}`);
+                            log("Removing stale token for user " + userId);
                             await supabase.from('fcm_tokens').delete().eq('token', tokens[idx]);
                         }
                     });
@@ -199,7 +199,7 @@ Deno.serve(async (req) => {
                     });
                 } catch (pushErr: any) {
                     failureCount++;
-                    log(`Push error for user ${userId}: ${pushErr.message}`);
+                    log("Push error for user " + userId + ": " + pushErr.message);
                     await supabase.from('notification_logs').insert({
                         user_id: userId,
                         campaign_id: campaignId,
@@ -210,7 +210,7 @@ Deno.serve(async (req) => {
                 }
             } else {
                 failureCount++; // No token = fail to push
-                log(`User ${userId}: No FCM token found`);
+                log("User " + userId + ": No FCM token found");
                 // Still log the failure
                 await supabase.from('notification_logs').insert({
                     user_id: userId,
@@ -236,7 +236,7 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ success: true, targets: targets.length, sent: successCount, failed: failureCount, logs }), { status: 200 });
 
     } catch (e: any) {
-        log(`Error: ${e.message}`);
+        log("Error: " + e.message);
         if (campaignId) {
             await supabase.from('notification_campaigns')
                 .update({ status: 'failed', metadata: { error: e.message } })

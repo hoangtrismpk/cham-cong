@@ -76,7 +76,7 @@ self.addEventListener('notificationclick', (event: any) => {
 
     // If 'checkin' action → open attendance page directly
     let urlToOpen = event.action === 'checkin'
-        ? `${self.location.origin}/attendance`
+        ? `${self.location.origin}/`
         : (notificationData.url || '/');
 
     try {

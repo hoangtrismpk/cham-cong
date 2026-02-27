@@ -27,7 +27,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
-import { getActivities, approveActivity, rejectActivity, ActivityItem } from '@/app/actions/approvals'
+import { getActivities, approveActivity, rejectActivity, cancelApprovedLeave, rescheduleApprovedLeave, ActivityItem } from '@/app/actions/approvals'
 import { format } from 'date-fns'
 import { vi, enUS } from 'date-fns/locale'
 import { useI18n } from '@/contexts/i18n-context'
@@ -55,6 +55,12 @@ export default function ApprovalsClientPage() {
     const [isApproveConfirmOpen, setIsApproveConfirmOpen] = useState(false)
     const [isRejectOpen, setIsRejectOpen] = useState(false)
     const [rejectReason, setRejectReason] = useState('')
+
+    // Extra actions for Approved Leave
+    const [isCancelOpen, setIsCancelOpen] = useState(false)
+    const [cancelReason, setCancelReason] = useState('')
+    const [isRescheduleOpen, setIsRescheduleOpen] = useState(false)
+    const [newDate, setNewDate] = useState('')
 
     const router = useRouter()
 
@@ -135,6 +141,73 @@ export default function ApprovalsClientPage() {
             }
         } catch (error) {
             toast.error(t.admin.approvalsPage.messages.error)
+        } finally {
+            setProcessing(null)
+        }
+    }
+
+    const handleCancelInit = () => {
+        setIsCancelOpen(true)
+    }
+
+    const handleCancelSubmit = async () => {
+        if (!selectedItem) return
+        if (!cancelReason.trim()) {
+            toast.error('Vui lòng nhập lý do hủy')
+            return
+        }
+
+        setProcessing(selectedItem.id)
+        try {
+            const res = await cancelApprovedLeave(selectedItem.id, cancelReason)
+            if (res.success) {
+                toast.success('Đã hủy đơn nghỉ phép thành công')
+                setActivities(prev => prev.map(a => a.id === selectedItem.id ? { ...a, status: 'rejected' } : a))
+                setIsCancelOpen(false)
+                setIsDetailOpen(false)
+                setCancelReason('')
+            } else {
+                toast.error('Lỗi khi hủy đơn: ' + res.message)
+            }
+        } catch (error) {
+            toast.error('Có lỗi xảy ra, vui lòng thử lại sau.')
+        } finally {
+            setProcessing(null)
+        }
+    }
+
+    const handleRescheduleInit = () => {
+        setIsRescheduleOpen(true)
+        if (selectedItem?.payload?.leave_date) {
+            setNewDate(selectedItem.payload.leave_date.split('T')[0])
+        }
+    }
+
+    const handleRescheduleSubmit = async () => {
+        if (!selectedItem) return
+        if (!newDate) {
+            toast.error('Vui lòng chọn ngày mới')
+            return
+        }
+
+        setProcessing(selectedItem.id)
+        try {
+            const res = await rescheduleApprovedLeave(selectedItem.id, newDate)
+            if (res.success) {
+                toast.success('Đã thay đổi ngày nghỉ phép thành công')
+                setActivities(prev => prev.map(a => {
+                    if (a.id === selectedItem.id && a.payload) {
+                        return { ...a, payload: { ...a.payload, leave_date: newDate } }
+                    }
+                    return a
+                }))
+                setIsRescheduleOpen(false)
+                setIsDetailOpen(false)
+            } else {
+                toast.error('Lỗi khi đổi ngày: ' + res.message)
+            }
+        } catch (error) {
+            toast.error('Có lỗi xảy ra, vui lòng thử lại sau.')
         } finally {
             setProcessing(null)
         }
@@ -542,6 +615,18 @@ export default function ApprovalsClientPage() {
                                 </Button>
                             </>
                         )}
+                        {selectedItem?.status === 'approved' && selectedItem?.type === 'leave_request' && can('approvals.approve') && (
+                            <>
+                                <Button variant="outline" className="text-orange-500 border-orange-500/50 hover:bg-orange-500/10 hover:text-orange-400" onClick={handleCancelInit}>
+                                    <XCircle className="w-4 h-4 mr-2" />
+                                    Hủy Phê Duyệt
+                                </Button>
+                                <Button className="bg-cyan-500 hover:bg-cyan-600 text-white shadow-lg shadow-cyan-900/20" onClick={handleRescheduleInit}>
+                                    <CalendarClock className="w-4 h-4 mr-2" />
+                                    Đổi Ngày
+                                </Button>
+                            </>
+                        )}
                     </div>
                 </DialogContent>
             </Dialog>
@@ -594,6 +679,59 @@ export default function ApprovalsClientPage() {
                             disabled={!!processing}
                         >
                             {processing ? t.admin.approvalsPage.actions.processing : t.admin.approvalsPage.actions.confirmApprove}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Cancel Approved Dialog */}
+            <Dialog open={isCancelOpen} onOpenChange={setIsCancelOpen}>
+                <DialogContent className="bg-slate-900 border-slate-700 text-slate-200">
+                    <DialogHeader>
+                        <DialogTitle>Hủy Đơn Đã Phê Duyệt</DialogTitle>
+                        <DialogDescription className="text-slate-400">
+                            Bạn có chắc chắn muốn hủy đơn nghỉ phép này không? Đơn sẽ được chuyển sang trạng thái Từ chối.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Textarea
+                            value={cancelReason}
+                            onChange={(e) => setCancelReason(e.target.value)}
+                            placeholder="Nhập lý do hủy đơn (Bắt buộc)"
+                            className="bg-slate-950 border-slate-800 h-32 text-slate-200 placeholder:text-slate-600"
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setIsCancelOpen(false)}>{t.admin.approvalsPage.actions.cancel}</Button>
+                        <Button variant="destructive" onClick={handleCancelSubmit} disabled={!!processing}>
+                            {processing ? t.admin.approvalsPage.actions.processing : 'Xác Nhận Hủy'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Reschedule Approved Dialog */}
+            <Dialog open={isRescheduleOpen} onOpenChange={setIsRescheduleOpen}>
+                <DialogContent className="bg-slate-900 border-slate-700 text-slate-200">
+                    <DialogHeader>
+                        <DialogTitle>Đổi Ngày Nghỉ Phép</DialogTitle>
+                        <DialogDescription className="text-slate-400">
+                            Chọn ngày mới cho đơn xin nghỉ phép này.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <label className="block text-sm font-medium text-slate-400 mb-2">Ngày Mới</label>
+                        <input
+                            type="date"
+                            value={newDate}
+                            onChange={(e) => setNewDate(e.target.value)}
+                            className="w-full bg-slate-950 border border-slate-800 rounded-md p-2 text-white outline-none focus:border-cyan-500"
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setIsRescheduleOpen(false)}>{t.admin.approvalsPage.actions.cancel}</Button>
+                        <Button className="bg-cyan-500 hover:bg-cyan-600 text-white" onClick={handleRescheduleSubmit} disabled={!!processing}>
+                            {processing ? t.admin.approvalsPage.actions.processing : 'Xác Nhận Đổi'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

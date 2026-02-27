@@ -201,7 +201,7 @@ Deno.serve(async (req) => {
                     body: isIn
                         ? `Ca "${target.title}" ngày ${viewDate} bắt đầu lúc ${target.time}. Đừng quên chấm công vào nhé!`
                         : `Ca "${target.title}" ngày ${viewDate} kết thúc lúc ${target.time}. Đừng quên chấm công ra trước khi về nhé!`,
-                    url: '/attendance',
+                    url: '/',
                     // type tells the Service Worker to show rich notification (image + action buttons)
                     type: isIn ? 'clock_in_reminder' : 'clock_out_reminder',
                     shiftId: target.shiftId || '',

@@ -838,6 +838,114 @@ export async function rejectActivity(id: string, type: string, note: string): Pr
     }
 }
 
+// Cancel Approved Leave
+export async function cancelApprovedLeave(id: string, reason: string): Promise<{ success: boolean, message?: string }> {
+    const hasAccess = await checkPermission('approvals.approve')
+    if (!hasAccess) return { success: false, message: 'Permission denied' }
+
+    const supabase = await createClient()
+
+    try {
+        const { data: request } = await supabase.from('leave_requests').select('user_id, leave_date, status').eq('id', id).single()
+
+        if (!request) throw new Error('Request not found')
+        if (request.status !== 'approved') throw new Error('Chỉ có thể hủy đơn đã được phê duyệt')
+
+        const { error } = await supabase
+            .from('leave_requests')
+            .update({
+                status: 'rejected',
+                admin_note: reason
+            })
+            .eq('id', id)
+
+        if (error) throw error
+
+        const dateStr = new Date(request.leave_date).toLocaleDateString('vi-VN')
+        const notificationBody = `Đơn nghỉ phép ngày ${dateStr} của bạn đã bị Admin hủy bỏ. Lý do: ${reason}`
+
+        // Audit Log
+        await createAuditLog({
+            action: 'UPDATE', // Or REJECT
+            resourceType: 'leave_request',
+            resourceId: id,
+            description: `Hủy đơn nghỉ phép đã duyệt ngày ${dateStr}. Lý do: ${reason}`,
+            oldValues: { status: 'approved' },
+            newValues: { status: 'rejected', note: reason }
+        })
+
+        // Notify user
+        const { sendNotification } = await import('@/app/actions/notification-system')
+        await sendNotification({
+            userId: request.user_id,
+            title: 'Đơn nghỉ phép bị hủy',
+            message: notificationBody,
+            type: 'error',
+            priority: 'high',
+            link: '/admin/approvals'
+        })
+
+        revalidatePath('/admin/approvals')
+        return { success: true }
+    } catch (error: any) {
+        return { success: false, message: error.message }
+    }
+}
+
+// Reschedule Approved Leave
+export async function rescheduleApprovedLeave(id: string, newDateStr: string): Promise<{ success: boolean, message?: string }> {
+    const hasAccess = await checkPermission('approvals.approve')
+    if (!hasAccess) return { success: false, message: 'Permission denied' }
+
+    const supabase = await createClient()
+
+    try {
+        const { data: request } = await supabase.from('leave_requests').select('user_id, leave_date, status').eq('id', id).single()
+
+        if (!request) throw new Error('Request not found')
+        if (request.status !== 'approved') throw new Error('Chỉ có thể đổi ngày cho đơn đã được phê duyệt')
+
+        const { error } = await supabase
+            .from('leave_requests')
+            .update({
+                leave_date: newDateStr
+            })
+            .eq('id', id)
+
+        if (error) throw error
+
+        const oldDateStr = new Date(request.leave_date).toLocaleDateString('vi-VN')
+        const newDateFormatted = new Date(newDateStr).toLocaleDateString('vi-VN')
+        const notificationBody = `Đơn nghỉ phép ngày ${oldDateStr} của bạn đã được chuyển sang ngày ${newDateFormatted}.`
+
+        // Audit Log
+        await createAuditLog({
+            action: 'UPDATE',
+            resourceType: 'leave_request',
+            resourceId: id,
+            description: `Đổi ngày nghỉ phép từ ${oldDateStr} sang ${newDateFormatted}`,
+            oldValues: { leave_date: request.leave_date },
+            newValues: { leave_date: newDateStr }
+        })
+
+        // Notify user
+        const { sendNotification } = await import('@/app/actions/notification-system')
+        await sendNotification({
+            userId: request.user_id,
+            title: 'Thay đổi ngày nghỉ phép',
+            message: notificationBody,
+            type: 'info',
+            priority: 'high',
+            link: '/admin/approvals'
+        })
+
+        revalidatePath('/admin/approvals')
+        return { success: true }
+    } catch (error: any) {
+        return { success: false, message: error.message }
+    }
+}
+
 function getVietnameseDayName(date: Date) {
     const days = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7']
     return days[date.getDay()]

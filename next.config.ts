@@ -1,10 +1,12 @@
 import type { NextConfig } from "next";
 import withSerwistInit from "@serwist/next";
 
+const isDev = process.env.NODE_ENV !== 'production';
+
 const withSerwist = withSerwistInit({
   swSrc: "app/sw.ts",
   swDest: "public/sw.js",
-  disable: false, // Enable caching locally for testing payload and PWA load
+  disable: isDev, // Disable in dev to prevent HMR infinite loop (sw.js rewrite triggers file watcher)
 });
 
 const nextConfig: NextConfig = {
