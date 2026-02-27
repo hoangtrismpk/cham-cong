@@ -592,10 +592,20 @@ export function SettingsClient({ user, initialData }: SettingsClientProps) {
                         <button onClick={async () => {
                             try {
                                 const supabase = createClient()
-                                // Remove FCM tokens for this user on this device before signing out
                                 const { data: { user: currentUser } } = await supabase.auth.getUser()
                                 if (currentUser) {
-                                    await supabase.from('fcm_tokens').delete().eq('user_id', currentUser.id)
+                                    try {
+                                        const { messaging, VAPID_KEY, getToken } = await import('@/utils/firebase')
+                                        const msg = await messaging()
+                                        if (msg) {
+                                            const currentToken = await getToken(msg, { vapidKey: VAPID_KEY })
+                                            if (currentToken) {
+                                                await supabase.from('fcm_tokens').delete().match({ user_id: currentUser.id, token: currentToken })
+                                            }
+                                        }
+                                    } catch (e) {
+                                        // Firebase might fail if blocked or not supported, ignore safely
+                                    }
                                 }
                                 await supabase.auth.signOut()
                             } catch (e) { /* ignore */ }

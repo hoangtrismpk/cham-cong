@@ -38,7 +38,7 @@ import { Switch } from "@/components/ui/switch"
 import { createClient } from '@/utils/supabase/client'
 import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
-import { createReviewCampaign, sendCampaign, getCampaignOptions } from '@/app/actions/campaigns'
+import { createReviewCampaign, getCampaignOptions } from '@/app/actions/campaigns'
 import { cn } from "@/lib/utils"
 
 interface Campaign {
@@ -152,12 +152,10 @@ export default function NotificationsClientPage() {
             const res = await createReviewCampaign(form)
             if (res.error) throw new Error(res.error)
 
-            if (res.status === 'scheduled') {
+            if (scheduleEnabled) {
                 toast.success('Đã lên lịch gửi!')
-            } else if (res.id) {
-                const sendRes = await sendCampaign(res.id)
-                if (sendRes?.error) toast.error('Lỗi gửi: ' + sendRes.error)
-                else toast.success('Đã bắt đầu gửi!')
+            } else {
+                toast.success('Đã tạo thông báo! Đang gửi trong giây lát...')
             }
 
             setIsOpen(false)

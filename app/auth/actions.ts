@@ -74,12 +74,22 @@ export async function login(previousState: any, formData: FormData) {
     redirect('/')
 }
 
-export async function signout() {
+export async function signout(formData?: FormData) {
     const supabase = await createClient()
     // Remove FCM tokens for this user before signing out
     const { data: { user } } = await supabase.auth.getUser()
+
+    // If a specific token is provided from the client, only delete that one
+    // This prevents deleting tokens from other devices (like mobile app)
+    const tokenToDelete = formData?.get('fcm_token') as string | null
+
     if (user) {
-        await supabase.from('fcm_tokens').delete().eq('user_id', user.id)
+        if (tokenToDelete) {
+            await supabase.from('fcm_tokens').delete().match({ user_id: user.id, token: tokenToDelete })
+        } else {
+            // We don't delete all tokens anymore to preserve other devices.
+            // The client should ideally pass the token to delete.
+        }
     }
     await supabase.auth.signOut()
     revalidatePath('/', 'layout')

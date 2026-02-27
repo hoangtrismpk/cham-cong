@@ -104,7 +104,21 @@ export default function ReportsSidebar() {
                             <span className="material-symbols-outlined text-xl">settings</span>
                             <span className="text-sm">Cài đặt</span>
                         </Link>
-                        <form action={signout}>
+                        <form action={async (formData) => {
+                            try {
+                                const { messaging, VAPID_KEY, getToken } = await import('@/utils/firebase')
+                                const msg = await messaging()
+                                if (msg) {
+                                    const currentToken = await getToken(msg, { vapidKey: VAPID_KEY })
+                                    if (currentToken) {
+                                        formData.append('fcm_token', currentToken)
+                                    }
+                                }
+                            } catch (e) {
+                                // Ignore Firebase errors 
+                            }
+                            await signout(formData)
+                        }}>
                             <button
                                 type="submit"
                                 className="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all duration-300 font-bold cursor-pointer"

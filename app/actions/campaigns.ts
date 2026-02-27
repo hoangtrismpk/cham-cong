@@ -78,8 +78,11 @@ export async function createReviewCampaign(formData: FormData) {
         targetValueJson = targetValue
     }
 
-    // If scheduled_at is provided, status is 'scheduled'; otherwise 'draft' (will be sent immediately)
-    const status = scheduledAt ? 'scheduled' : 'draft'
+    // ALWAYS use 'scheduled' status.
+    // For "Send Now": scheduled_at = NOW -> campaign-scheduler picks it up immediately on next run
+    // For "Schedule": scheduled_at = user-chosen time
+    // This ensures both paths use the same reliable delivery mechanism (campaign-scheduler -> notify-dispatcher)
+    const finalScheduledAt = scheduledAt || new Date().toISOString()
 
     const { data, error } = await supabase.from('notification_campaigns').insert({
         title,
@@ -88,13 +91,13 @@ export async function createReviewCampaign(formData: FormData) {
         target_type: targetType,
         target_value: targetValueJson,
         created_by: user.id,
-        status: status,
-        scheduled_at: scheduledAt || null
+        status: 'scheduled',
+        scheduled_at: finalScheduledAt
     }).select().single()
 
     if (error) return { error: error.message }
 
-    return { success: true, id: data.id, status }
+    return { success: true, id: data.id, status: 'scheduled' }
 }
 
 export async function sendCampaign(campaignId: string) {
@@ -139,27 +142,38 @@ export async function sendCampaign(campaignId: string) {
         payload.userIds = campaign.target_value
     }
 
-    // 4. Call Edge Function using Supabase client (handles auth properly)
+    // 4. Call Edge Function using fetch() directly (same as campaign-scheduler)
+    // NOTE: supabaseAdmin.functions.invoke() causes 401 because Supabase Gateway
+    // validates the JWT before the request reaches the Edge Function.
+    // Using fetch() with Bearer <service_key> bypasses this issue.
+    const functionUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/notify-dispatcher`
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+
     try {
-        const { data, error } = await supabaseAdmin.functions.invoke('notify-dispatcher', {
-            body: payload,
+        const response = await fetch(functionUrl, {
+            method: 'POST',
             headers: {
-                // Pass Service key directly as custom header to ensure Edge Function verifies it easily
-                'x-notify-secret': process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-            }
+                'Authorization': `Bearer ${serviceKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
         })
 
-        if (error) {
-            console.error('[sendCampaign] Dispatcher error:', error)
+        const resJson = await response.json()
+
+        if (!response.ok) {
+            const errorMsg = resJson?.error || `Dispatcher returned ${response.status}`
+            console.error('[sendCampaign] Dispatcher error:', errorMsg)
             await supabaseAdmin.from('notification_campaigns')
-                .update({ status: 'failed', metadata: { error: error.message } })
+                .update({ status: 'failed', metadata: { error: errorMsg } })
                 .eq('id', campaignId)
-            return { error: error.message }
+            return { error: errorMsg }
         }
 
         return { success: true }
     } catch (e: any) {
         // Mark campaign as failed on network error
+        console.error('[sendCampaign] Network error:', e.message)
         await supabaseAdmin.from('notification_campaigns')
             .update({ status: 'failed', metadata: { error: e.message } })
             .eq('id', campaignId)

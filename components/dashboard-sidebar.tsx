@@ -140,7 +140,21 @@ export function DashboardSidebar({ user, onClose }: DashboardSidebarProps) {
                         <span className="material-symbols-outlined">settings</span>
                         {t.nav.settings}
                     </Link>
-                    <form action={signout}>
+                    <form action={async (formData) => {
+                        try {
+                            const { messaging, VAPID_KEY, getToken } = await import('@/utils/firebase')
+                            const msg = await messaging()
+                            if (msg) {
+                                const currentToken = await getToken(msg, { vapidKey: VAPID_KEY })
+                                if (currentToken) {
+                                    formData.append('fcm_token', currentToken)
+                                }
+                            }
+                        } catch (e) {
+                            // Ignore Firebase errors 
+                        }
+                        await signout(formData)
+                    }}>
                         <button
                             type="submit"
                             className="flex w-full items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-red-500/10 hover:text-red-400 rounded-xl transition-all font-bold cursor-pointer"

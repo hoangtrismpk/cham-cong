@@ -37,45 +37,55 @@ messaging.onBackgroundMessage((payload) => {
 
 // Handle notification click - opens the link from data.url
 self.addEventListener('notificationclick', (event) => {
-    console.log('Notification clicked', event);
+    console.log('[firebase-messaging-sw.js] Notification clicked', event);
     event.notification.close();
 
-    // Get URL payload from data
-    const urlToOpen = (event.notification.data && event.notification.data.url) || '/';
+    // Get URL payload from data or custom data field
+    const notificationData = event.notification.data || {};
+    let urlToOpen = notificationData.url || '/';
+
+    // Ensure URL is absolute
+    try {
+        urlToOpen = new URL(urlToOpen, self.location.origin).href;
+    } catch (e) {
+        urlToOpen = self.location.origin;
+    }
 
     event.waitUntil(
-        Promise.all([
-            // 1. Open Window logic
-            clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
-                const targetUrl = new URL(urlToOpen, self.location.origin).href;
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+            // Track Click async
+            try {
+                fetch('/api/tracking/notification-click', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        shiftId: notificationData.shiftId,
+                        campaignId: notificationData.campaignId,
+                        type: notificationData.type || 'server_push'
+                    })
+                }).catch(() => { });
+            } catch (e) {
+                // Ignore tracking errors
+            }
 
-                // Check if there is already a window/tab open with the target URL
-                for (let i = 0; i < windowClients.length; i++) {
-                    let client = windowClients[i];
-                    if (client.url === targetUrl && 'focus' in client) {
-                        return client.focus();
-                    }
-                    // Or at least focus and navigate the existing window
-                    if (client.url.includes(self.location.origin) && 'navigate' in client) {
-                        return client.navigate(targetUrl).then(c => c ? c.focus() : null);
-                    }
+            // 1. Try to find exact URL window to focus
+            for (let client of windowClients) {
+                if (client.url === urlToOpen && 'focus' in client) {
+                    return client.focus();
                 }
-                // If no window is found, open a new one
-                if (clients.openWindow) {
-                    return clients.openWindow(targetUrl);
-                }
-            }),
+            }
 
-            // 2. Track Click
-            fetch('/api/tracking/notification-click', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    shiftId: event.notification.data?.shiftId,
-                    campaignId: event.notification.data?.campaignId,
-                    type: event.notification.data?.type || 'server_push'
-                })
-            }).catch(e => console.error('Tracking error:', e))
-        ])
+            // 2. Try to find ANY window on our origin to navigate
+            for (let client of windowClients) {
+                if (client.url.includes(self.location.origin) && 'navigate' in client) {
+                    return client.navigate(urlToOpen).then(c => c ? c.focus() : null);
+                }
+            }
+
+            // 3. Fallback: open a new window
+            if (clients.openWindow) {
+                return clients.openWindow(urlToOpen);
+            }
+        })
     );
 });

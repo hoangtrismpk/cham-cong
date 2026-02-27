@@ -174,7 +174,21 @@ export function AdminSidebar({ className, mobile, onLinkClick, preloadedPermissi
                     <span className="text-sm font-medium">{t.admin.userDashboard}</span>
                 </Link>
 
-                <form action={signout} className="pt-2">
+                <form action={async (formData) => {
+                    try {
+                        const { messaging, VAPID_KEY, getToken } = await import('@/utils/firebase')
+                        const msg = await messaging()
+                        if (msg) {
+                            const currentToken = await getToken(msg, { vapidKey: VAPID_KEY })
+                            if (currentToken) {
+                                formData.append('fcm_token', currentToken)
+                            }
+                        }
+                    } catch (e) {
+                        // Ignore Firebase errors 
+                    }
+                    await signout(formData)
+                }} className="pt-2">
                     <button
                         type="submit"
                         className="flex w-full items-center gap-3 px-3 py-3 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all font-medium group cursor-pointer"
