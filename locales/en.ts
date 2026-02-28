@@ -80,6 +80,7 @@ export const en: Translations = {
         // Menu Items
 
         approvals: 'Approvals',
+        notifications: 'Notifications',
         auditLogs: 'Audit Logs',
         settings: 'Settings',
 
@@ -195,7 +196,7 @@ export const en: Translations = {
             title: 'Employee Management',
             subtitle: 'Manage and track your organization\'s human resources.',
             export: 'Export',
-            addNew: 'Add New Employee',
+            addNew: 'Add Employee',
             searchPlaceholder: 'Search by name, ID or email',
             filters: {
                 department: 'Department',
@@ -222,7 +223,7 @@ export const en: Translations = {
                 deactivate: 'Deactivate User'
             },
             create: {
-                title: 'Add New Employee',
+                title: 'Add Employee',
                 desc: 'Create a new account for an employee. An email confirmation will be sent.',
                 firstName: 'First Name',
                 lastName: 'Last Name',
@@ -528,6 +529,66 @@ export const en: Translations = {
                 error: 'An error occurred',
                 enterReason: 'Please enter a rejection reason',
                 date: "Date"
+            }
+        },
+        notificationsPage: {
+            title: 'Push Notifications',
+            subtitle: 'Manage and send bulk push notifications to employees',
+            createNew: 'Create New Notification',
+            table: {
+                campaign: 'Campaign',
+                target: 'Target',
+                status: 'Status',
+                sent: 'Sent',
+                date: 'Created / Scheduled Date',
+                empty: 'No campaigns found'
+            },
+            status: {
+                draft: 'Draft',
+                scheduled: 'Scheduled',
+                processing: 'Processing',
+                completed: 'Completed',
+                sent: 'Sent',
+                failed: 'Failed'
+            },
+            dialog: {
+                title: 'Send New Notification',
+                desc: 'Send push notifications to employee applications.',
+                subject: 'Title',
+                subjectPlaceholder: 'Ex: National Holiday Announcement',
+                message: 'Message',
+                messagePlaceholder: 'Enter notification message...',
+                sendTo: 'Send to',
+                targetAll: 'All Employees',
+                targetRole: 'By Role',
+                targetDept: 'By Department',
+                targetSpecific: 'Specific Users',
+                selectRole: '-- Select Role --',
+                selectDept: '-- Select Department --',
+                searchUser: 'Search and select users...',
+                searchUserPlaceholder: 'Search employee name...',
+                noUserFound: 'No employee found.',
+                selectedUsers: 'Selected {count} employees',
+                schedule: 'Schedule Send',
+                scheduleDesc: 'Automatically send at chosen time',
+                date: 'Send Date',
+                selectDate: 'Select Date',
+                time: 'Send Time',
+                link: 'Link (Optional)',
+                linkPlaceholder: '/schedule or https://...',
+                cancel: 'Cancel',
+                scheduleLater: 'Schedule',
+                sendNow: 'Send Now',
+                processing: 'Processing...'
+            },
+            messages: {
+                scheduledSuccess: 'Successfully scheduled!',
+                sendSuccess: 'Notification created! Sending shortly...'
+            },
+            targets: {
+                specific_users: 'Specific Users',
+                draft: 'Not Sent',
+                all: 'All Employees'
             }
         },
         attendancePage: {
@@ -1249,6 +1310,16 @@ export const en: Translations = {
             attendance: 'Attendance',
             leave: 'Leave',
             system: 'System',
+        },
+        descriptions: {
+            'account-registration': 'Welcome email for new staff members',
+            'password-reset': 'Recovery instructions for forgotten credentials',
+            'password-changed': 'Confirmation of successful password update',
+            'unknown-device-login': 'Security alert for unrecognized login attempt',
+            'email-change': 'Sent to the OLD email address when a user requests an email change',
+            'email-change-new': 'Sent to the NEW email address when a user requests an email change',
+            'leave-approved': 'Notification when leave request is approved',
+            'daily-attendance-report': 'Daily summary report sent to Admin every evening',
         },
         actions: {
             edit: 'Edit',

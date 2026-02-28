@@ -17,6 +17,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from '@/components/ui/sheet'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import type { EmailTemplate } from '../client-page'
@@ -578,7 +586,7 @@ export default function EditEmailTemplateClientPage({ templateId }: Props) {
 
             <div className="flex flex-col h-full bg-[#0d131a]">
                 {/* ── Top Bar ── */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 shrink-0">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-4 py-3 border-b border-slate-800 shrink-0">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => router.push('/admin/email-templates')}
@@ -588,11 +596,13 @@ export default function EditEmailTemplateClientPage({ templateId }: Props) {
                         </button>
                         <div>
                             <h1 className="text-base font-bold text-white">{et.title}</h1>
-                            <p className="text-xs text-slate-500">{templateId === 'new' ? et.newTitle : template.name}</p>
+                            {templateId === 'new' && (
+                                <p className="text-xs text-slate-500">{et.newTitle}</p>
+                            )}
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         {/* Preview Button */}
                         <Button
                             variant="outline"
@@ -658,28 +668,8 @@ export default function EditEmailTemplateClientPage({ templateId }: Props) {
 
                 {/* ── 2-Column Layout ── */}
                 <div className="flex flex-1 overflow-hidden">
-                    {/* LEFT: Variables panel */}
-                    <div className="w-[240px] shrink-0 border-r border-slate-800 flex flex-col overflow-y-auto bg-[#111827]">
-                        {/* Category */}
-                        <div className="p-4 border-b border-slate-800">
-                            <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-3">{et.templateInfo}</p>
-                            <div>
-                                <Label className="text-xs text-slate-400 mb-1.5 block">{et.categoryLabel}</Label>
-                                <Select value={category} onValueChange={setCategory}>
-                                    <SelectTrigger className="h-8 text-xs bg-[#0d131a] border-slate-700 text-white">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-[#161b22] border-slate-700 text-white">
-                                        {CATEGORY_OPTIONS.map(opt => (
-                                            <SelectItem key={opt.value} value={opt.value} className="text-xs hover:bg-slate-800">
-                                                {opt.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-
+                    {/* LEFT: Variables panel (Hidden on Mobile) */}
+                    <div className="hidden md:flex w-[240px] shrink-0 border-r border-slate-800 flex-col overflow-y-auto bg-[#111827]">
                         {/* Placeholders */}
                         <div className="p-4 flex-1 overflow-y-auto">
                             <div className="flex items-center justify-between mb-3">
@@ -716,16 +706,33 @@ export default function EditEmailTemplateClientPage({ templateId }: Props) {
 
                     {/* RIGHT: Editor area */}
                     <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                        {/* ── Name + Subject row ── */}
-                        <div className="grid grid-cols-2 gap-3 px-4 py-3 border-b border-slate-800 bg-[#111827] shrink-0">
-                            <div className="flex items-center gap-2">
-                                <Label className="text-xs text-slate-400 shrink-0 w-[90px]">{et.nameLabel}</Label>
-                                <Input
-                                    value={name}
-                                    onChange={e => setName(e.target.value)}
-                                    placeholder={et.namePlaceholder}
-                                    className="h-8 text-xs bg-[#0d131a] border-slate-700 text-white flex-1"
-                                />
+                        {/* ── Name + Category + Subject row ── */}
+                        <div className="flex flex-col gap-3 px-4 py-3 border-b border-slate-800 bg-[#111827] shrink-0">
+                            <div className="flex flex-col md:flex-row gap-3">
+                                <div className="flex-1 flex items-center gap-2 min-w-0">
+                                    <Label className="text-xs text-slate-400 shrink-0 w-[90px]">{et.nameLabel}</Label>
+                                    <Input
+                                        value={name}
+                                        onChange={e => setName(e.target.value)}
+                                        placeholder={et.namePlaceholder}
+                                        className="h-8 text-xs bg-[#0d131a] border-slate-700 text-white flex-1"
+                                    />
+                                </div>
+                                <div className="flex-1 flex items-center gap-2 min-w-0">
+                                    <Label className="text-xs text-slate-400 shrink-0 md:w-[90px] w-[90px]">{et.categoryLabel}</Label>
+                                    <Select value={category} onValueChange={setCategory}>
+                                        <SelectTrigger className="h-8 text-xs bg-[#0d131a] border-slate-700 text-white flex-1">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-[#161b22] border-slate-700 text-white">
+                                            {CATEGORY_OPTIONS.map(opt => (
+                                                <SelectItem key={opt.value} value={opt.value} className="text-xs hover:bg-slate-800">
+                                                    {opt.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
                             <div className="flex items-center gap-2">
                                 <Label className="text-xs text-slate-400 shrink-0 w-[90px]">{et.subjectLabel}</Label>
@@ -733,16 +740,53 @@ export default function EditEmailTemplateClientPage({ templateId }: Props) {
                                     value={subject}
                                     onChange={e => setSubject(e.target.value)}
                                     placeholder={et.subjectPlaceholder}
-                                    className="h-8 text-xs bg-[#0d131a] border-slate-700 text-white font-mono flex-1"
+                                    className="h-8 text-xs bg-[#0d131a] border-slate-700 text-white font-mono flex-1 w-full"
                                 />
                             </div>
                         </div>
 
                         {/* ── Editor status bar ── */}
                         <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-800 bg-[#111827] shrink-0">
-                            <p className="text-[11px] text-slate-500">
-                                Nhấn nút <kbd className="px-1 py-0.5 bg-slate-800 rounded text-slate-400 text-[10px]">&lt;/&gt;</kbd> trong toolbar để sửa HTML trực tiếp
-                            </p>
+                            <div className="flex items-center gap-2">
+                                <Sheet>
+                                    <SheetTrigger asChild>
+                                        <Button variant="outline" size="sm" className="md:hidden h-7 text-[10px] gap-1.5 px-2.5 border-cyan-500/30 text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 active:bg-cyan-500/30">
+                                            <Code className="h-3 w-3" />
+                                            {et.placeholders}
+                                        </Button>
+                                    </SheetTrigger>
+                                    <SheetContent side="bottom" className="h-[75vh] bg-[#111827] border-t border-slate-800 p-0 flex flex-col z-[100]">
+                                        <SheetHeader className="p-4 border-b border-slate-800 shrink-0 text-left">
+                                            <SheetTitle className="text-sm font-bold text-white mb-1">Chèn biến thay thế</SheetTitle>
+                                            <SheetDescription className="text-xs text-slate-400">
+                                                Bấm để sao chép biến và dán thủ công vào nội dung email.
+                                            </SheetDescription>
+                                        </SheetHeader>
+                                        <div className="flex-1 overflow-y-auto p-4 space-y-2 pb-10">
+                                            {ALL_VARIABLES.map(({ key, desc }) => (
+                                                <button
+                                                    key={key}
+                                                    onClick={() => handleCopyVar(key)}
+                                                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg bg-[#162032] border border-cyan-500/20 active:border-cyan-500 hover:border-cyan-500/50 transition-all text-left gap-3"
+                                                >
+                                                    <div className="min-w-0 flex-1">
+                                                        <code className="text-[13px] text-cyan-400 font-mono block truncate">{`{{${key}}}`}</code>
+                                                        <span className="text-[11px] text-slate-400 block truncate leading-tight mt-1">{desc}</span>
+                                                    </div>
+                                                    {copiedVar === key ? (
+                                                        <Check className="h-5 w-5 text-emerald-400 shrink-0" />
+                                                    ) : (
+                                                        <Copy className="h-5 w-5 text-slate-500 shrink-0" />
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </SheetContent>
+                                </Sheet>
+                                <p className="hidden sm:block text-[11px] text-slate-500">
+                                    Nhấn nút <kbd className="px-1 py-0.5 bg-slate-800 rounded text-slate-400 text-[10px]">&lt;/&gt;</kbd> trong toolbar để sửa HTML trực tiếp
+                                </p>
+                            </div>
                             <div className="flex items-center gap-1 bg-[#0d131a] rounded-lg p-0.5 border border-slate-700">
                                 <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-700 text-white text-[11px] font-semibold">
                                     <Eye className="h-3 w-3" />
@@ -753,7 +797,7 @@ export default function EditEmailTemplateClientPage({ templateId }: Props) {
                         </div>
 
                         {/* ── TinyMCE Editor ── */}
-                        <div className="flex-1 overflow-hidden" style={{ minHeight: 0 }}>
+                        <div className="flex-1 flex flex-col min-h-[400px]">
                             <VisualEditor
                                 onEditorChange={(newContent) => setContent(newContent)}
                                 value={content}
@@ -768,6 +812,7 @@ export default function EditEmailTemplateClientPage({ templateId }: Props) {
                                         'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
                                         'insertdatetime', 'media', 'table', 'help', 'wordcount'
                                     ],
+                                    toolbar_mode: 'sliding',
                                     toolbar: 'undo redo | blocks | ' +
                                         'bold italic underline forecolor backcolor | alignleft aligncenter ' +
                                         'alignright alignjustify | bullist numlist outdent indent | ' +

@@ -171,10 +171,10 @@ export default function EmployeeDetailPage() {
                     </div>
 
                     {/* Profile Header */}
-                    <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-6">
+                    <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6">
+                        <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
                             {/* Avatar */}
-                            <div className="relative">
+                            <div className="relative shrink-0">
                                 <div className={`w-24 h-24 rounded-full flex items-center justify-center text-white font-black bg-gradient-to-br border-4 border-slate-700 shadow-xl overflow-hidden ${!employee.avatar_url ? getAvatarFallback(employee.full_name) : 'bg-slate-800'}`}>
                                     {employee.avatar_url ? (
                                         <img src={employee.avatar_url} alt={employee.full_name} className="w-full h-full object-cover" />
@@ -189,7 +189,7 @@ export default function EmployeeDetailPage() {
 
                             {/* Info */}
                             <div>
-                                <div className="flex items-center gap-3 mb-2">
+                                <div className="flex flex-col md:flex-row items-center gap-3 mb-2">
                                     <h1 className="text-3xl font-bold">{employee.full_name}</h1>
                                     {employee.employment_type && (
                                         <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
@@ -197,10 +197,10 @@ export default function EmployeeDetailPage() {
                                         </Badge>
                                     )}
                                 </div>
-                                <p className="text-lg text-slate-300 mb-1">
+                                <p className="text-lg text-slate-300 mb-2">
                                     {employee.job_title} • {employee.department}
                                 </p>
-                                <div className="flex items-center gap-4 text-sm text-slate-400">
+                                <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4 text-sm text-slate-400">
                                     <span className="flex items-center gap-1">
                                         <Briefcase className="h-3.5 w-3.5" />
                                         {t.admin.detail.labels.id}: #{employee.employee_code || (employee.numeric_id ? employee.numeric_id.toString().padStart(6, '0') : 'N/A')}
@@ -214,10 +214,10 @@ export default function EmployeeDetailPage() {
                         </div>
 
                         {/* Actions */}
-                        <div className="flex gap-3">
+                        <div className="flex gap-3 w-full md:w-auto mt-4 md:mt-0">
                             <Button
                                 variant="outline"
-                                className="bg-slate-800 border-slate-700"
+                                className="flex-1 md:flex-none bg-slate-800 border-slate-700"
                                 onClick={() => toast.info('Export PDF feature coming soon!')}
                             >
                                 <Download className="h-4 w-4 mr-2" />
@@ -225,7 +225,7 @@ export default function EmployeeDetailPage() {
                             </Button>
                             {can('users.edit') && (
                                 <Button
-                                    className="bg-primary hover:bg-primary/90 text-black"
+                                    className="flex-1 md:flex-none bg-primary hover:bg-primary/90 text-black shadow-lg shadow-primary/20"
                                     onClick={() => {
                                         const displayId = employee.numeric_id ? employee.numeric_id.toString().padStart(6, '0') : employeeId;
                                         router.push(`/admin/employees/${displayId}/edit`);
@@ -241,32 +241,34 @@ export default function EmployeeDetailPage() {
             </div>
 
             {/* Tabs */}
-            <div className="max-w-7xl mx-auto px-8 py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-4 bg-slate-800/50 p-1 h-12">
-                        <TabsTrigger value="personal" className="data-[state=active]:bg-primary data-[state=active]:text-black font-bold">
-                            <FileText className="h-4 w-4 mr-2" />
-                            {t.admin.detail.tabs.personal}
-                        </TabsTrigger>
-                        <TabsTrigger value="schedule" className="data-[state=active]:bg-primary data-[state=active]:text-black font-bold">
-                            <Calendar className="h-4 w-4 mr-2" />
-                            {t.admin.detail.tabs.schedule}
-                        </TabsTrigger>
-                        <TabsTrigger value="attendance" className="data-[state=active]:bg-primary data-[state=active]:text-black font-bold">
-                            <Clock className="h-4 w-4 mr-2" />
-                            {t.admin.detail.tabs.attendance}
-                        </TabsTrigger>
-                        <TabsTrigger value="documents" className="data-[state=active]:bg-primary data-[state=active]:text-black font-bold">
-                            <FileText className="h-4 w-4 mr-2" />
-                            {t.admin.detail.tabs.documents}
-                        </TabsTrigger>
-                    </TabsList>
+                    <div className="overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:pb-0 hide-scrollbar-on-mobile">
+                        <TabsList className="inline-flex min-w-full md:grid md:w-full md:grid-cols-4 bg-slate-800/50 p-1 h-12">
+                            <TabsTrigger value="personal" className="data-[state=active]:bg-primary data-[state=active]:text-black font-bold">
+                                <FileText className="h-4 w-4 mr-2" />
+                                {t.admin.detail.tabs.personal}
+                            </TabsTrigger>
+                            <TabsTrigger value="schedule" className="data-[state=active]:bg-primary data-[state=active]:text-black font-bold">
+                                <Calendar className="h-4 w-4 mr-2" />
+                                {t.admin.detail.tabs.schedule}
+                            </TabsTrigger>
+                            <TabsTrigger value="attendance" className="data-[state=active]:bg-primary data-[state=active]:text-black font-bold">
+                                <Clock className="h-4 w-4 mr-2" />
+                                {t.admin.detail.tabs.attendance}
+                            </TabsTrigger>
+                            <TabsTrigger value="documents" className="data-[state=active]:bg-primary data-[state=active]:text-black font-bold">
+                                <FileText className="h-4 w-4 mr-2" />
+                                {t.admin.detail.tabs.documents}
+                            </TabsTrigger>
+                        </TabsList>
+                    </div>
 
                     {/* Personal Info Tab */}
                     <TabsContent value="personal" className="mt-6 space-y-6">
-                        <div className="grid grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             {/* LEFT COLUMN - Contact Details & Emergency */}
-                            <div className="col-span-2 space-y-6">
+                            <div className="lg:col-span-2 space-y-6">
                                 {/* Contact Details */}
                                 <Card className="bg-[#161b22] border-slate-800">
                                     <CardHeader>
@@ -276,7 +278,7 @@ export default function EmployeeDetailPage() {
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent>
-                                        <div className="grid grid-cols-2 gap-x-8 gap-y-5">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
                                             <div>
                                                 <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">{t.admin.detail.labels.id}</p>
                                                 <p className="text-white font-medium">{employee.employee_code || (employee.numeric_id ? employee.numeric_id.toString().padStart(6, '0') : 'N/A')}</p>
@@ -319,7 +321,7 @@ export default function EmployeeDetailPage() {
                                                     {employee.manager_name ? <span className="text-emerald-400 font-bold">{employee.manager_name}</span> : 'N/A'}
                                                 </p>
                                             </div>
-                                            <div className="col-span-2">
+                                            <div className="sm:col-span-2">
                                                 <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">{t.admin.detail.labels.address}</p>
                                                 <p className="text-white font-medium">
                                                     {employee.address || 'N/A'}
@@ -348,7 +350,7 @@ export default function EmployeeDetailPage() {
                                             }
 
                                             return (
-                                                <div className="grid grid-cols-3 gap-x-6 gap-y-4">
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-4">
                                                     <div>
                                                         <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5 font-semibold">{t.admin.detail.emergencyLabels.name}</p>
                                                         <p className="text-white font-medium">{contact.name}</p>
@@ -495,7 +497,7 @@ export default function EmployeeDetailPage() {
                     {/* Attendance History Tab */}
                     <TabsContent value="attendance" className="mt-6 space-y-6">
                         {/* Overview Stats */}
-                        <div className="grid grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                             <Card className="bg-[#161b22] border-slate-800">
                                 <CardContent className="pt-6">
                                     <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">{t.admin.detail.attendance.monthlyRate}</p>
@@ -534,70 +536,72 @@ export default function EmployeeDetailPage() {
                                     </Button>
                                 </div>
                             </CardHeader>
-                            <CardContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow className="border-slate-700 hover:bg-slate-800/40">
-                                            <TableHead className="text-slate-400 font-bold tracking-wider">{t.admin.detail.attendance.table.date}</TableHead>
-                                            <TableHead className="text-slate-400 font-bold tracking-wider">{t.admin.detail.attendance.table.checkIn}</TableHead>
-                                            <TableHead className="text-slate-400 font-bold tracking-wider">{t.admin.detail.attendance.table.checkOut}</TableHead>
-                                            <TableHead className="text-slate-400 font-bold tracking-wider">{t.admin.detail.attendance.table.total}</TableHead>
-                                            <TableHead className="text-slate-400 font-bold tracking-wider">{t.admin.detail.attendance.table.status}</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {attendanceLoading ? (
-                                            <TableRow>
-                                                <TableCell colSpan={5} className="py-20 text-center">
-                                                    <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                                                    <p className="text-sm text-slate-500">{t.common.loading}</p>
-                                                </TableCell>
+                            <CardContent className="p-0 sm:p-6 sm:pt-0 pb-6">
+                                <div className="overflow-x-auto custom-scrollbar">
+                                    <Table className="min-w-[500px]">
+                                        <TableHeader>
+                                            <TableRow className="border-slate-700 hover:bg-slate-800/40">
+                                                <TableHead className="text-slate-400 font-bold tracking-wider">{t.admin.detail.attendance.table.date}</TableHead>
+                                                <TableHead className="text-slate-400 font-bold tracking-wider">{t.admin.detail.attendance.table.checkIn}</TableHead>
+                                                <TableHead className="text-slate-400 font-bold tracking-wider">{t.admin.detail.attendance.table.checkOut}</TableHead>
+                                                <TableHead className="text-slate-400 font-bold tracking-wider">{t.admin.detail.attendance.table.total}</TableHead>
+                                                <TableHead className="text-slate-400 font-bold tracking-wider">{t.admin.detail.attendance.table.status}</TableHead>
                                             </TableRow>
-                                        ) : attendanceLogs.length > 0 ? (
-                                            attendanceLogs.map((log) => (
-                                                <TableRow key={log.id || `${log.work_date}-${log.user_id}`} className="border-slate-800 hover:bg-slate-800/40">
-                                                    <TableCell className="font-medium">
-                                                        {format(new Date(log.work_date), 'dd/MM/yyyy', { locale: dateLocale })}
-                                                    </TableCell>
-                                                    <TableCell className="text-slate-300">
-                                                        {log.check_in_time ? format(new Date(log.check_in_time), 'hh:mm a', { locale: dateLocale }) : '—'}
-                                                    </TableCell>
-                                                    <TableCell className="text-slate-300">
-                                                        {log.check_out_time ? format(new Date(log.check_out_time), 'hh:mm a', { locale: dateLocale }) : '—'}
-                                                    </TableCell>
-                                                    <TableCell className="font-bold">
-                                                        {log.totalHours ? `${log.totalHours}h` : '0h'}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Badge
-                                                            variant="outline"
-                                                            className={
-                                                                log.status === 'present'
-                                                                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                                                                    : log.status === 'late'
-                                                                        ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
-                                                                        : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
-                                                            }
-                                                        >
-                                                            {log.status === 'present'
-                                                                ? t.admin.detail.attendance.onTime.toUpperCase()
-                                                                : log.status === 'late'
-                                                                    ? t.admin.detail.attendance.late.toUpperCase()
-                                                                    : t.admin.detail.attendance.absent.toUpperCase()
-                                                            }
-                                                        </Badge>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {attendanceLoading ? (
+                                                <TableRow>
+                                                    <TableCell colSpan={5} className="py-20 text-center">
+                                                        <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                                                        <p className="text-sm text-slate-500">{t.common.loading}</p>
                                                     </TableCell>
                                                 </TableRow>
-                                            ))
-                                        ) : (
-                                            <TableRow>
-                                                <TableCell colSpan={5} className="text-center py-12 text-slate-500 italic">
-                                                    {t.admin.detail.messages.noAttendance}
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
+                                            ) : attendanceLogs.length > 0 ? (
+                                                attendanceLogs.map((log) => (
+                                                    <TableRow key={log.id || `${log.work_date}-${log.user_id}`} className="border-slate-800 hover:bg-slate-800/40">
+                                                        <TableCell className="font-medium">
+                                                            {format(new Date(log.work_date), 'dd/MM/yyyy', { locale: dateLocale })}
+                                                        </TableCell>
+                                                        <TableCell className="text-slate-300">
+                                                            {log.check_in_time ? format(new Date(log.check_in_time), 'hh:mm a', { locale: dateLocale }) : '—'}
+                                                        </TableCell>
+                                                        <TableCell className="text-slate-300">
+                                                            {log.check_out_time ? format(new Date(log.check_out_time), 'hh:mm a', { locale: dateLocale }) : '—'}
+                                                        </TableCell>
+                                                        <TableCell className="font-bold">
+                                                            {log.totalHours ? `${log.totalHours}h` : '0h'}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Badge
+                                                                variant="outline"
+                                                                className={
+                                                                    log.status === 'present'
+                                                                        ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                                                                        : log.status === 'late'
+                                                                            ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                                                                            : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
+                                                                }
+                                                            >
+                                                                {log.status === 'present'
+                                                                    ? t.admin.detail.attendance.onTime.toUpperCase()
+                                                                    : log.status === 'late'
+                                                                        ? t.admin.detail.attendance.late.toUpperCase()
+                                                                        : t.admin.detail.attendance.absent.toUpperCase()
+                                                                }
+                                                            </Badge>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))
+                                            ) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={5} className="text-center py-12 text-slate-500 italic">
+                                                        {t.admin.detail.messages.noAttendance}
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
 
                                 {attendanceTotal > ATTENDANCE_PAGE_SIZE && (
                                     <div className="flex items-center justify-between mt-6 px-2">

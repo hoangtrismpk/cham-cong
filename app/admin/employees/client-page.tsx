@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
     Search, ChevronLeft, ChevronRight,
-    MoreVertical, Plus, Filter, Download, Check, Trash2
+    MoreVertical, Plus, Filter, Download, Check, Trash2, Users
 } from 'lucide-react';
 import {
     DropdownMenu,
@@ -228,11 +228,12 @@ export default function EmployeesClientPage() {
     };
 
     return (
-        <div className="p-6 max-w-[1600px] mx-auto min-h-screen bg-[#0d1117]">
+        <div className="p-6 max-w-[1600px] mx-auto min-h-screen bg-[#0d1117] space-y-6">
             {/* Header & Actions */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+            <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">
+                    <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+                        <Users className="w-8 h-8 text-primary" />
                         {t.admin.employeeManagement.title}
                     </h1>
                     <p className="text-slate-400">
@@ -250,7 +251,7 @@ export default function EmployeesClientPage() {
                     </Button>
                     {can('users.create') && <CreateEmployeeDialog />}
                 </div>
-            </div>
+            </header>
 
             {/* Filter Bar */}
             <Card className="bg-[#1a1f2e] border-slate-800/50 p-4 mb-6 shadow-md">
@@ -582,6 +583,6 @@ export default function EmployeesClientPage() {
                     </div>
                 </div>
             </Card>
-        </div>
+        </div >
     );
 }

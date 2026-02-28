@@ -79,14 +79,16 @@ export default function MyTeamClient({ team: initialTeam, stats: initialStats, c
     }
 
     return (
-        <div className="space-y-6 p-6">
-            <header className="flex items-center justify-between">
+        <div className="p-6 max-w-[1600px] mx-auto min-h-screen bg-[#0d1117] space-y-6">
+            <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-                        <Users className="h-8 w-8 text-primary" />
+                    <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+                        <Users className="w-8 h-8 text-primary" />
                         {t.admin.myTeam.title}
                     </h1>
-                    <p className="text-slate-400 mt-1">{t.admin.myTeam.subtitle}</p>
+                    <p className="text-slate-400">
+                        {t.admin.myTeam.subtitle}
+                    </p>
                 </div>
             </header>
 

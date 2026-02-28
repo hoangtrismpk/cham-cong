@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card } from '@/components/ui/card'
-import { Loader2, Download, ChevronLeft, ChevronRight, Search, Filter } from 'lucide-react'
+import { Loader2, Download, ChevronLeft, ChevronRight, Search, Filter, Shield } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { usePermissions } from '@/contexts/permission-context'
@@ -125,14 +125,19 @@ export default function AuditLogsClientPage() {
     }
 
     return (
-        <div className="p-6 max-w-7xl mx-auto">
+        <div className="p-6 max-w-[1600px] mx-auto min-h-screen bg-[#0d1117] space-y-6">
             {/* Header */}
-            <div className="mb-6">
-                <h1 className="text-3xl font-bold text-white mb-2">Audit Logs</h1>
-                <p className="text-slate-400">
-                    Theo dõi tất cả hoạt động của admin trong hệ thống
-                </p>
-            </div>
+            <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+                        <Shield className="w-8 h-8 text-primary" />
+                        Audit Logs
+                    </h1>
+                    <p className="text-slate-400">
+                        Theo dõi tất cả hoạt động của admin trong hệ thống
+                    </p>
+                </div>
+            </header>
 
             {/* Filters */}
             {mounted && (

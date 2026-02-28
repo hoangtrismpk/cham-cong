@@ -5,10 +5,7 @@ import { useI18n } from '@/contexts/i18n-context';
 import { createEmployee, getDepartments, getRoles, getJobTitles } from '@/app/actions/employees';
 import { getOrganizationSettings } from '@/app/actions/organization';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog, DialogContent, DialogDescription,
-    DialogFooter, DialogHeader, DialogTitle, DialogTrigger
-} from '@/components/ui/dialog';
+import { ResponsiveModal } from '@/components/ui/responsive-modal';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -134,21 +131,19 @@ export default function CreateEmployeeDialog() {
     };
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-900/20">
-                    <Plus className="w-4 h-4 mr-2" />
-                    {t.admin.employeeManagement.addNew}
-                </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px] bg-[#1a1f2e] border-slate-800 text-white">
-                <DialogHeader>
-                    <DialogTitle className="text-xl font-bold">{t.admin.employeeManagement.create.title}</DialogTitle>
-                    <DialogDescription className="text-slate-400">
+        <>
+            <Button onClick={() => setOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-900/20">
+                <Plus className="w-4 h-4 mr-2" />
+                {t.admin.employeeManagement.addNew}
+            </Button>
+            <ResponsiveModal open={open} onOpenChange={setOpen} className="bg-[#1a1f2e] border border-slate-800 text-white">
+                <div className="mb-4 space-y-1">
+                    <h2 className="text-xl font-bold">{t.admin.employeeManagement.create.title}</h2>
+                    <p className="text-slate-400 text-sm">
                         {t.admin.employeeManagement.create.desc}
-                    </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4 py-4">
+                    </p>
+                </div>
+                <form onSubmit={handleSubmit} className="space-y-4 py-2">
                     {/* Employee Code & Name */}
                     <div className="space-y-2">
                         <Label>{t.admin.employeeManagement.create.employeeCode} <span className="text-red-500">*</span></Label>
@@ -304,17 +299,17 @@ export default function CreateEmployeeDialog() {
                         </Select>
                     </div>
 
-                    <DialogFooter className="mt-6">
-                        <Button type="button" variant="outline" onClick={() => setOpen(false)} className="border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800">
+                    <div className="mt-8 flex items-center justify-end gap-3 flex-wrap sm:flex-nowrap">
+                        <Button type="button" variant="outline" onClick={() => setOpen(false)} className="w-full sm:w-auto border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800">
                             {t.admin.employeeManagement.create.cancel}
                         </Button>
-                        <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20">
+                        <Button type="submit" disabled={loading} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20">
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {loading ? t.admin.employeeManagement.create.loading : t.admin.employeeManagement.create.submit}
                         </Button>
-                    </DialogFooter>
+                    </div>
                 </form>
-            </DialogContent>
-        </Dialog>
+            </ResponsiveModal>
+        </>
     );
 }

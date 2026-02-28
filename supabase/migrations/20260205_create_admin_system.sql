@@ -108,7 +108,7 @@ INSERT INTO available_permissions (id, resource, action, display_name, category)
   
   -- Users
   ('users.view', 'users', 'view', 'Xem danh sách nhân viên', 'Users'),
-  ('users.create', 'users', 'create', 'Thêm nhân viên mới', 'Users'),
+  ('users.create', 'users', 'create', 'Thêm nhân viên', 'Users'),
   ('users.edit', 'users', 'edit', 'Sửa thông tin nhân viên', 'Users'),
   ('users.delete', 'users', 'delete', 'Xóa nhân viên', 'Users'),
   

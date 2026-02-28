@@ -261,15 +261,17 @@ export default function ApprovalsClientPage() {
     }
 
     return (
-        <div className="p-8 max-w-[1600px] mx-auto min-h-screen">
+        <div className="p-6 max-w-[1600px] mx-auto min-h-screen bg-[#0d1117] space-y-6">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+            <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
-                        <Activity className="w-6 h-6 text-primary" suppressHydrationWarning />
+                    <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+                        <Activity className="w-8 h-8 text-primary" suppressHydrationWarning />
                         {t.admin.approvalsPage.title}
                     </h1>
-                    <p className="text-slate-400 mt-1 text-sm">{t.admin.approvalsPage.subtitle}</p>
+                    <p className="text-slate-400">
+                        {t.admin.approvalsPage.subtitle}
+                    </p>
                 </div>
                 <div className="flex items-center gap-2 mt-4 md:mt-0">
                     <Tabs value={viewMode} onValueChange={(v) => {
@@ -283,7 +285,7 @@ export default function ApprovalsClientPage() {
                         </TabsList>
                     </Tabs>
                 </div>
-            </div>
+            </header>
 
             <Tabs defaultValue="all" className="w-full">
                 <TabsList className="bg-slate-900 border border-slate-800 p-1 h-auto mb-6 w-full justify-start overflow-x-auto">
@@ -425,19 +427,19 @@ export default function ApprovalsClientPage() {
 
                                 {/* --- PAGINATION CONTROLS --- */}
                                 {totalCount > 0 && (
-                                    <div className="flex items-center justify-between px-6 py-6 border-t border-slate-800">
+                                    <div className="grid grid-cols-2 sm:flex sm:flex-row items-center justify-between gap-4 px-4 sm:px-6 py-4 sm:py-6 border-t border-slate-800">
                                         <button
                                             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                                             disabled={currentPage === 1}
-                                            className="flex items-center gap-2 px-4 py-2 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white bg-slate-900 border border-white/5 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all rounded-xl"
+                                            className="col-span-1 order-2 sm:order-1 flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2.5 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white bg-slate-900 border border-white/5 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all rounded-xl"
                                         >
                                             <span className="material-symbols-outlined text-sm">arrow_back</span>
-                                            {t.common.back}
+                                            <span className="truncate">{t.common.back}</span>
                                         </button>
 
-                                        <div className="flex flex-col items-center">
+                                        <div className="col-span-2 order-1 sm:order-2 flex flex-col items-center justify-center">
                                             <div className="flex items-center gap-2 mb-1">
-                                                <span className="text-xs font-bold text-white">{t.admin.employeeManagement.pagination?.page || 'Trang'}</span>
+                                                <span className="text-xs font-bold text-slate-400 sm:text-white">{t.admin.employeeManagement.pagination?.page || 'Trang'}</span>
                                                 <input
                                                     type="number"
                                                     min={1}
@@ -458,7 +460,7 @@ export default function ApprovalsClientPage() {
                                                     }}
                                                     className="w-12 h-6 px-1 text-center bg-slate-800 border border-white/10 rounded text-xs font-bold text-white focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
                                                 />
-                                                <span className="text-xs font-bold text-white">/ {totalPages}</span>
+                                                <span className="text-xs font-bold text-slate-400 sm:text-white">/ {totalPages}</span>
                                             </div>
                                             <span className="text-[10px] text-slate-500 font-medium">
                                                 {totalCount} {t.common.results}
@@ -468,9 +470,9 @@ export default function ApprovalsClientPage() {
                                         <button
                                             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                                             disabled={currentPage >= totalPages}
-                                            className="flex items-center gap-2 px-4 py-2 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white bg-slate-900 border border-white/5 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all rounded-xl"
+                                            className="col-span-1 order-3 flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2.5 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white bg-slate-900 border border-white/5 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all rounded-xl"
                                         >
-                                            {t.common.next}
+                                            <span className="truncate">{t.common.next}</span>
                                             <span className="material-symbols-outlined text-sm">arrow_forward</span>
                                         </button>
                                     </div>

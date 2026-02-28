@@ -78,6 +78,7 @@ export const vi = {
         // Menu Items
 
         approvals: 'Phê duyệt',
+        notifications: 'Thông báo',
         auditLogs: 'Nhật ký hệ thống',
         settings: 'Cài đặt',
 
@@ -193,7 +194,7 @@ export const vi = {
             title: 'Quản lý Nhân sự',
             subtitle: 'Quản lý và theo dõi nguồn nhân lực của tổ chức.',
             export: 'Xuất danh sách',
-            addNew: 'Thêm nhân viên mới',
+            addNew: 'Thêm nhân viên',
             searchPlaceholder: 'Tìm theo tên, ID hoặc email',
             filters: {
                 department: 'Phòng ban',
@@ -220,7 +221,7 @@ export const vi = {
                 deactivate: 'Vô hiệu hóa'
             },
             create: {
-                title: 'Thêm nhân viên mới',
+                title: 'Thêm nhân viên',
                 desc: 'Tạo tài khoản mới cho nhân viên. Hệ thống sẽ tự động gửi email xác nhận.',
                 firstName: 'Tên',
                 lastName: 'Họ đệm',
@@ -526,6 +527,66 @@ export const vi = {
                 error: 'Có lỗi xảy ra',
                 enterReason: 'Vui lòng nhập lý do từ chối',
                 date: "Ngày nghỉ"
+            }
+        },
+        notificationsPage: {
+            title: 'Gửi Thông Báo (Push)',
+            subtitle: 'Quản lý và gửi thông báo hàng loạt đến nhân viên',
+            createNew: 'Tạo Thông Báo Mới',
+            table: {
+                campaign: 'Chiến dịch',
+                target: 'Mục tiêu',
+                status: 'Trạng thái',
+                sent: 'Đã gửi',
+                date: 'Ngày tạo / Gửi',
+                empty: 'Chưa có chiến dịch nào'
+            },
+            status: {
+                draft: 'Nháp',
+                scheduled: 'Đã hẹn giờ',
+                processing: 'Đang gửi',
+                completed: 'Hoàn thành',
+                sent: 'Đã gửi',
+                failed: 'Lỗi'
+            },
+            dialog: {
+                title: 'Gửi Thông Báo Mới',
+                desc: 'Gửi thông báo đến ứng dụng của nhân viên.',
+                subject: 'Tiêu đề',
+                subjectPlaceholder: 'VD: Thông báo nghỉ lễ 30/4',
+                message: 'Nội dung',
+                messagePlaceholder: 'Nhập nội dung thông báo...',
+                sendTo: 'Gửi đến',
+                targetAll: 'Tất cả nhân viên',
+                targetRole: 'Theo vai trò',
+                targetDept: 'Theo phòng ban',
+                targetSpecific: 'Cụ thể (Chọn nhân viên)',
+                selectRole: '-- Chọn vai trò --',
+                selectDept: '-- Chọn phòng ban --',
+                searchUser: 'Tìm và chọn nhân viên...',
+                searchUserPlaceholder: 'Tìm tên nhân viên...',
+                noUserFound: 'Không tìm thấy nhân viên.',
+                selectedUsers: 'Đã chọn {count} nhân viên',
+                schedule: 'Hẹn giờ gửi',
+                scheduleDesc: 'Tự động gửi vào thời gian đã chọn',
+                date: 'Ngày gửi',
+                selectDate: 'Chọn ngày',
+                time: 'Giờ gửi',
+                link: 'Đường dẫn (Tùy chọn)',
+                linkPlaceholder: '/schedule hoặc https://...',
+                cancel: 'Hủy',
+                scheduleLater: 'Lên Lịch',
+                sendNow: 'Gửi Ngay',
+                processing: 'Đang xử lý...'
+            },
+            messages: {
+                scheduledSuccess: 'Đã lên lịch gửi!',
+                sendSuccess: 'Đã tạo thông báo! Đang gửi trong giây lát...'
+            },
+            targets: {
+                specific_users: 'Người dùng cụ thể',
+                draft: 'Chưa gửi',
+                all: 'Tất cả nhân viên'
             }
         },
         attendancePage: {
@@ -1247,6 +1308,16 @@ export const vi = {
             attendance: 'Chấm công',
             leave: 'Nghỉ phép',
             system: 'Hệ thống',
+        },
+        descriptions: {
+            'account-registration': 'Email chào mừng nhân viên mới',
+            'password-reset': 'Hướng dẫn khôi phục thông tin đăng nhập',
+            'password-changed': 'Xác nhận thay đổi mật khẩu thành công',
+            'unknown-device-login': 'Cảnh báo bảo mật khi thiết bị lạ đăng nhập',
+            'email-change': 'Gửi đến email CŨ khi yêu cầu đổi email',
+            'email-change-new': 'Gửi đến email MỚI khi yêu cầu đổi email',
+            'leave-approved': 'Thông báo khi đơn xin phép được duyệt',
+            'daily-attendance-report': 'Báo cáo tổng hợp hàng ngày gửi Admin',
         },
         actions: {
             edit: 'Chỉnh sửa',

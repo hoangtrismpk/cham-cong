@@ -6,7 +6,7 @@ import { format, differenceInMinutes, parseISO } from 'date-fns'
 import { vi, enUS } from 'date-fns/locale'
 import Link from 'next/link'
 import { useI18n } from '@/contexts/i18n-context'
-
+import { LayoutDashboard } from 'lucide-react'
 
 interface TrendData {
     name: string
@@ -71,11 +71,16 @@ export function AdminDashboardClient({
     const dateLocale = locale === 'vi' ? vi : enUS
 
     return (
-        <div className="p-8 max-w-[1600px] w-full mx-auto space-y-8 bg-[#0b0f1a] min-h-screen">
-            <header className="flex items-center justify-between mb-8">
+        <div className="p-6 max-w-[1600px] mx-auto min-h-screen bg-[#0d1117] space-y-6">
+            <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-white">{t.admin.overview}</h2>
-                    <p className="text-slate-400 text-sm">{t.admin.realTimeData} {todayStr}</p>
+                    <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+                        <LayoutDashboard className="w-8 h-8 text-primary" />
+                        {t.admin.overview}
+                    </h1>
+                    <p className="text-slate-400">
+                        {t.admin.realTimeData} {todayStr}
+                    </p>
                 </div>
             </header>
 

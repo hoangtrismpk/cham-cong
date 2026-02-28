@@ -3,6 +3,12 @@ import { createClient } from '@/utils/supabase/server'
 import MyTeamClient from './client-page'
 import { redirect } from 'next/navigation'
 import { requirePermission } from '@/utils/auth-guard'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+    title: "Đội ngũ của tôi - Quản lý Chấm công",
+    description: "Xem và quản lý thông tin các thành viên trong đội ngũ của bạn.",
+}
 
 export default async function MyTeamPage() {
     await requirePermission('my_team.view', '/admin')

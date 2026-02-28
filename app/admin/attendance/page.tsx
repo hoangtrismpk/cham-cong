@@ -2,6 +2,12 @@ import { createClient } from '@/utils/supabase/server'
 import { AttendanceClient } from './client-page'
 import { ClientRedirect } from '@/components/client-redirect'
 import { checkPermission } from '@/utils/auth-guard'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+    title: "Chấm công - Quản lý Chấm công",
+    description: "Quản lý và theo dõi nhật ký chấm công của nhân viên.",
+}
 
 export const revalidate = 0
 

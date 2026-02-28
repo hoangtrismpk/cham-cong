@@ -245,21 +245,26 @@ export default function AdminReportsDashboard({ reports: initialReports, total, 
     const chartData = stats.dailyTrend || []
 
     return (
-        <div className="max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500 pb-10">
+        <div className="max-w-[1600px] mx-auto animate-in fade-in duration-500 pb-10 space-y-6">
             {/* Page Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
-                    <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase mb-2">{t.admin.reportDashboard.title}</h1>
-                    <p className="text-slate-400 font-medium tracking-wide">{t.admin.reportDashboard.subtitle}</p>
+                    <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+                        <FileText className="w-8 h-8 text-primary" />
+                        {t.admin.reportDashboard.title}
+                    </h1>
+                    <p className="text-slate-400">
+                        {t.admin.reportDashboard.subtitle}
+                    </p>
                 </div>
                 <div className="flex items-center gap-3">
                     {can('reports.export') && (
                         <Button
                             onClick={handleExport}
                             variant="outline"
-                            className="h-12 bg-[#1a1f2e] border-slate-700 text-slate-300 hover:bg-slate-800 rounded-2xl px-6 font-bold shadow-xl transition-all"
+                            className="bg-[#1a1f2e] border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
                         >
-                            <Download className="w-4 h-4 mr-2 text-primary" />
+                            <Download className="w-4 h-4 mr-2" />
                             {t.admin.reportDashboard.export}
                         </Button>
                     )}
@@ -270,15 +275,15 @@ export default function AdminReportsDashboard({ reports: initialReports, total, 
                                 const [m, y] = e.target.value.split('-')
                                 handleMonthYearChange(m, y)
                             }}
-                            className="h-12 px-6 bg-[#1a1f2e] border border-slate-700 text-white rounded-2xl focus:outline-none focus:border-primary font-black shadow-xl appearance-none cursor-pointer pr-12 transition-all hover:bg-slate-800"
+                            className="h-10 px-4 bg-[#1a1f2e] border border-slate-700 text-slate-300 rounded-md focus:outline-none focus:border-primary text-sm shadow-sm appearance-none cursor-pointer pr-10 transition-all hover:bg-slate-800 hover:text-white"
                         >
                             <option value={`${new Date().getMonth() + 1}-${new Date().getFullYear()}`}>{t.admin.reportDashboard.thisMonth}</option>
                             <option value={`${new Date().getMonth()}-${new Date().getFullYear()}`}>{t.admin.reportDashboard.lastMonth}</option>
                         </select>
-                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none group-hover:text-white transition-colors" />
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none group-hover:text-white transition-colors" />
                     </div>
                 </div>
-            </div>
+            </header>
 
             {/* Stats Dashboard */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
