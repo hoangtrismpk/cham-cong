@@ -467,7 +467,10 @@ export async function updateEmployee(employeeId: string | number, formData: Part
 
     // 4. If email is changed, update via Admin Auth API
     if (formData.email) {
-        const origin = (await headers()).get('origin') || (await headers()).get('host') ? 'https://' + (await headers()).get('host') : ''
+        const host = (await headers()).get('host')
+        const protocol = host?.includes('localhost') ? 'http://' : 'https://'
+        const origin = (await headers()).get('origin') || (host ? `${protocol}${host}` : '')
+
         const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(actualEmployeeId, {
             email: formData.email,
             user_metadata: { request_origin: origin || process.env.NEXT_PUBLIC_SITE_URL }

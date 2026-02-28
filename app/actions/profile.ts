@@ -268,7 +268,10 @@ export async function updateMyProfile(formData: {
 
     // If email is provided and different from current user's email, update in auth.users
     if (formData.email && formData.email !== user.email) {
-        const origin = (await headers()).get('origin') || (await headers()).get('host') ? 'https://' + (await headers()).get('host') : ''
+        const host = (await headers()).get('host')
+        const protocol = host?.includes('localhost') ? 'http://' : 'https://'
+        const origin = (await headers()).get('origin') || (host ? `${protocol}${host}` : '')
+
         const { error: emailError } = await supabase.auth.updateUser({
             email: formData.email,
             data: { request_origin: origin || process.env.NEXT_PUBLIC_SITE_URL }
