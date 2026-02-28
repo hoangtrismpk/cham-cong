@@ -464,10 +464,20 @@ export async function updateEmployee(employeeId: string | number, formData: Part
         actualEmployeeId = employee.id
     }
 
-    // 4. Update Profile
+    // 4. If email is changed, update via Admin Auth API
+    if (formData.email) {
+        const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(actualEmployeeId, { email: formData.email })
+        if (authError) {
+            console.error('Update auth email error:', authError)
+            return { error: 'Tên miền email không hợp lệ hoặc email đã tồn tại trong hệ thống.' }
+        }
+    }
+
+    // 5. Update Profile
     const { error } = await supabaseAdmin
         .from('profiles')
         .update({
+            email: formData.email,
             first_name: formData.first_name,
             last_name: formData.last_name,
             full_name: `${formData.first_name} ${formData.last_name}`,

@@ -188,11 +188,10 @@ export default function EditEmployeePage() {
                                     <Input
                                         id="email"
                                         type="email"
-                                        value={formData.email}
-                                        className="bg-[#0d1117] border-slate-700 text-slate-500"
-                                        disabled
+                                        value={formData.email || ''}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        className="bg-[#0d1117] border-slate-700"
                                     />
-                                    <p className="text-xs text-slate-500">Email không thể thay đổi</p>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="phone">{t.admin.detail.labels.phone}</Label>

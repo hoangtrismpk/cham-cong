@@ -259,10 +259,20 @@ export async function updateMyProfile(formData: {
     emergency_contact?: any
     skills?: string[]
     avatar_url?: string
+    email?: string
 }) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
+
+    // If email is provided and different from current user's email, update in auth.users
+    if (formData.email && formData.email !== user.email) {
+        const { error: emailError } = await supabase.auth.updateUser({ email: formData.email })
+        if (emailError) {
+            console.error('Error updating auth email:', emailError)
+            return { error: 'Lỗi cập nhật email: Email có thể đã được sử dụng hoặc không hợp lệ.' }
+        }
+    }
 
     // Only allow updating personal fields. 
     // Sensitive fields like role, salary, job_title are NOT updated here.
@@ -279,6 +289,7 @@ export async function updateMyProfile(formData: {
             gender: formData.gender || null,
             emergency_contact: formData.emergency_contact || null,
             skills: formData.skills || null,
+            email: formData.email || undefined,
             avatar_url: formData.avatar_url || undefined // Add avatar_url to sync
         })
         .eq('id', user.id)

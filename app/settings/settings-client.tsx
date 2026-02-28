@@ -211,6 +211,7 @@ export function SettingsClient({ user, initialData }: SettingsClientProps) {
 
             if (profile) {
                 const updatePayload = {
+                    email: profile.email,
                     first_name: profile.first_name,
                     last_name: profile.last_name,
                     phone: profile.phone,
@@ -685,7 +686,7 @@ export function SettingsClient({ user, initialData }: SettingsClientProps) {
                                             <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Liên hệ & Công việc</h3>
                                             <div className="space-y-1.5">
                                                 <label className="text-[10px] font-bold uppercase text-slate-400">Email</label>
-                                                <input className="w-full bg-slate-900/50 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-500 font-bold text-sm" value={profile?.email || ''} readOnly />
+                                                <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-bold text-sm" value={profile?.email || ''} onChange={(e) => updateProfile('email', e.target.value)} type="email" />
                                             </div>
                                             <div className="space-y-1.5">
                                                 <label className="text-[10px] font-bold uppercase text-slate-400">SĐT</label>
@@ -927,7 +928,7 @@ export function SettingsClient({ user, initialData }: SettingsClientProps) {
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-slate-400">Email (Readonly)</label>
-                                    <input className="w-full bg-slate-900/50 border border-slate-800 rounded-xl px-4 py-3 text-slate-500 font-bold" value={profile?.email || ''} readOnly />
+                                    <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold" value={profile?.email || ''} onChange={(e) => updateProfile('email', e.target.value)} type="email" />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-slate-400">{t.settings?.phone || 'SĐT'}</label>
