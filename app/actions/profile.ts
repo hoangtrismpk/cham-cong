@@ -297,7 +297,6 @@ export async function updateMyProfile(formData: {
             gender: formData.gender || null,
             emergency_contact: formData.emergency_contact || null,
             skills: formData.skills || null,
-            email: formData.email || undefined,
             avatar_url: formData.avatar_url || undefined // Add avatar_url to sync
         })
         .eq('id', user.id)

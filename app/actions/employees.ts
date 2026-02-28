@@ -485,7 +485,6 @@ export async function updateEmployee(employeeId: string | number, formData: Part
     const { error } = await supabaseAdmin
         .from('profiles')
         .update({
-            email: formData.email,
             first_name: formData.first_name,
             last_name: formData.last_name,
             full_name: `${formData.first_name} ${formData.last_name}`,
