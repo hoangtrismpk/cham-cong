@@ -267,7 +267,10 @@ export async function updateMyProfile(formData: {
 
     // If email is provided and different from current user's email, update in auth.users
     if (formData.email && formData.email !== user.email) {
-        const { error: emailError } = await supabase.auth.updateUser({ email: formData.email })
+        const { error: emailError } = await supabase.auth.updateUser({
+            email: formData.email,
+            data: { request_origin: typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_SITE_URL }
+        })
         if (emailError) {
             console.error('Error updating auth email:', emailError)
             return { error: 'Lỗi cập nhật email: Email có thể đã được sử dụng hoặc không hợp lệ.' }

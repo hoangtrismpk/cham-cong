@@ -45,6 +45,8 @@ function TemplateIcon({ slug, className }: { slug: string; className?: string })
         'password-reset': <Key className={cn('h-4 w-4', className)} />,
         'password-changed': <Key className={cn('h-4 w-4', className)} />,
         'unknown-device-login': <MonitorSmartphone className={cn('h-4 w-4', className)} />,
+        'email-change': <Key className={cn('h-4 w-4', className)} />,
+        'email-change-new': <Key className={cn('h-4 w-4', className)} />,
         'leave-approved': <UserCheck className={cn('h-4 w-4', className)} />,
         'daily-attendance-report': <Shield className={cn('h-4 w-4', className)} />,
     }
@@ -56,6 +58,8 @@ const ICON_COLOR: Record<string, string> = {
     'password-reset': 'bg-orange-500/20 text-orange-400',
     'password-changed': 'bg-orange-500/20 text-orange-400',
     'unknown-device-login': 'bg-red-500/20 text-red-400',
+    'email-change': 'bg-orange-500/20 text-orange-400',
+    'email-change-new': 'bg-orange-500/20 text-orange-400',
     'leave-approved': 'bg-emerald-500/20 text-emerald-400',
     'daily-attendance-report': 'bg-violet-500/20 text-violet-400',
 }
