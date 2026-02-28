@@ -665,7 +665,7 @@ export function SettingsClient({ user, initialData }: SettingsClientProps) {
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div className="space-y-1.5">
                                                     <label className="text-[10px] font-bold uppercase text-slate-400">Ngày sinh</label>
-                                                    <input type="date" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-bold text-sm" value={profile?.dob || ''} onChange={(e) => updateProfile('dob', e.target.value)} />
+                                                    <input type="date" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-bold text-sm min-h-[42px] appearance-none" value={profile?.dob || ''} onChange={(e) => updateProfile('dob', e.target.value)} />
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="text-[10px] font-bold uppercase text-slate-400">Giới tính</label>
@@ -912,7 +912,7 @@ export function SettingsClient({ user, initialData }: SettingsClientProps) {
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-slate-400">{t.settings?.dob || 'Ngày sinh'}</label>
-                                    <input type="date" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold" value={profile?.dob || ''} onChange={(e) => updateProfile('dob', e.target.value)} />
+                                    <input type="date" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold min-h-[48px] appearance-none" value={profile?.dob || ''} onChange={(e) => updateProfile('dob', e.target.value)} />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-slate-400">{t.settings?.gender || 'Giới tính'}</label>
