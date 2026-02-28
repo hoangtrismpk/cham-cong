@@ -278,7 +278,13 @@ export async function updateMyProfile(formData: {
         })
         if (emailError) {
             console.error('Error updating auth email:', emailError)
-            return { error: 'Lỗi cập nhật email: Email có thể đã được sử dụng hoặc không hợp lệ.' }
+            let errorMessage = 'Lỗi cập nhật email. Vui lòng thử lại sau.'
+            if (emailError.message.includes('60 seconds')) {
+                errorMessage = 'Vui lòng đợi 60 giây trước khi gửi lại yêu cầu đổi email.'
+            } else if (emailError.message.includes('registered')) {
+                errorMessage = 'Email này đã tồn tại trong hệ thống.'
+            }
+            return { error: errorMessage }
         }
     }
 

@@ -66,106 +66,66 @@ Deno.serve(async (req) => {
     }
 
     // Fetch template
-    let actionType = email_data.email_action_type;
+    const actionType = email_data.email_action_type;
     // Map Supabase action types to our template slugs
     let templateSlug = actionType;
     if (actionType === 'signup') templateSlug = 'account-registration';
     if (actionType === 'recovery') templateSlug = 'password-reset';
     if (actionType === 'email_change') templateSlug = 'email-change';
-    if (actionType === 'email_change_new') templateSlug = 'email-change-new'; // if they get separated out? Usually it's just 'email_change'
+    if (actionType === 'email_change_new') templateSlug = 'email-change-new';
 
     console.log(`Processing email type: ${actionType}, mapped to template: ${templateSlug}`);
 
-    const { data: templates, error: templateError } = await supabase
+    const { data: template, error: templateError } = await supabase
       .from("email_templates")
       .select("subject, content, is_active")
-      .in("slug", [templateSlug, 'email-change-new']); // Fetch both if needed
+      .eq("slug", templateSlug)
+      .single();
 
-    if (templateError || !templates || templates.length === 0) {
+    if (templateError || !template) {
       console.error("Template not found for slug:", templateSlug);
       return new Response("Template not found", { status: 404, headers: corsHeaders });
     }
 
-    let template = templates.find(t => t.slug === templateSlug) || templates[0];
-
-    // --- Special Handling for Email Changes (which has 2 tokens sometimes) ---
-    // As per Supabase docs, when "Secure Email Change" is on, `email_change` has `token` and `token_new`
-    // We might need to send 2 emails. One to old email, one to new email.
-    if (actionType === 'email_change') {
-      const hasNewToken = !!email_data.token_new;
-      let successCount = 0;
-
-      // 1. Send to OLD email
-      if (email_data.token && user.email) {
-        const oldTemplate = template;
-        if (!oldTemplate || !oldTemplate.is_active) {
-          console.log("Old email change template inactive or not found");
-        } else {
-          const siteUrl = user.user_metadata?.request_origin || Deno.env.get("FRONTEND_URL") || email_data.site_url;
-          const confirmUrl = `${siteUrl}/auth/confirm?token_hash=${email_data.token_hash_new}&type=email_change&next=/settings`;
-          let htmlBody = oldTemplate.content
-            .replace(/{{company_name}}/g, config.from_name)
-            .replace(/{{old_email}}/g, user.email)
-            .replace(/{{new_email}}/g, user.email_change || user.new_email || 'bạn')
-            .replace(/{{confirmation_url}}/g, confirmUrl)
-            .replace(/{{token}}/g, email_data.token)
-            .replace(/{{support_email}}/g, config.reply_to || config.from_email);
-
-          await sendResendEmail(config, user.email, oldTemplate.subject.replace(/{{company_name}}/g, config.from_name), htmlBody);
-          successCount++;
-        }
-      }
-
-      // 2. Send to NEW email
-      const newEmailAddr = user.email_change || user.new_email || email_data.new_email
-      if (hasNewToken && newEmailAddr) {
-        const targetEmail = newEmailAddr; // Fallback
-
-        const newTemplate = templates.find(t => t.slug === 'email-change-new') || template;
-        if (!newTemplate || !newTemplate.is_active) {
-          console.log("New email change template inactive or not found");
-        } else {
-          // Note Supabase counterintuitive naming: token_hash is actually for the new email!
-          const siteUrl = user.user_metadata?.request_origin || Deno.env.get("FRONTEND_URL") || email_data.site_url;
-          const confirmNewUrl = `${siteUrl}/auth/confirm?token_hash=${email_data.token_hash}&type=email_change&next=/settings`;
-          let htmlBody = newTemplate.content
-            .replace(/{{company_name}}/g, config.from_name)
-            .replace(/{{confirmation_url}}/g, confirmNewUrl)
-            .replace(/{{new_token}}/g, email_data.token_new)
-            .replace(/{{support_email}}/g, config.reply_to || config.from_email);
-
-          await sendResendEmail(config, targetEmail, newTemplate.subject.replace(/{{company_name}}/g, config.from_name), htmlBody);
-          successCount++;
-        }
-      }
-
-      if (successCount === 0) return new Response("Skipped. No active templates.", { status: 200, headers: corsHeaders });
-
-      return new Response(JSON.stringify({ message: "Email change emails processed!" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-
-    // --- Normal Email Sending (Signup, Recovery, etc.) ---
     if (!template.is_active) {
       console.log(`Template ${templateSlug} is inactive.`);
       return new Response("Template inactive", { status: 200, headers: corsHeaders });
     }
 
+    // Determine target email
+    let targetEmail = user.email;
+    if (actionType === 'email_change_new') {
+      targetEmail = user.new_email || user.email_change || email_data.new_email;
+    }
+
+    if (!targetEmail) {
+      console.error("Target email not found for action:", actionType);
+      return new Response("Missing target email", { status: 400, headers: corsHeaders });
+    }
+
     const siteUrl = user.user_metadata?.request_origin || Deno.env.get("FRONTEND_URL") || email_data.site_url;
-    const confirmUrl = `${siteUrl}/auth/confirm?token_hash=${email_data.token_hash}&type=${email_data.email_action_type}&next=/`;
+    // VERY IMPORTANT: type for both `email_change` and `email_change_new` links must be 'email_change' for the confirm route endpoint
+    const urlType = actionType === 'email_change_new' ? 'email_change' : actionType;
+    const nextPath = urlType === 'email_change' ? '/settings' : '/';
+    const confirmUrl = `${siteUrl}/auth/confirm?token_hash=${email_data.token_hash}&type=${urlType}&next=${nextPath}`;
 
     let htmlBody = template.content
       .replace(/{{company_name}}/g, config.from_name)
       .replace(/{{user_name}}/g, user.user_metadata?.full_name || user.email?.split("@")[0] || "User")
-      .replace(/{{user_email}}/g, user.email)
-      .replace(/{{reset_link}}/g, confirmUrl)
+      .replace(/{{user_email}}/g, targetEmail)
+      .replace(/{{old_email}}/g, user.email || '')
+      .replace(/{{new_email}}/g, user.new_email || user.email_change || email_data.new_email || '')
+      .replace(/{{reset_link}}/g, confirmUrl)  // Legacy variable name fallback
+      .replace(/{{confirmation_url}}/g, confirmUrl)
+      .replace(/{{token}}/g, email_data.token || '')
+      .replace(/{{new_token}}/g, email_data.token || '') // since token_new might be passed as generic token in `email_change_new`
       .replace(/{{login_url}}/g, `${siteUrl}/login`)
       .replace(/{{expiry_time}}/g, "1 giờ") // Default
       .replace(/{{support_email}}/g, config.reply_to || config.from_email);
 
     const subject = template.subject.replace(/{{company_name}}/g, config.from_name);
 
-    await sendResendEmail(config, user.email, subject, htmlBody);
+    await sendResendEmail(config, targetEmail, subject, htmlBody);
 
     return new Response(
       JSON.stringify({ message: "Email sent successfully." }),
