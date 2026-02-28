@@ -70,7 +70,7 @@ export async function ssrAutoAttendance(): Promise<SSRAutoCheckResult> {
             supabase
                 .from('leave_requests')
                 .select('id')
-                .eq('user_id', user.id)
+                .eq('employee_id', user.id)
                 .eq('leave_date', today)
                 .eq('status', 'approved')
                 .limit(1)

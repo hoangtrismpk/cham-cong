@@ -48,7 +48,7 @@ export function useLocalNotifications() {
                     supabase
                         .from('leave_requests')
                         .select('leave_date')
-                        .eq('user_id', user.id)
+                        .eq('employee_id', user.id)
                         .in('leave_date', [today, tomorrow])
                         .eq('status', 'approved'),
                     supabase

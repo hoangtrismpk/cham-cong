@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
             supabase.from('employee_default_schedules').select('employee_id, custom_start_time, custom_end_time, shift_type').eq('day_of_week', dayOfWeek).eq('is_template', true).neq('shift_type', 'off'),
             supabase.from('fcm_tokens').select('user_id, token'),
             supabase.from('profiles').select('id, clock_in_remind_minutes, clock_out_remind_mode, clock_out_remind_minutes'),
-            supabase.from('leave_requests').select('user_id').eq('leave_date', todayStr).eq('status', 'approved')
+            supabase.from('leave_requests').select('employee_id').eq('leave_date', todayStr).eq('status', 'approved')
         ]);
 
         let globalStart = '08:30', globalEnd = '17:30', globalOff = [0, 6];
@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
         const isOffDay = globalOff.includes(dayOfWeek);
         const targets: any[] = [];
 
-        const leaveUserIds = new Set((leaves || []).map(l => l.user_id));
+        const leaveUserIds = new Set((leaves || []).map(l => l.employee_id));
 
         // 5. Evaluate Schedules
         for (const userId of Object.keys(userTokensMap)) {

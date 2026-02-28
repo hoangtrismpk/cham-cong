@@ -67,7 +67,7 @@ export async function attemptAutoCheckIn(
             supabase
                 .from('leave_requests')
                 .select('id')
-                .eq('user_id', user.id)
+                .eq('employee_id', user.id)
                 .eq('leave_date', today)
                 .eq('status', 'approved')
                 .limit(1)
@@ -282,7 +282,7 @@ export async function attemptAutoCheckOut(
             supabase
                 .from('leave_requests')
                 .select('id')
-                .eq('user_id', user.id)
+                .eq('employee_id', user.id)
                 .eq('leave_date', today)
                 .eq('status', 'approved')
                 .limit(1)
