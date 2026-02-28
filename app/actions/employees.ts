@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import { getOrganizationSettings } from './organization'
 import { requirePermissionForAction } from '@/utils/permissions'
 import { checkPermission } from '@/utils/auth-guard'
@@ -466,9 +467,10 @@ export async function updateEmployee(employeeId: string | number, formData: Part
 
     // 4. If email is changed, update via Admin Auth API
     if (formData.email) {
+        const origin = (await headers()).get('origin') || (await headers()).get('host') ? 'https://' + (await headers()).get('host') : ''
         const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(actualEmployeeId, {
             email: formData.email,
-            user_metadata: { request_origin: process.env.NEXT_PUBLIC_SITE_URL }
+            user_metadata: { request_origin: origin || process.env.NEXT_PUBLIC_SITE_URL }
         })
         if (authError) {
             console.error('Update auth email error:', authError)

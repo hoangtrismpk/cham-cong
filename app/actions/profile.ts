@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 
 // Use type from employees.ts to ensure consistency
 import { Employee } from './employees'
@@ -267,9 +268,10 @@ export async function updateMyProfile(formData: {
 
     // If email is provided and different from current user's email, update in auth.users
     if (formData.email && formData.email !== user.email) {
+        const origin = (await headers()).get('origin') || (await headers()).get('host') ? 'https://' + (await headers()).get('host') : ''
         const { error: emailError } = await supabase.auth.updateUser({
             email: formData.email,
-            data: { request_origin: typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_SITE_URL }
+            data: { request_origin: origin || process.env.NEXT_PUBLIC_SITE_URL }
         })
         if (emailError) {
             console.error('Error updating auth email:', emailError)
