@@ -18,7 +18,7 @@ interface DashboardSidebarProps {
 export function DashboardSidebar({ user, onClose }: DashboardSidebarProps) {
     const { t } = useI18n()
     const pathname = usePathname()
-    const { value: companyName } = useSetting('company_name', 'FHB')
+    const { value: companyName } = useSetting('company_name', 'FHB Việt Nam')
     const [profile, setProfile] = useState<any>(null)
     const [loadingProfile, setLoadingProfile] = useState(true)
 

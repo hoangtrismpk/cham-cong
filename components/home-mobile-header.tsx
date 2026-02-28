@@ -22,7 +22,7 @@ export function HomeMobileHeader({ userName }: HomeMobileHeaderProps) {
     } else {
         dateStr = format(today, 'EEEE, MMM d, yyyy')
     }
-    const { value: companyName } = useSetting('company_name', 'Chấm công FHB')
+    const { value: companyName } = useSetting('company_name', 'FHB Việt Nam')
 
     return (
         <MobileHeader

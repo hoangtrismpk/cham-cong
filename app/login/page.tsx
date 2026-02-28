@@ -26,7 +26,7 @@ function LoginForm() {
     const next = searchParams.get('next')
 
     // Dynamic Setting
-    const { value: companyName } = useSetting('company_name', 'Chấm Công FHB Vietnam')
+    const { value: companyName } = useSetting('company_name', 'FHB Việt Nam')
 
     const handleFormSubmit = async (formData: FormData) => {
         if (!executeRecaptcha) {
