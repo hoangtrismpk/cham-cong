@@ -595,3 +595,98 @@ export async function restoreEmployee(employeeId: string | number) {
     revalidatePath('/admin/employees')
     return { success: true }
 }
+
+// ==========================================
+// SECURITY / PASSWORD MANAGEMENT ACTIONS
+// ==========================================
+
+// Option A: Send Reset Password Email
+export async function sendPasswordResetEmail(email: string) {
+    // 1. Check permissions (granular: users.edit)
+    const denied = await requirePermissionForAction('users.edit')
+    if (denied) return denied
+
+    const supabaseAdmin = createAdminClient()
+
+    // Send reset link using admin client to ensure it bypasses any RLS
+    // Note: This relies on Supabase Auth Settings to have a configured Email provider & templates
+    const origin = (await headers()).get('origin') || process.env.NEXT_PUBLIC_SITE_URL
+    const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'recovery',
+        email: email,
+        options: {
+            redirectTo: `${origin}/update-password`
+        }
+    })
+
+    if (error) {
+        console.error('Generate reset link error:', error)
+        return { error: 'Không thể tạo link khôi phục mật khẩu. ' + error.message }
+    }
+
+    // Wait! Supabase generateLink does NOT send an email automatically.
+    // So we use standard resetPasswordForEmail OR our custom Email system.
+    // If EmailService is ready, we could send it manually using `data.properties.action_link`.
+    // Alternatively, just use the built-in supabase endpoint.
+    const supabase = await createClient()
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${origin}/update-password`
+    })
+
+    if (resetError) return { error: 'Gửi email khôi phục thất bại: ' + resetError.message }
+
+    // Log the audit event (Optional - assume this exists or can be added later)
+    console.log(`[AUDIT] Admin initiated password reset email for ${email}`)
+
+    return { success: true }
+}
+
+// Option B: Set Temporary Password & Force Change
+export async function forceUserPasswordChange(employeeId: string, newPassword: string) {
+    // 1. Check permissions (granular: users.edit)
+    const denied = await requirePermissionForAction('users.edit')
+    if (denied) return denied
+
+    const supabaseAdmin = createAdminClient()
+
+    // 2. Convert to UUID if needed
+    const isNumeric = typeof employeeId === 'number' || /^\d+$/.test(employeeId.toString())
+    let actualEmployeeId = employeeId.toString()
+
+    if (isNumeric) {
+        const { data: employee, error: fetchError } = await supabaseAdmin
+            .from('profiles')
+            .select('id, email, full_name')
+            .eq('numeric_id', parseInt(employeeId.toString()))
+            .single()
+
+        if (fetchError || !employee) return { error: 'Không tìm thấy nhân viên' }
+        actualEmployeeId = employee.id
+    }
+
+    // 3. Update password in Auth using Admin Client
+    const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(actualEmployeeId, {
+        password: newPassword
+    })
+
+    if (authError) {
+        console.error('Update password admin error:', authError)
+        return { error: 'Cập nhật mật khẩu thất bại: ' + authError.message }
+    }
+
+    // 4. Set the `require_password_change` flag in profiles
+    const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .update({ require_password_change: true })
+        .eq('id', actualEmployeeId)
+
+    if (profileError) {
+        console.error('Set force change flag error:', profileError)
+        return { error: 'Đặt mật khẩu thành công nhưng gắn cờ force_change thất bại.' }
+    }
+
+    console.log(`[AUDIT] Admin forced temporary password change for user ID ${actualEmployeeId}`)
+
+    revalidatePath(`/admin/employees/${employeeId}`)
+    return { success: true }
+}

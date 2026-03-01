@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { ArrowLeft, Save, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
+import { PasswordResetManager } from './PasswordResetManager'
 
 export default function EditEmployeePage() {
     const params = useParams()
@@ -456,6 +457,15 @@ export default function EditEmployeePage() {
                             </div>
                         </CardContent>
                     </Card>
+
+                    {/* Mật khẩu và Bảo mật (PasswordResetManager) */}
+                    {formData.id && (
+                        <PasswordResetManager
+                            employeeId={formData.id}
+                            email={formData.email || ''}
+                            employeeName={formData.full_name || ''}
+                        />
+                    )}
 
                     {/* Actions */}
                     <div className="flex justify-end gap-3">

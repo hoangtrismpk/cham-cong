@@ -52,11 +52,10 @@ export default function ForcePasswordClient({ userEmail }: { userEmail: string }
             }
 
             setMsg({ type: 'success', text: 'Cập nhật thành công. Đang chuyển hướng...' })
-            
-            // Redirect về admin/dashboard
+
+            // Redirect về trang chủ bằng hard navigation để xóa cache hoàn toàn
             setTimeout(() => {
-                router.push('/')
-                router.refresh()
+                window.location.href = '/'
             }, 1000)
 
         } catch (err: any) {
@@ -118,8 +117,8 @@ export default function ForcePasswordClient({ userEmail }: { userEmail: string }
 
                         {msg.text && (
                             <div className={`flex items-start gap-2.5 p-3 rounded-lg text-sm border ${msg.type === 'error'
-                                    ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                                    : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                                : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                                 }`}>
                                 {msg.type === 'error' ? (
                                     <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
@@ -139,7 +138,7 @@ export default function ForcePasswordClient({ userEmail }: { userEmail: string }
                                 <Loader2 className="h-5 w-5 animate-spin" />
                             ) : (
                                 <span className="flex items-center gap-2">
-                                    Cập nhật mật khẩu 
+                                    Cập nhật mật khẩu
                                     <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                                 </span>
                             )}
@@ -147,7 +146,7 @@ export default function ForcePasswordClient({ userEmail }: { userEmail: string }
                     </form>
                 </div>
             </div>
-            
+
             <p className="mt-8 text-xs text-slate-500 flex items-center gap-1.5">
                 <Lock className="h-3 w-3" /> Được bảo mật an toàn
             </p>
