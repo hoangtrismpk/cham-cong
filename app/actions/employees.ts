@@ -610,7 +610,7 @@ export async function sendPasswordResetEmail(email: string) {
 
     // Send reset link using admin client to ensure it bypasses any RLS
     // Note: This relies on Supabase Auth Settings to have a configured Email provider & templates
-    const origin = (await headers()).get('origin') || process.env.NEXT_PUBLIC_SITE_URL
+    const origin = (await headers()).get('origin') || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
     const { data, error } = await supabaseAdmin.auth.admin.generateLink({
         type: 'recovery',
         email: email,
@@ -638,7 +638,7 @@ export async function sendPasswordResetEmail(email: string) {
         await EmailService.sendAsync('password-reset', email, {
             user_name: email,
             reset_link: actionLink,
-            expiry_time: '24 giờ'
+            expiry_time: '10 phút'
         })
     } catch (sendError: any) {
         console.error('Failed to send reset email using EmailService:', sendError)

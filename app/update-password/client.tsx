@@ -19,23 +19,81 @@ export default function UpdatePasswordClient() {
     const [hasSession, setHasSession] = useState<boolean | null>(null)
 
     useEffect(() => {
-        // Kiểm tra xem user có session thông qua query params dạng ?code=... hoặc #access_token=... (do Supabase auto set)
-        const checkSession = async () => {
-            const supabase = createClient()
-            const { data } = await supabase.auth.getSession()
-            if (data.session) {
-                setHasSession(true)
-            } else {
+        let mounted = true
+        const supabase = createClient()
 
-                // Set timeout để fallback nếu supabase js load chậm
+        // Hàm kiểm tra token JWT (JWT có tuổi thọ cấu hình ở Supabase, ta ép cứng 10 phút)
+        const checkTokenExpiry = (token: string | null) => {
+            if (!token) return false;
+            try {
+                const parts = token.split('.');
+                if (parts.length !== 3) return false;
+                const payload = JSON.parse(atob(parts[1]));
+                const iat = payload.iat;
+                const now = Date.now() / 1000;
+                // Nếu khoảng thời gian từ lúc tạo > 600s (10 phút) -> Hết hạn
+                if (iat && (now - iat) > 600) {
+                    return true; // Is expired
+                }
+                return false;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        const handleSession = (session: any, accessTokenFromHash?: string) => {
+            const token = session?.access_token || accessTokenFromHash;
+            if (checkTokenExpiry(token)) {
+                // Hết hạn 10 phút
+                supabase.auth.signOut();
+                if (mounted) setHasSession(false);
+            } else {
+                if (mounted) setHasSession(true);
+            }
+        }
+
+        // Lắng nghe sự kiện auth để bắt sự kiện PASSWORD_RECOVERY hoặc SIGNED_IN
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN' || session) {
+                handleSession(session)
+            }
+        })
+
+        const checkSession = async () => {
+            const { data } = await supabase.auth.getSession()
+            // Nhỡ Supabase xử lý hash chậm, ta lấy JWT trực tiếp từ url
+            let tokenFromHash = null
+            if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
+                const params = new URLSearchParams(window.location.hash.slice(1))
+                tokenFromHash = params.get('access_token')
+            }
+
+            if (data.session || tokenFromHash) {
+                handleSession(data.session, tokenFromHash || undefined)
+            } else {
+                // Chờ thêm một chút nữa
                 setTimeout(async () => {
                     const { data: secondCheck } = await supabase.auth.getSession()
-                    if (secondCheck.session) setHasSession(true)
-                    else setHasSession(false)
-                }, 1000)
+                    if (mounted) {
+                        let secondHashToken = null
+                        if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
+                            secondHashToken = new URLSearchParams(window.location.hash.slice(1)).get('access_token')
+                        }
+                        if (secondCheck.session || secondHashToken) {
+                            handleSession(secondCheck.session, secondHashToken || undefined)
+                        } else {
+                            setHasSession(false)
+                        }
+                    }
+                }, 2000)
             }
         }
         checkSession()
+
+        return () => {
+            mounted = false
+            subscription.unsubscribe()
+        }
     }, [])
 
     async function handleSubmit(e: React.FormEvent) {

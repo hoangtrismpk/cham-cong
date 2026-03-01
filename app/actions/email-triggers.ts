@@ -185,12 +185,15 @@ export async function sendPasswordResetEmail(email: string) {
         const { createAdminClient } = await import('@/utils/supabase/admin')
         const adminClient = createAdminClient()
 
+        const headersList = await headers()
+        const origin = headersList.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+
         // Generate the native supabase recovery link
         const { data: linkData, error: linkErr } = await adminClient.auth.admin.generateLink({
             type: 'recovery',
             email: email,
             options: {
-                redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/update-password`
+                redirectTo: `${origin}/update-password`
             }
         })
 
@@ -209,7 +212,7 @@ export async function sendPasswordResetEmail(email: string) {
             user_email: email,
             reset_link: linkData.properties.action_link,
             action_url: linkData.properties.action_link,
-            expiry_time: '24 giờ',
+            expiry_time: '10 phút',
         })
         return { success: true }
     } catch (error: any) {
