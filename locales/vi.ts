@@ -224,7 +224,7 @@ export const vi = {
                 title: 'Thêm nhân viên',
                 desc: 'Tạo tài khoản mới cho nhân viên. Hệ thống sẽ tự động gửi email xác nhận.',
                 firstName: 'Tên',
-                lastName: 'Họ đệm',
+                lastName: 'Họ và tên đệm',
                 email: 'Email',
                 password: 'Mật khẩu',
                 department: 'Phòng ban',
@@ -425,7 +425,30 @@ export const vi = {
             saving: 'Đang lưu...',
             success: 'Cập nhật thông tin thành công!',
             error: 'Có lỗi xảy ra khi cập nhật',
-            notFound: 'Không tìm thấy nhân viên'
+            notFound: 'Không tìm thấy nhân viên',
+            passwordReset: {
+                title: 'Quản lý Bảo mật (Mật khẩu)',
+                desc: 'Hỗ trợ nhân viên khôi phục hoặc cài đặt lại mật khẩu.',
+                emailOption: {
+                    title: 'Gửi Email Khôi phục (Khuyên dùng)',
+                    desc: 'An toàn và bảo mật nhất. Hệ thống sẽ gửi một đường dẫn để {name} tự đặt mật khẩu mới qua email {email}.',
+                    button: 'Gửi Link Reset',
+                    confirm: 'Bạn có chắc chắn muốn gửi email khôi phục mật khẩu đến {email}?',
+                    missingEmail: 'Nhân viên này chưa có email.',
+                    success: 'Đã gửi email khôi phục mật khẩu đến {email}'
+                },
+                tempOption: {
+                    title: 'Cấp Mật khẩu Tạm thời (Dự phòng)',
+                    desc: 'Sử dụng khi nhân viên mất quyền truy cập email. Bạn tự đặt một mật khẩu, nhân viên sẽ bị buộc phải đổi mật khẩu lại ở lần đăng nhập tiếp theo.',
+                    label: 'Mật khẩu tạm thời',
+                    minLength: 'Tối thiểu 6 ký tự',
+                    placeholder: 'Nhập mật khẩu tạm cho nhân viên...',
+                    button: 'Cấp Mật khẩu',
+                    confirm: 'Cấp mật khẩu tạm: {password} cho {name}? Họ sẽ bị buộc phải đổi mật khẩu ở lần đăng nhập tới.',
+                    success: 'Đã cấp mật khẩu tạm và yêu cầu đổi mật khẩu lần tới.',
+                    invalid: 'Mật khẩu tạm thời phải có ít nhất 6 ký tự.'
+                }
+            }
         },
         myTeam: {
             title: 'Đội ngũ của tôi',
@@ -773,7 +796,7 @@ export const vi = {
         confirmPassword: 'Xác nhận mật khẩu',
 
         generalInfo: "Thông tin cơ bản",
-        lastName: "Họ đệm",
+        lastName: "Họ và tên đệm",
         firstName: "Tên",
         dob: "Ngày sinh",
         gender: "Giới tính",

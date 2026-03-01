@@ -6,12 +6,14 @@ import { createClient } from '@/utils/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Lock, AlertCircle, CheckCircle2, Loader2, ArrowRight } from 'lucide-react'
+import { Lock, AlertCircle, CheckCircle2, Loader2, ArrowRight, Eye, EyeOff } from 'lucide-react'
 
 export default function UpdatePasswordClient() {
     const router = useRouter()
     const [password, setPassword] = useState('')
     const [confirm, setConfirm] = useState('')
+    const [showPassword, setShowPassword] = useState(false)
+    const [showConfirm, setShowConfirm] = useState(false)
     const [msg, setMsg] = useState({ type: '', text: '' })
     const [loading, setLoading] = useState(false)
     const [hasSession, setHasSession] = useState<boolean | null>(null)
@@ -24,7 +26,7 @@ export default function UpdatePasswordClient() {
             if (data.session) {
                 setHasSession(true)
             } else {
-                
+
                 // Set timeout để fallback nếu supabase js load chậm
                 setTimeout(async () => {
                     const { data: secondCheck } = await supabase.auth.getSession()
@@ -70,12 +72,12 @@ export default function UpdatePasswordClient() {
     if (hasSession === false) {
         return (
             <div className="min-h-screen bg-[#0B1120] text-slate-200 flex flex-col items-center justify-center p-4">
-               <div className="w-full max-w-md bg-[#111827] rounded-2xl border border-rose-500/20 p-8 shadow-2xl relative overflow-hidden text-center">
+                <div className="w-full max-w-md bg-[#111827] rounded-2xl border border-rose-500/20 p-8 shadow-2xl relative overflow-hidden text-center">
                     <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
                     <h2 className="text-xl font-bold mb-2">Liên kết không hợp lệ</h2>
                     <p className="text-slate-400 text-sm mb-6">Liên kết khôi phục mật khẩu đã hết hạn hoặc định dạng không chính xác. Bạn vui lòng yêu cầu gửi lại link mới.</p>
                     <Button onClick={() => router.push('/login')} className="bg-cyan-500 text-white w-full">Về trang Đăng nhập</Button>
-               </div>
+                </div>
             </div>
         )
     }
@@ -85,7 +87,7 @@ export default function UpdatePasswordClient() {
             <div className="w-full max-w-md bg-[#111827] rounded-2xl border border-slate-800 p-8 shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
                 <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 blur-[50px] rounded-full" />
-                
+
                 <div className="relative z-10 flex flex-col items-center">
                     <div className="h-16 w-16 bg-[#162032] rounded-full flex justify-center items-center border border-cyan-500/20 mb-6">
                         <Lock className="h-7 w-7 text-cyan-400" />
@@ -101,27 +103,45 @@ export default function UpdatePasswordClient() {
                     <form onSubmit={handleSubmit} className="w-full space-y-5">
                         <div className="space-y-2">
                             <Label className="text-slate-300 text-xs">Mật khẩu mới</Label>
-                            <Input
-                                type="password"
-                                placeholder="Tối thiểu 6 ký tự"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                minLength={6}
-                                required
-                                className="bg-[#0B1120] border-slate-700/50 hover:border-slate-600 focus-visible:border-cyan-500 h-11 transition-colors"
-                            />
+                            <div className="relative">
+                                <Input
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="Tối thiểu 6 ký tự"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    minLength={6}
+                                    required
+                                    className="bg-[#0B1120] border-slate-700/50 hover:border-slate-600 focus-visible:border-cyan-500 h-11 transition-colors pr-10"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300"
+                                >
+                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </button>
+                            </div>
                         </div>
                         <div className="space-y-2">
                             <Label className="text-slate-300 text-xs">Xác nhận mật khẩu</Label>
-                            <Input
-                                type="password"
-                                placeholder="Nhập lại mật khẩu mới"
-                                value={confirm}
-                                onChange={(e) => setConfirm(e.target.value)}
-                                minLength={6}
-                                required
-                                className="bg-[#0B1120] border-slate-700/50 hover:border-slate-600 focus-visible:border-cyan-500 h-11 transition-colors"
-                            />
+                            <div className="relative">
+                                <Input
+                                    type={showConfirm ? "text" : "password"}
+                                    placeholder="Nhập lại mật khẩu mới"
+                                    value={confirm}
+                                    onChange={(e) => setConfirm(e.target.value)}
+                                    minLength={6}
+                                    required
+                                    className="bg-[#0B1120] border-slate-700/50 hover:border-slate-600 focus-visible:border-cyan-500 h-11 transition-colors pr-10"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConfirm(!showConfirm)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300"
+                                >
+                                    {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </button>
+                            </div>
                         </div>
 
                         {msg.text && (

@@ -427,7 +427,30 @@ export const en: Translations = {
             saving: 'Saving...',
             success: 'Updated successfully!',
             error: 'An error occurred while updating',
-            notFound: 'Employee not found'
+            notFound: 'Employee not found',
+            passwordReset: {
+                title: 'Security Management (Password)',
+                desc: 'Assist employee in recovering or resetting their password.',
+                emailOption: {
+                    title: 'Send Recovery Email (Recommended)',
+                    desc: 'Most safe and secure. The system will send a link for {name} to set a new password via email {email}.',
+                    button: 'Send Reset Link',
+                    confirm: 'Are you sure you want to send a password reset email to {email}?',
+                    missingEmail: 'This employee does not have an email.',
+                    success: 'Sent password reset email to {email}'
+                },
+                tempOption: {
+                    title: 'Issue Temporary Password (Fallback)',
+                    desc: 'Use when the employee loses access to their email. You set a password, and the employee will be forced to change it on their next login.',
+                    label: 'Temporary Password',
+                    minLength: 'Min 6 characters',
+                    placeholder: 'Enter a temporary password for employee...',
+                    button: 'Issue Password',
+                    confirm: 'Issue temp password: {password} to {name}? They will be forced to change it on their next login.',
+                    success: 'Temporary password issued and password change requested for next login.',
+                    invalid: 'Temporary password must be at least 6 characters.'
+                }
+            }
         },
         myTeam: {
             title: 'My Team',

@@ -162,21 +162,21 @@ export default function EditEmployeePage() {
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="first_name">{t.admin.employeeManagement.create.firstName} <span className="text-red-500">*</span></Label>
-                                    <Input
-                                        id="first_name"
-                                        value={formData.first_name}
-                                        onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                                        className="bg-[#0d1117] border-slate-700"
-                                        required
-                                    />
-                                </div>
-                                <div className="space-y-2">
                                     <Label htmlFor="last_name">{t.admin.employeeManagement.create.lastName} <span className="text-red-500">*</span></Label>
                                     <Input
                                         id="last_name"
                                         value={formData.last_name}
                                         onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                                        className="bg-[#0d1117] border-slate-700"
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="first_name">{t.admin.employeeManagement.create.firstName} <span className="text-red-500">*</span></Label>
+                                    <Input
+                                        id="first_name"
+                                        value={formData.first_name}
+                                        onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
                                         className="bg-[#0d1117] border-slate-700"
                                         required
                                     />
@@ -459,13 +459,11 @@ export default function EditEmployeePage() {
                     </Card>
 
                     {/* Mật khẩu và Bảo mật (PasswordResetManager) */}
-                    {formData.id && (
-                        <PasswordResetManager
-                            employeeId={formData.id}
-                            email={formData.email || ''}
-                            employeeName={formData.full_name || ''}
-                        />
-                    )}
+                    <PasswordResetManager
+                        employeeId={employeeId}
+                        email={formData.email || ''}
+                        employeeName={formData.full_name || 'Nhân viên'}
+                    />
 
                     {/* Actions */}
                     <div className="flex justify-end gap-3">

@@ -624,18 +624,28 @@ export async function sendPasswordResetEmail(email: string) {
         return { error: 'Không thể tạo link khôi phục mật khẩu. ' + error.message }
     }
 
-    // Wait! Supabase generateLink does NOT send an email automatically.
-    // So we use standard resetPasswordForEmail OR our custom Email system.
-    // If EmailService is ready, we could send it manually using `data.properties.action_link`.
-    // Alternatively, just use the built-in supabase endpoint.
-    const supabase = await createClient()
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${origin}/update-password`
-    })
+    // Wait! Supabase generateLink DOES not send an email by default.
+    // However, if we call both `generateLink` and `resetPasswordForEmail`, 
+    // we will hit Supabase's "59 seconds" rate limit.
+    // Therefore, we MUST use our custom EmailService with the generated link.
+    const actionLink = data.properties?.action_link
 
-    if (resetError) return { error: 'Gửi email khôi phục thất bại: ' + resetError.message }
+    if (!actionLink) {
+        return { error: 'Hệ thống Auth không thể tạo link phục hồi.' }
+    }
 
-    // Log the audit event (Optional - assume this exists or can be added later)
+    try {
+        await EmailService.sendAsync('password-reset', email, {
+            user_name: email,
+            reset_link: actionLink,
+            expiry_time: '24 giờ'
+        })
+    } catch (sendError: any) {
+        console.error('Failed to send reset email using EmailService:', sendError)
+        return { error: 'Không thể gửi email: ' + sendError.message }
+    }
+
+    // Log the audit event
     console.log(`[AUDIT] Admin initiated password reset email for ${email}`)
 
     return { success: true }

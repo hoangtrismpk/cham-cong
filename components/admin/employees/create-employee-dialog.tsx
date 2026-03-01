@@ -158,20 +158,20 @@ export default function CreateEmployeeDialog() {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label>{t.admin.employeeManagement.create.firstName} <span className="text-red-500">*</span></Label>
-                            <Input
-                                required
-                                value={firstName}
-                                onChange={(e) => setFirstName(e.target.value)}
-                                className="bg-[#0d1117] border-slate-700 text-white focus:bg-[#161b26] transition-colors"
-                            />
-                        </div>
-                        <div className="space-y-2">
                             <Label>{t.admin.employeeManagement.create.lastName} <span className="text-red-500">*</span></Label>
                             <Input
                                 required
                                 value={lastName}
                                 onChange={(e) => setLastName(e.target.value)}
+                                className="bg-[#0d1117] border-slate-700 text-white focus:bg-[#161b26] transition-colors"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>{t.admin.employeeManagement.create.firstName} <span className="text-red-500">*</span></Label>
+                            <Input
+                                required
+                                value={firstName}
+                                onChange={(e) => setFirstName(e.target.value)}
                                 className="bg-[#0d1117] border-slate-700 text-white focus:bg-[#161b26] transition-colors"
                             />
                         </div>
