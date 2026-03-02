@@ -125,7 +125,7 @@ export async function checkIn(latitude?: number, longitude?: number, notes?: str
     }
 
     // 2. Kiểm tra GPS
-    let gpsDistance = 0
+    let gpsDistance: number | null = null
     if (latitude !== undefined && longitude !== undefined) {
         gpsDistance = calculateDistance(
             latitude,
@@ -140,6 +140,7 @@ export async function checkIn(latitude?: number, longitude?: number, notes?: str
 
     // --- XÁC ĐỊNH TỔNG HỢP VỊ TRÍ ---
     let isLocationValid = false
+    const distText = gpsDistance !== null ? `${Math.round(gpsDistance)}m` : 'Không có'
     if (settings.require_gps_and_wifi) {
         // Bắt buộc CẢ HAI
         if (isIpValid && isGpsValid) {
@@ -148,7 +149,7 @@ export async function checkIn(latitude?: number, longitude?: number, notes?: str
         } else {
             let errorMsg = 'Chế độ an toàn cao: Bạn cần thỏa mãn cả GPS và Wifi.'
             if (!isIpValid) errorMsg += ` (IP ${userIp} không thuộc văn phòng)`
-            if (!isGpsValid) errorMsg += ` (Vị trí GPS nằm ngoài bán kính ${settings.max_distance_meters}m)`
+            if (!isGpsValid) errorMsg += ` (GPS: ${distText}, Bán kính: ${settings.max_distance_meters}m)`
             return { error: errorMsg }
         }
     } else {
@@ -161,7 +162,7 @@ export async function checkIn(latitude?: number, longitude?: number, notes?: str
             verificationMethod = 'gps'
         } else {
             return {
-                error: `Không thể xác minh vị trí. Vui lòng kết nối Wifi công ty HOẶC bật GPS trong bán kính cho phép. (IP: ${userIp}, Khoảng cách: ${Math.round(gpsDistance)}m)`
+                error: `Không thể xác minh vị trí. Vui lòng kết nối Wifi công ty HOẶC bật GPS. (IP: ${userIp}, Khoảng cách GPS: ${distText})`
             }
         }
     }
@@ -305,7 +306,7 @@ export async function checkOut(latitude?: number, longitude?: number, notes?: st
         isIpValid = true
     }
 
-    let gpsDistance = 0
+    let gpsDistance: number | null = null
     if (latitude !== undefined && longitude !== undefined) {
         gpsDistance = calculateDistance(
             latitude,
@@ -320,6 +321,7 @@ export async function checkOut(latitude?: number, longitude?: number, notes?: st
 
     // --- XÁC ĐỊNH TỔNG HỢP VỊ TRÍ ---
     let isLocationValid = false
+    const distText = gpsDistance !== null ? `${Math.round(gpsDistance)}m` : 'Không có'
     if (settings.require_gps_and_wifi) {
         if (isIpValid && isGpsValid) {
             isLocationValid = true
@@ -327,7 +329,7 @@ export async function checkOut(latitude?: number, longitude?: number, notes?: st
         } else {
             let errorMsg = 'Cần thỏa mãn cả GPS và Wifi để Chấm ra.'
             if (!isIpValid) errorMsg += ` (IP ${userIp} không hợp lệ)`
-            if (!isGpsValid) errorMsg += ` (GPS nằm ngoài bán kính)`
+            if (!isGpsValid) errorMsg += ` (GPS: ${distText}, Bán kính: ${settings.max_distance_meters}m)`
             return { error: errorMsg }
         }
     } else {
@@ -339,7 +341,7 @@ export async function checkOut(latitude?: number, longitude?: number, notes?: st
             verificationMethod = 'gps'
         } else {
             return {
-                error: `Không thể xác minh vị trí qua Wifi hoặc GPS. (IP: ${userIp}, Khoảng cách: ${Math.round(gpsDistance)}m)`
+                error: `Không thể xác minh vị trí qua Wifi hoặc GPS. (IP: ${userIp}, Khoảng cách GPS: ${distText})`
             }
         }
     }

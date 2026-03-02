@@ -70,9 +70,9 @@ export function AutoAttendanceHandler({ ssrResult }: { ssrResult: SSRAutoResult 
             try {
                 const position = await new Promise<GeolocationPosition>((resolve, reject) => {
                     navigator.geolocation.getCurrentPosition(resolve, reject, {
-                        enableHighAccuracy: false,
-                        timeout: 10000,
-                        maximumAge: 30000
+                        enableHighAccuracy: true,
+                        timeout: 15000,
+                        maximumAge: 0
                     })
                 })
 

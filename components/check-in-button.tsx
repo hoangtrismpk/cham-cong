@@ -136,9 +136,9 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
                 }
             },
             {
-                enableHighAccuracy: false, // Less aggressive → works better with Brave
-                timeout: 8000,
-                maximumAge: 60000  // Accept 60s cached position → Brave-friendly
+                enableHighAccuracy: true, // Force GPS
+                timeout: 15000, // Wait 15s for the first satellite lock
+                maximumAge: 0  // Do not accept cached position to ensure accuracy
             }
         )
     }
