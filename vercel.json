@@ -3,6 +3,14 @@
         {
             "path": "/api/cron/daily-summaries",
             "schedule": "30 17 * * *"
+        },
+        {
+            "path": "/api/cron/daily-remind",
+            "schedule": "*/5 8-12 * * 1-6"
+        },
+        {
+            "path": "/api/cron/weekly-remind",
+            "schedule": "0 1 * * 1"
         }
     ]
 }

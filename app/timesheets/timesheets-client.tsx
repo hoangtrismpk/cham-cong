@@ -398,23 +398,23 @@ export function TimesheetsClient({ user, initialData, workSettings }: Timesheets
 
             <main className="flex-1 overflow-y-auto no-scrollbar pb-24 md:p-8">
                 {/* --- MOBILE STATS STRIP --- */}
-                <div className="flex md:hidden items-center gap-4 overflow-x-auto no-scrollbar px-6 py-6 border-b border-white/5 bg-white/[0.01]">
-                    <div className="min-w-[140px] p-5 bg-card/40 rounded-3xl border border-white/5 relative overflow-hidden shrink-0">
+                <div className="grid md:hidden grid-cols-2 gap-4 px-6 py-6 border-b border-white/5 bg-white/[0.01]">
+                    <div className="p-5 bg-card/40 rounded-3xl border border-white/5 relative overflow-hidden">
                         <div className="absolute top-0 right-0 size-12 bg-primary/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-xl"></div>
                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{t.timesheets.totalHoursWorked}</p>
                         <p className="text-2xl font-black text-white">{data.stats.totalHours}<span className="text-[10px] text-slate-600 block">GIỜ LÀM</span></p>
                     </div>
-                    <div className="min-w-[140px] p-5 bg-card/40 rounded-3xl border border-white/5 relative overflow-hidden shrink-0">
+                    <div className="p-5 bg-card/40 rounded-3xl border border-white/5 relative overflow-hidden">
                         <div className="absolute top-0 right-0 size-12 bg-purple-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-xl"></div>
                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{t.timesheets.overtime}</p>
                         <p className="text-2xl font-black text-white">{data.stats.overtime}<span className="text-[10px] text-slate-600 block">TĂNG CA</span></p>
                     </div>
-                    <div className="min-w-[140px] p-5 bg-card/40 rounded-3xl border border-white/5 relative overflow-hidden shrink-0">
+                    <div className="p-5 bg-card/40 rounded-3xl border border-white/5 relative overflow-hidden">
                         <div className="absolute top-0 right-0 size-12 bg-amber-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-xl"></div>
                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{t.timesheets.daysPresent}</p>
                         <p className="text-2xl font-black text-white">{data.stats.daysPresent}<span className="text-[10px] text-slate-600 block">/ {data.stats.totalWorkdays} NGÀY</span></p>
                     </div>
-                    <div className="min-w-[140px] p-5 bg-card/40 rounded-3xl border border-white/5 relative overflow-hidden shrink-0">
+                    <div className="p-5 bg-card/40 rounded-3xl border border-white/5 relative overflow-hidden">
                         <div className="absolute top-0 right-0 size-12 bg-rose-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-xl"></div>
                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{t.timesheets.lateHours}</p>
                         <p className="text-2xl font-black text-white">{data.stats.lateHours || 0}<span className="text-[10px] text-slate-600 block">{locale === 'vi' ? 'GIỜ' : 'HOURS'}</span></p>
@@ -712,9 +712,9 @@ export function TimesheetsClient({ user, initialData, workSettings }: Timesheets
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-sm font-bold text-white uppercase tracking-widest">{locale === 'vi' ? 'QUẢN LÝ NGHỈ PHÉP' : 'LEAVE MANAGEMENT'}</h3>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
                             {/* Grand Total Leave */}
-                            <div className="bg-card/80 md:rounded-[2rem] rounded-3xl border border-border p-6 relative overflow-hidden group flex flex-col items-center justify-center text-center shadow-lg">
+                            <div className="col-span-2 md:col-span-1 bg-card/80 md:rounded-[2rem] rounded-3xl border border-border p-6 relative overflow-hidden group flex flex-col items-center justify-center text-center shadow-lg">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:bg-rose-500/20 transition-all duration-700"></div>
                                 <div className="size-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mb-4">
                                     <span className="material-symbols-outlined text-rose-400 text-xl">account_circle_off</span>
@@ -727,7 +727,7 @@ export function TimesheetsClient({ user, initialData, workSettings }: Timesheets
                             </div>
 
                             {/* Monthly Leave */}
-                            <div className="bg-card/80 md:rounded-[2rem] rounded-3xl border border-border p-6 relative overflow-hidden group flex flex-col items-center justify-center text-center shadow-lg">
+                            <div className="col-span-1 bg-card/80 md:rounded-[2rem] rounded-3xl border border-border p-6 relative overflow-hidden group flex flex-col items-center justify-center text-center shadow-lg">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:bg-emerald-500/20 transition-all duration-700"></div>
                                 <div className="size-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-4">
                                     <span className="material-symbols-outlined text-emerald-400 text-xl">calendar_view_month</span>
@@ -740,7 +740,7 @@ export function TimesheetsClient({ user, initialData, workSettings }: Timesheets
                             </div>
 
                             {/* Yearly Leave */}
-                            <div className="bg-card/80 md:rounded-[2rem] rounded-3xl border border-border p-6 relative overflow-hidden group flex flex-col items-center justify-center text-center shadow-lg">
+                            <div className="col-span-1 bg-card/80 md:rounded-[2rem] rounded-3xl border border-border p-6 relative overflow-hidden group flex flex-col items-center justify-center text-center shadow-lg">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-sky-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:bg-sky-500/20 transition-all duration-700"></div>
                                 <div className="size-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center mb-4">
                                     <span className="material-symbols-outlined text-sky-400 text-xl">event_available</span>
