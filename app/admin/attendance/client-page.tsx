@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react'
 import { Search, Loader2, Download, Plus, RefreshCw, XCircle, CheckCircle2, AlertCircle, Clock, Calendar, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -23,34 +24,36 @@ interface EmployeeData {
     email: string
     avatar: string | null
     department: string
-    status: string
-    isLate: boolean
-    checkIn: string | null
-    checkOut: string | null
-    totalHours: number | null
-    activeSessionStartTime: string | null
+    workDays: number
+    lateDays: number
+    leaveDays: number
+    totalHours: number
+    totalOvertimeHours: number
 }
 
 interface AttendancePageProps {
     initialEmployees: EmployeeData[]
     stats: {
         totalEmployees: number
-        present: number
-        late: number
-        onLeave: number
+        totalWorkDays: number
+        totalLateDays: number
+        totalLeaveDays: number
     }
-    todayStr: string
+    startDateStr: string
+    endDateStr: string
     viewScope?: 'all' | 'team'
 }
 
-export function AttendanceClient({ initialEmployees, stats, todayStr, viewScope = 'all' }: AttendancePageProps) {
+export function AttendanceClient({ initialEmployees, stats, startDateStr, endDateStr, viewScope = 'all' }: AttendancePageProps) {
+    const router = useRouter()
     const { t, locale } = useI18n()
     const { can } = usePermissions()
     const dateLocale = locale === 'vi' ? viLocale : enUS
 
     const [searchQuery, setSearchQuery] = useState('')
     const [departmentFilter, setDepartmentFilter] = useState('all')
-    const [statusFilter, setStatusFilter] = useState('all')
+    const [localStartDate, setLocalStartDate] = useState(startDateStr)
+    const [localEndDate, setLocalEndDate] = useState(endDateStr)
     const [currentPage, setCurrentPage] = useState(1)
     const itemsPerPage = 8
 
@@ -68,36 +71,15 @@ export function AttendanceClient({ initialEmployees, stats, todayStr, viewScope 
 
             const matchesDept = departmentFilter === 'all' || emp.department === departmentFilter
 
-            const matchesStatus = statusFilter === 'all' ||
-                (statusFilter === 'late' && emp.isLate) ||
-                (statusFilter === 'present' && (emp.status === 'clocked_in' || emp.status === 'clocked_out')) ||
-                (statusFilter === 'absent' && emp.status === 'absent') ||
-                (statusFilter === 'on_leave' && emp.status === 'on_leave')
-
-            return matchesSearch && matchesDept && matchesStatus
+            return matchesSearch && matchesDept
         })
-    }, [initialEmployees, searchQuery, departmentFilter, statusFilter])
+    }, [initialEmployees, searchQuery, departmentFilter])
 
     // Pagination
     const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage)
     const paginatedEmployees = filteredEmployees.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
     // --- Helpers ---
-    const getStatusConfig = (status: string, isLate: boolean) => {
-        if (isLate) return { label: t.admin.attendancePage.filters.late.toUpperCase(), color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20', icon: AlertCircle }
-        if (status === 'on_leave') return { label: t.admin.attendancePage.filters.onLeave.toUpperCase(), color: 'bg-slate-500/10 text-slate-400 border-slate-500/20', icon: Calendar }
-        if (status === 'absent') return { label: t.admin.attendancePage.filters.absent.toUpperCase(), color: 'bg-rose-500/10 text-rose-500 border-rose-500/20', icon: XCircle }
-        if (status === 'clocked_out') return { label: t.admin.checkedOut.toUpperCase(), color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20', icon: CheckCircle2 }
-        if (status === 'clocked_in') return { label: t.admin.clockedIn.toUpperCase(), color: 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20', icon: Clock }
-        return { label: 'UNKNOWN', color: 'bg-slate-500/10 text-slate-500', icon: AlertCircle }
-    }
-
-    const formatTime = (isoString: string | null) => {
-        if (!isoString) return '--:--'
-        // Handle timezone properly or just format time part
-        return format(new Date(isoString), 'hh:mm a', { locale: dateLocale })
-    }
-
     const formatHours = (hours: number | null) => {
         if (hours === null || hours === undefined || isNaN(hours)) return '0h 0m'
         const h = Math.floor(hours)
@@ -110,8 +92,7 @@ export function AttendanceClient({ initialEmployees, stats, todayStr, viewScope 
         try {
             toast.loading('Đang tạo báo cáo, vui lòng đợi...', { id: 'export-report' })
 
-            const monthStr = todayStr.substring(0, 7)
-            const res = await fetch(`/api/admin/reports/attendance?month=${monthStr}&scope=${viewScope}`)
+            const res = await fetch(`/api/admin/reports/attendance?startDate=${startDateStr}&endDate=${endDateStr}&scope=${viewScope}`)
             if (!res.ok) throw new Error('Failed to fetch report data')
 
             const data = await res.json()
@@ -120,9 +101,12 @@ export function AttendanceClient({ initialEmployees, stats, todayStr, viewScope 
             const sheet1Data: any[] = []
             const summaryData: any[] = []
 
-            const year = parseInt(monthStr.split('-')[0])
-            const month = parseInt(monthStr.split('-')[1])
-            const numDays = new Date(year, month, 0).getDate()
+            const todayStr = new Date().toISOString().split('T')[0]
+
+            const parseDate = (dStr: string) => {
+                const [y, m, d] = dStr.split('-').map(Number)
+                return new Date(y, m - 1, d, 12, 0, 0) // Parse as midday to avoid timezone shifts
+            }
 
             profiles.forEach((emp: any) => {
                 let totalWorkDays = 0
@@ -132,11 +116,14 @@ export function AttendanceClient({ initialEmployees, stats, todayStr, viewScope 
                 let totalLateMinutes = 0
                 let totalOvertimeHours = 0
 
-                for (let d = 1; d <= numDays; d++) {
-                    const dateStr = `${monthStr}-${String(d).padStart(2, '0')}`
+                let currentDate = parseDate(startDateStr)
+                const endD = parseDate(endDateStr)
+
+                while (currentDate <= endD) {
+                    const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`
 
                     // Stop checking future dates
-                    if (dateStr > todayStr) continue
+                    if (dateStr > todayStr) break
 
                     const dayLogs = logs.filter((l: any) => l.user_id === emp.id && l.work_date === dateStr)
                     dayLogs.sort((a: any, b: any) => new Date(a.check_in_time).getTime() - new Date(b.check_in_time).getTime())
@@ -181,12 +168,12 @@ export function AttendanceClient({ initialEmployees, stats, todayStr, viewScope 
                         'ID': employeeIdStr,
                         'Phòng ban': emp.department || 'Chưa phân bổ',
                         'Trạng thái': status,
-                        'Giờ vào': formatTime(firstLog?.check_in_time),
-                        'Giờ ra': formatTime(lastLog?.check_out_time),
                         'Đi trễ (phút)': firstLog?.late_minutes || 0,
                         'Tăng ca (giờ)': dayLogs.reduce((sum: number, lg: any) => sum + (lg.overtime_hours || 0), 0),
                         'Tổng giờ': formatHours(dailyHours)
                     })
+
+                    currentDate.setDate(currentDate.getDate() + 1)
                 }
 
                 summaryData.push({
@@ -220,9 +207,9 @@ export function AttendanceClient({ initialEmployees, stats, todayStr, viewScope 
 
             const wb = XLSX.utils.book_new()
             XLSX.utils.book_append_sheet(wb, ws1, "Chi tiết chấm công")
-            XLSX.utils.book_append_sheet(wb, ws2, "Tổng quan tháng")
+            XLSX.utils.book_append_sheet(wb, ws2, "Tổng quan")
 
-            XLSX.writeFile(wb, `BaoCao_ChamCong_${monthStr}.xlsx`)
+            XLSX.writeFile(wb, `BaoCao_ChamCong_${startDateStr}_to_${endDateStr}.xlsx`)
 
             toast.success('Xuất báo cáo thành công!', { id: 'export-report' })
         } catch (error) {
@@ -242,7 +229,7 @@ export function AttendanceClient({ initialEmployees, stats, todayStr, viewScope 
                     </h1>
                     <div className="flex items-center gap-2 mt-1 text-slate-400 text-sm">
                         <Calendar className="w-4 h-4" />
-                        <span>{t.admin.attendancePage.subtitle}, {format(new Date(todayStr), 'MMM dd, yyyy', { locale: dateLocale })}</span>
+                        <span>{locale === 'vi' ? 'Từ' : 'From'} {format(new Date(startDateStr), 'dd/MM/yyyy')} {locale === 'vi' ? 'đến' : 'to'} {format(new Date(endDateStr), 'dd/MM/yyyy')}</span>
                         {viewScope === 'team' && (
                             <Badge className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20 text-[10px] font-bold uppercase tracking-wider ml-2">
                                 <span className="material-symbols-outlined text-[12px] mr-1">diversity_3</span>
@@ -278,41 +265,32 @@ export function AttendanceClient({ initialEmployees, stats, todayStr, viewScope 
             </header>
 
             {/* --- STATS CARDS --- */}
-            {/* --- STATS CARDS --- */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Total Employees */}
-                {/* Total Employees */}
                 {/* Total Employees */}
                 <div className="bg-[#161b2c] p-4 md:p-5 rounded-2xl border border-[#2d3748] shadow-sm group hover:border-blue-500/50 transition-all">
                     <div className="flex justify-between items-center mb-3 md:mb-4">
                         <div className="p-1.5 md:p-2 bg-blue-500/10 text-blue-500 rounded-xl group-hover:scale-110 transition-transform">
                             <span className="material-symbols-outlined text-[20px] md:text-[24px]">groups_3</span>
                         </div>
-                        <span className="text-[10px] md:text-xs font-bold px-2 py-1 rounded-lg text-emerald-500 bg-emerald-500/10">
-                            +12 {t.admin.attendancePage.stats.thisMonth}
-                        </span>
                     </div>
-                    <p className="text-slate-500 text-[10px] md:text-xs font-bold uppercase tracking-wider">{t.admin.attendancePage.stats.totalEmployees}</p>
+                    <p className="text-slate-500 text-[10px] md:text-xs font-bold uppercase tracking-wider">{locale === 'vi' ? 'Tổng nhân sự' : 'Total Employees'}</p>
                     <p className="text-2xl md:text-3xl font-black text-white mt-1">{stats.totalEmployees.toLocaleString()}</p>
                     <div className="mt-4 w-full bg-slate-800 h-1 rounded-full overflow-hidden">
                         <div className="bg-blue-500 h-full rounded-full" style={{ width: '100%' }}></div>
                     </div>
                 </div>
 
-                {/* Present Today */}
+                {/* Total Work Days */}
                 <div className="bg-[#161b2c] p-4 md:p-5 rounded-2xl border border-[#2d3748] shadow-sm group hover:border-emerald-500/50 transition-all">
                     <div className="flex justify-between items-center mb-3 md:mb-4">
                         <div className="p-1.5 md:p-2 bg-emerald-500/10 text-emerald-500 rounded-xl group-hover:scale-110 transition-transform">
-                            <span className="material-symbols-outlined text-[20px] md:text-[24px]">login</span>
+                            <span className="material-symbols-outlined text-[20px] md:text-[24px]">fact_check</span>
                         </div>
-                        <span className="text-[10px] md:text-xs font-bold px-2 py-1 rounded-lg text-emerald-500 bg-emerald-500/10">
-                            {stats.totalEmployees > 0 ? Math.round((stats.present / stats.totalEmployees) * 100) : 0}% {t.admin.attendancePage.stats.rate}
-                        </span>
                     </div>
-                    <p className="text-slate-500 text-[10px] md:text-xs font-bold uppercase tracking-wider">{t.admin.attendancePage.stats.presentToday}</p>
-                    <p className="text-2xl md:text-3xl font-black text-white mt-1">{stats.present.toLocaleString()}</p>
+                    <p className="text-slate-500 text-[10px] md:text-xs font-bold uppercase tracking-wider">{locale === 'vi' ? 'Tổng ngày công' : 'Total Work Days'}</p>
+                    <p className="text-2xl md:text-3xl font-black text-white mt-1">{stats.totalWorkDays.toLocaleString()}</p>
                     <div className="mt-4 w-full bg-slate-800 h-1 rounded-full overflow-hidden">
-                        <div className="bg-emerald-500 h-full rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]" style={{ width: `${stats.totalEmployees > 0 ? (stats.present / stats.totalEmployees) * 100 : 0}%` }}></div>
+                        <div className="bg-emerald-500 h-full rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]" style={{ width: '100%' }}></div>
                     </div>
                 </div>
 
@@ -322,14 +300,11 @@ export function AttendanceClient({ initialEmployees, stats, todayStr, viewScope 
                         <div className="p-1.5 md:p-2 bg-amber-500/10 text-amber-500 rounded-xl group-hover:scale-110 transition-transform">
                             <span className="material-symbols-outlined text-[20px] md:text-[24px]">schedule_send</span>
                         </div>
-                        <span className="text-[10px] md:text-xs font-bold px-2 py-1 rounded-lg text-amber-500 bg-amber-500/10">
-                            {stats.present > 0 ? ((stats.late / stats.present) * 100).toFixed(1) : 0}% {t.admin.attendancePage.stats.late}
-                        </span>
                     </div>
-                    <p className="text-slate-500 text-[10px] md:text-xs font-bold uppercase tracking-wider">{t.admin.attendancePage.stats.lateArrivals}</p>
-                    <p className="text-2xl md:text-3xl font-black text-white mt-1">{stats.late}</p>
+                    <p className="text-slate-500 text-[10px] md:text-xs font-bold uppercase tracking-wider">{locale === 'vi' ? 'Tổng lượt đi trễ' : 'Total Late Events'}</p>
+                    <p className="text-2xl md:text-3xl font-black text-white mt-1">{stats.totalLateDays}</p>
                     <div className="mt-4 w-full bg-slate-800 h-1 rounded-full overflow-hidden">
-                        <div className="bg-amber-500 h-full rounded-full shadow-[0_0_8px_rgba(245,158,11,0.5)]" style={{ width: `${stats.present > 0 ? (stats.late / stats.present) * 100 : 0}%` }}></div>
+                        <div className="bg-amber-500 h-full rounded-full shadow-[0_0_8px_rgba(245,158,11,0.5)]" style={{ width: '100%' }}></div>
                     </div>
                 </div>
 
@@ -339,14 +314,11 @@ export function AttendanceClient({ initialEmployees, stats, todayStr, viewScope 
                         <div className="p-1.5 md:p-2 bg-rose-500/10 text-rose-500 rounded-xl group-hover:scale-110 transition-transform">
                             <span className="material-symbols-outlined text-[20px] md:text-[24px]">logout</span>
                         </div>
-                        <span className="text-[10px] md:text-xs font-bold px-2 py-1 rounded-lg text-slate-400 bg-slate-800">
-                            {t.admin.attendancePage.stats.today}
-                        </span>
                     </div>
-                    <p className="text-slate-500 text-[10px] md:text-xs font-bold uppercase tracking-wider">{t.admin.attendancePage.stats.onLeave}</p>
-                    <p className="text-2xl md:text-3xl font-black text-white mt-1">{stats.onLeave}</p>
+                    <p className="text-slate-500 text-[10px] md:text-xs font-bold uppercase tracking-wider">{locale === 'vi' ? 'Tổng ngày phép' : 'Total Leave Days'}</p>
+                    <p className="text-2xl md:text-3xl font-black text-white mt-1">{stats.totalLeaveDays}</p>
                     <div className="mt-4 w-full bg-slate-800 h-1 rounded-full overflow-hidden">
-                        <div className="bg-rose-500 h-full rounded-full shadow-[0_0_8px_rgba(244,63,94,0.5)]" style={{ width: `${stats.totalEmployees > 0 ? (stats.onLeave / stats.totalEmployees) * 100 : 0}%` }}></div>
+                        <div className="bg-rose-500 h-full rounded-full shadow-[0_0_8px_rgba(244,63,94,0.5)]" style={{ width: '100%' }}></div>
                     </div>
                 </div>
             </div>
@@ -364,9 +336,9 @@ export function AttendanceClient({ initialEmployees, stats, todayStr, viewScope 
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
                         <Select value={departmentFilter} onValueChange={(val) => { setDepartmentFilter(val); setCurrentPage(1); }}>
-                            <SelectTrigger className="w-full sm:w-[180px] bg-[#0d1117] border-slate-700 text-slate-300 font-medium">
+                            <SelectTrigger className="w-full sm:w-[150px] bg-[#0d1117] border-slate-700 text-slate-300 font-medium">
                                 <SelectValue placeholder={t.admin.attendancePage.filters.allDepartments} />
                             </SelectTrigger>
                             <SelectContent className="bg-[#161b22] border-slate-700 text-slate-300">
@@ -377,18 +349,36 @@ export function AttendanceClient({ initialEmployees, stats, todayStr, viewScope 
                             </SelectContent>
                         </Select>
 
-                        <Select value={statusFilter} onValueChange={(val) => { setStatusFilter(val); setCurrentPage(1); }}>
-                            <SelectTrigger className="w-full sm:w-[160px] bg-[#0d1117] border-slate-700 text-slate-300 font-medium">
-                                <SelectValue placeholder={t.admin.attendancePage.filters.allStatuses} />
-                            </SelectTrigger>
-                            <SelectContent className="bg-[#161b22] border-slate-700 text-slate-300">
-                                <SelectItem value="all">{t.admin.attendancePage.filters.allStatuses}</SelectItem>
-                                <SelectItem value="present">{t.admin.attendancePage.filters.present}</SelectItem>
-                                <SelectItem value="late">{t.admin.attendancePage.filters.late}</SelectItem>
-                                <SelectItem value="absent">{t.admin.attendancePage.filters.absent}</SelectItem>
-                                <SelectItem value="on_leave">{t.admin.attendancePage.filters.onLeave}</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <span className="text-slate-400 text-sm hidden sm:inline">{locale === 'vi' ? 'Từ' : 'From'}:</span>
+                            <Input
+                                type="date"
+                                className="w-full sm:w-[130px] bg-[#0d1117] border-slate-700 text-slate-300 font-medium"
+                                value={localStartDate}
+                                onChange={(e) => setLocalStartDate(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <span className="text-slate-400 text-sm hidden sm:inline">{locale === 'vi' ? 'Đến' : 'To'}:</span>
+                            <Input
+                                type="date"
+                                className="w-full sm:w-[130px] bg-[#0d1117] border-slate-700 text-slate-300 font-medium"
+                                value={localEndDate}
+                                onChange={(e) => setLocalEndDate(e.target.value)}
+                            />
+                        </div>
+
+                        <Button
+                            className="w-full sm:w-auto bg-cyan-600 hover:bg-cyan-700 text-white"
+                            onClick={() => {
+                                if (localStartDate && localEndDate) {
+                                    router.push(`/admin/attendance?from=${localStartDate}&to=${localEndDate}`)
+                                }
+                            }}
+                        >
+                            {locale === 'vi' ? 'Lọc' : 'Filter'}
+                        </Button>
 
                         <Button
                             variant="outline"
@@ -397,7 +387,6 @@ export function AttendanceClient({ initialEmployees, stats, todayStr, viewScope 
                             onClick={() => {
                                 setSearchQuery('')
                                 setDepartmentFilter('all')
-                                setStatusFilter('all')
                                 setCurrentPage(1)
                             }}
                         >
@@ -414,9 +403,10 @@ export function AttendanceClient({ initialEmployees, stats, todayStr, viewScope 
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest cursor-pointer hover:text-slate-300 transition-colors">{t.admin.attendancePage.table.employee}</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest cursor-pointer hover:text-slate-300 transition-colors">{t.admin.attendancePage.table.id}</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest cursor-pointer hover:text-slate-300 transition-colors">{t.admin.attendancePage.table.department}</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest cursor-pointer hover:text-slate-300 transition-colors">{t.admin.attendancePage.table.status}</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest cursor-pointer hover:text-slate-300 transition-colors text-right">{t.admin.attendancePage.table.clockIn}</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest cursor-pointer hover:text-slate-300 transition-colors text-right">{t.admin.attendancePage.table.clockOut}</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest cursor-pointer hover:text-slate-300 transition-colors text-right">{locale === 'vi' ? 'Ngày công' : 'Work Days'}</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest cursor-pointer hover:text-slate-300 transition-colors text-right">{locale === 'vi' ? 'Đi trễ' : 'Late Days'}</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest cursor-pointer hover:text-slate-300 transition-colors text-right">{locale === 'vi' ? 'Nghỉ phép' : 'Leave Days'}</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest cursor-pointer hover:text-slate-300 transition-colors text-right">{locale === 'vi' ? 'Tăng ca' : 'Overtime'}</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest cursor-pointer hover:text-slate-300 transition-colors text-right">{t.admin.attendancePage.table.totalHours}</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">{t.admin.attendancePage.table.actions}</th>
                             </tr>
@@ -430,7 +420,6 @@ export function AttendanceClient({ initialEmployees, stats, todayStr, viewScope 
                                 </tr>
                             ) : (
                                 paginatedEmployees.map((emp) => {
-                                    const statusConfig = getStatusConfig(emp.status, emp.isLate)
                                     return (
                                         <tr key={emp.id} className="group hover:bg-[#0d1117]/50 transition-colors">
                                             <td className="px-6 py-4 whitespace-nowrap">
@@ -453,20 +442,22 @@ export function AttendanceClient({ initialEmployees, stats, todayStr, viewScope 
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-300">
                                                 {emp.department}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <Badge className={cn("rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border whitespace-nowrap w-fit flex items-center gap-1.5", statusConfig.color)}>
-                                                    <statusConfig.icon className="w-3 h-3" />
-                                                    {statusConfig.label}
+                                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 tabular-nums">
+                                                    {emp.workDays} {locale === 'vi' ? 'ngày' : 'days'}
                                                 </Badge>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-300 text-right tabular-nums">
-                                                {formatTime(emp.checkIn)}
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-amber-500 text-right tabular-nums">
+                                                {emp.lateDays} {locale === 'vi' ? 'ngày' : 'days'}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-500 text-right tabular-nums">
-                                                {formatTime(emp.checkOut)}
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-rose-500 text-right tabular-nums">
+                                                {emp.leaveDays} {locale === 'vi' ? 'ngày' : 'days'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-black text-cyan-400 text-right tabular-nums">
+                                                {formatHours(emp.totalOvertimeHours)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-black text-white text-right tabular-nums">
-                                                {formatHours((emp.totalHours || 0) + (emp.activeSessionStartTime ? (Date.now() - new Date(emp.activeSessionStartTime).getTime()) / (1000 * 60 * 60) : 0))}
+                                                {formatHours(emp.totalHours)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right">
                                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-white hover:bg-slate-700/50 rounded-full">

@@ -11,7 +11,13 @@ export const metadata: Metadata = {
 
 export const revalidate = 0
 
-export default async function AttendancePage() {
+export default async function AttendancePage(props: {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
+    const searchParams = await props.searchParams
+    const fromParam = typeof searchParams.from === 'string' ? searchParams.from : ''
+    const toParam = typeof searchParams.to === 'string' ? searchParams.to : ''
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return <ClientRedirect url="/login" />
@@ -28,9 +34,21 @@ export default async function AttendancePage() {
     // Admin (role admin) defaults to 'all' via checkPermission bypass
     const viewScope: 'all' | 'team' = hasViewAll ? 'all' : (hasViewTeam ? 'team' : 'all')
 
-    // 1. Get Today's Date (VN Timezone)
+    // 1. Get Target Date Range (Default to Current Month)
     const getVNNow = () => new Date(new Date().getTime() + 7 * 60 * 60 * 1000)
-    const todayStr = getVNNow().toISOString().split('T')[0]
+
+    let startDateStr = fromParam
+    let endDateStr = toParam
+
+    if (!startDateStr || !endDateStr) {
+        const now = getVNNow()
+        const year = now.getFullYear()
+        const month = String(now.getMonth() + 1).padStart(2, '0')
+        startDateStr = `${year}-${month}-01`
+
+        const lastDay = new Date(year, now.getMonth() + 1, 0).getDate()
+        endDateStr = `${year}-${month}-${String(lastDay).padStart(2, '0')}`
+    }
 
     // 2. Build the list of user IDs this person is allowed to see
     let allowedUserIds: string[] | null = null // null = all users (no filter)
@@ -57,8 +75,9 @@ export default async function AttendancePage() {
             return (
                 <AttendanceClient
                     initialEmployees={[]}
-                    stats={{ totalEmployees: 0, present: 0, late: 0, onLeave: 0 }}
-                    todayStr={todayStr}
+                    stats={{ totalEmployees: 0, totalWorkDays: 0, totalLateDays: 0, totalLeaveDays: 0 }}
+                    startDateStr={startDateStr}
+                    endDateStr={endDateStr}
                     viewScope={viewScope}
                 />
             )
@@ -72,8 +91,8 @@ export default async function AttendancePage() {
         { data: allLeaveRequests }
     ] = await Promise.all([
         profilesQuery,
-        supabase.from('attendance_logs').select('*').eq('work_date', todayStr),
-        supabase.from('leave_requests').select('user_id').eq('leave_date', todayStr).eq('status', 'approved'),
+        supabase.from('attendance_logs').select('*').gte('work_date', startDateStr).lte('work_date', endDateStr),
+        supabase.from('leave_requests').select('user_id, leave_date').gte('leave_date', startDateStr).lte('leave_date', endDateStr).eq('status', 'approved'),
     ])
 
     const profiles = profilesResult.data || []
@@ -85,55 +104,44 @@ export default async function AttendancePage() {
     const attendanceLogs = (allAttendanceLogs || []).filter(l => profileIdSet.has(l.user_id))
     const leaveRequests = (allLeaveRequests || []).filter(l => profileIdSet.has(l.user_id))
 
-    // 4. Process Stats
-    const presentUserIds = new Set(attendanceLogs.map(l => l.user_id))
-    const lateUserIds = new Set(attendanceLogs.filter(l => l.status === 'late').map(l => l.user_id))
-    const leaveUserIds = new Set(leaveRequests.map(l => l.user_id))
+    let totalWorkDaysAll = 0
+    let totalLateDaysAll = 0
+    let totalLeaveDaysAll = 0
 
-    const stats = {
-        totalEmployees: profiles.length,
-        present: presentUserIds.size,
-        late: lateUserIds.size,
-        onLeave: leaveUserIds.size
-    }
-
-    // 5. Merge Data for Table
+    // 5. Merge Data for Table (Monthly Aggregation)
     const employees = profiles.map(profile => {
         const userLogs = attendanceLogs.filter(l => l.user_id === profile.id) || []
-        const isLeave = leaveUserIds.has(profile.id)
+        const userLeaves = leaveRequests.filter(l => l.user_id === profile.id) || []
 
-        let status = 'absent'
-        let checkIn = null
-        let checkOut = null
+        const daysWorked = new Set(userLogs.map(l => l.work_date))
+        const workDays = daysWorked.size
+        const leaveDays = new Set(userLeaves.map(l => l.leave_date)).size
+
+        let lateDays = 0
         let totalHours = 0
-        let isLate = false
-        let activeSessionStartTime = null
+        let totalOvertimeHours = 0
 
-        if (isLeave) {
-            status = 'on_leave'
-        } else if (userLogs.length > 0) {
-            userLogs.sort((a, b) => new Date(a.check_in_time).getTime() - new Date(b.check_in_time).getTime())
-            checkIn = userLogs[0].check_in_time
-            isLate = userLogs[0].status === 'late'
+        daysWorked.forEach(date => {
+            const dayLogs = userLogs.filter(l => l.work_date === date)
+            dayLogs.sort((a, b) => new Date(a.check_in_time).getTime() - new Date(b.check_in_time).getTime())
+            if (dayLogs[0].status === 'late') lateDays++
 
-            const activeLog = userLogs.find(l => !l.check_out_time)
-            if (activeLog) {
-                status = 'clocked_in'
-                checkOut = null
-                activeSessionStartTime = activeLog.check_in_time
-            } else {
-                status = 'clocked_out'
-                checkOut = userLogs[userLogs.length - 1].check_out_time
-            }
-
-            userLogs.forEach(log => {
-                if (log.check_in_time && log.check_out_time) {
-                    const inTime = new Date(log.check_in_time).getTime()
-                    const outTime = new Date(log.check_out_time).getTime()
-                    totalHours += (outTime - inTime) / (1000 * 60 * 60)
+            dayLogs.forEach(lg => {
+                let dailyHours = 0
+                if (lg.check_in_time && lg.check_out_time) {
+                    dailyHours = (new Date(lg.check_out_time).getTime() - new Date(lg.check_in_time).getTime()) / (1000 * 60 * 60)
+                } else if (lg.check_in_time && date === new Date().toISOString().split('T')[0]) {
+                    // Trạng thái đang checkin trong ngày hôm nay thì cộng tạm giờ đến hiện tại
+                    dailyHours = (new Date().getTime() - new Date(lg.check_in_time).getTime()) / (1000 * 60 * 60)
                 }
+                totalHours += dailyHours
+                totalOvertimeHours += (lg.overtime_hours || 0)
             })
-        }
+        })
+
+        totalWorkDaysAll += workDays
+        totalLateDaysAll += lateDays
+        totalLeaveDaysAll += leaveDays
 
         return {
             id: profile.id,
@@ -142,20 +150,27 @@ export default async function AttendancePage() {
             email: profile.email,
             avatar: profile.avatar_url,
             department: profile.department || 'Unassigned',
-            status,
-            isLate,
-            checkIn,
-            checkOut,
+            workDays,
+            lateDays,
+            leaveDays,
             totalHours,
-            activeSessionStartTime
+            totalOvertimeHours
         }
     })
+
+    const stats = {
+        totalEmployees: profiles.length,
+        totalWorkDays: totalWorkDaysAll,
+        totalLateDays: totalLateDaysAll,
+        totalLeaveDays: totalLeaveDaysAll
+    }
 
     return (
         <AttendanceClient
             initialEmployees={employees}
             stats={stats}
-            todayStr={todayStr}
+            startDateStr={startDateStr}
+            endDateStr={endDateStr}
             viewScope={viewScope}
         />
     )

@@ -10,11 +10,12 @@ export async function GET(request: Request) {
         }
 
         const { searchParams } = new URL(request.url)
-        const monthStr = searchParams.get('month') // e.g. "2026-02"
+        const startDateStr = searchParams.get('startDate')
+        const endDateStr = searchParams.get('endDate')
         const scope = searchParams.get('scope') || 'all' // 'all' or 'team'
 
-        if (!monthStr) {
-            return NextResponse.json({ error: 'Missing month parameter' }, { status: 400 })
+        if (!startDateStr || !endDateStr) {
+            return NextResponse.json({ error: 'Missing date range parameters' }, { status: 400 })
         }
 
         const supabase = await createClient()
@@ -58,26 +59,22 @@ export async function GET(request: Request) {
         // Build allowed user IDs set for filtering logs & leaves
         const allowedIds = profiles.map(p => p.id)
 
-        // Fetch attendance logs for the month using date range
-        const [year, month] = monthStr.split('-').map(Number)
-        const firstDay = `${monthStr}-01`
-        const lastDay = new Date(year, month, 0).toISOString().split('T')[0]
-
+        // Filter attendance logs for the date range
         const { data: allLogs, error: logError } = await supabase
             .from('attendance_logs')
             .select('*')
-            .gte('work_date', firstDay)
-            .lte('work_date', lastDay)
+            .gte('work_date', startDateStr)
+            .lte('work_date', endDateStr)
 
         if (logError) throw logError
 
-        // Fetch leave requests for the month
+        // Fetch leave requests for the date range
         const { data: allLeaves, error: leaveError } = await supabase
             .from('leave_requests')
             .select('*')
             .eq('status', 'approved')
-            .gte('leave_date', firstDay)
-            .lte('leave_date', lastDay)
+            .gte('leave_date', startDateStr)
+            .lte('leave_date', endDateStr)
 
         if (leaveError) throw leaveError
 
