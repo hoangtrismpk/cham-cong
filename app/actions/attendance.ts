@@ -964,35 +964,62 @@ async function enhanceStatsWithLeave(supabase: any, userId: string, stats: any, 
     const monthStart = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`
     const monthEnd = format(new Date(currentYear, currentMonth, 0), 'yyyy-MM-dd')
 
-    // Year count
-    const { count: usedLeaveYear } = await supabase
-        .from('attendance_logs')
-        .select('*', { count: 'exact', head: true })
+    // Query approved leave_requests for the whole year to calculate both Year and Month caps
+    // The previous implementation used attendance_logs, but leave_requests has `total_hours` directly.
+    // Also, attendance_logs only records 'leave' without durations easily.
+    const { data: leaveRequests } = await supabase
+        .from('leave_requests')
+        .select('leave_date, total_hours')
         .eq('user_id', userId)
-        .eq('status', 'leave')
-        .gte('work_date', yearStart)
-        .lte('work_date', yearEnd)
+        .eq('status', 'approved')
+        .gte('leave_date', yearStart)
+        .lte('leave_date', yearEnd)
 
-    // Month count
-    const { count: usedLeaveMonth } = await supabase
-        .from('attendance_logs')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('status', 'leave')
-        .gte('work_date', monthStart)
-        .lte('work_date', monthEnd)
+    let totalUsedLeaveYear = 0
+    let totalUsedLeaveMonth = 0
+    let grandTotalLeaveYear = 0  // Thống kê toàn bộ số ngày đã nghỉ trong 1 năm
+
+    // Group by month to calculate cap per month (max 1 day)
+    const leavesByMonth: Record<number, number> = {}
+
+    if (leaveRequests) {
+        leaveRequests.forEach((req: any) => {
+            const hours = req.total_hours || 0
+            const leaveDays = hours / 8
+
+            grandTotalLeaveYear += leaveDays
+
+            const reqDate = new Date(req.leave_date)
+            const reqMonth = reqDate.getMonth() + 1
+
+            if (!leavesByMonth[reqMonth]) leavesByMonth[reqMonth] = 0
+            leavesByMonth[reqMonth] += leaveDays
+        })
+    }
+
+    // Calculate Monthly used paid leave (Capped at 1)
+    if (leavesByMonth[currentMonth]) {
+        totalUsedLeaveMonth = Math.min(leavesByMonth[currentMonth], 1)
+    }
+
+    // Calculate Yearly used paid leave (Sum of all capped monthly leaves)
+    for (const monthStr in leavesByMonth) {
+        const monthNum = parseInt(monthStr)
+        totalUsedLeaveYear += Math.min(leavesByMonth[monthNum], 1)
+    }
 
     const annualLimit = 12
     const monthlyLimit = 1
 
     return {
         ...stats,
-        usedLeaveYear: usedLeaveYear || 0,
-        remainingLeaveYear: Math.max(0, annualLimit - (usedLeaveYear || 0)),
+        usedLeaveYear: totalUsedLeaveYear,
+        remainingLeaveYear: Math.max(0, annualLimit - totalUsedLeaveYear),
         annualLimit,
-        usedLeaveMonth: usedLeaveMonth || 0,
-        remainingLeaveMonth: Math.max(0, monthlyLimit - (usedLeaveMonth || 0)),
-        monthlyLimit
+        usedLeaveMonth: totalUsedLeaveMonth,
+        remainingLeaveMonth: Math.max(0, monthlyLimit - totalUsedLeaveMonth),
+        monthlyLimit,
+        grandTotalLeaveYear
     }
 }
 

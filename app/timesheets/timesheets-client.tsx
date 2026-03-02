@@ -712,7 +712,20 @@ export function TimesheetsClient({ user, initialData, workSettings }: Timesheets
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-sm font-bold text-white uppercase tracking-widest">{locale === 'vi' ? 'QUẢN LÝ NGHỈ PHÉP' : 'LEAVE MANAGEMENT'}</h3>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                            {/* Grand Total Leave */}
+                            <div className="bg-card/80 md:rounded-[2rem] rounded-3xl border border-border p-6 relative overflow-hidden group flex flex-col items-center justify-center text-center shadow-lg">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:bg-rose-500/20 transition-all duration-700"></div>
+                                <div className="size-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mb-4">
+                                    <span className="material-symbols-outlined text-rose-400 text-xl">account_circle_off</span>
+                                </div>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">{locale === 'vi' ? 'TỔNG NGÀY ĐÃ NGHỈ' : 'TOTAL LEAVES TAKEN'}</p>
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-3xl font-black text-white">{data.stats.grandTotalLeaveYear || 0}</span>
+                                    <span className="text-xs font-bold text-slate-600 uppercase">{locale === 'vi' ? 'NGÀY' : 'DAYS'}</span>
+                                </div>
+                            </div>
+
                             {/* Monthly Leave */}
                             <div className="bg-card/80 md:rounded-[2rem] rounded-3xl border border-border p-6 relative overflow-hidden group flex flex-col items-center justify-center text-center shadow-lg">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:bg-emerald-500/20 transition-all duration-700"></div>

@@ -108,13 +108,11 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
                     if (!result.error) {
                         onSuccess()
                     } else {
-                        // GPS location rejected by server → fallback to IP-only
-                        console.log('📍 GPS rejected by server, trying IP...', result.error)
-                        try {
-                            const ipResult = isCheckedIn ? await checkOut() : await checkIn()
-                            if (ipResult.error) { isRunningRef.current = false; setError(ipResult.error); setLoading(false) }
-                            else onSuccess()
-                        } catch (e) { isRunningRef.current = false; setError(t.common.error); setLoading(false) }
+                        // GPS location rejected by server → Show exact error instead of falling back to IP which breaks the distance tracking
+                        console.log('📍 GPS rejected by server:', result.error)
+                        isRunningRef.current = false
+                        setError(result.error)
+                        setLoading(false)
                     }
                 } catch (e) {
                     console.error('❌ [CheckInButton] GPS action error:', e)
