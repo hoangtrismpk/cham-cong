@@ -1,0 +1,30 @@
+[
+  {
+    "id": "5c318832-de71-40ff-acbd-d8ada7888119",
+    "email": "hoangtri@fhbvietnam.com",
+    "role": "admin",
+    "department": "Engineering",
+    "manager_id": "e8f30a09-94b8-4cc8-97d7-73d8b1c330ec",
+    "roles": {
+      "id": "393b0db2-c963-47d1-a1b8-a4dfacb9c014",
+      "name": "admin",
+      "permissions": [
+        "*"
+      ]
+    }
+  },
+  {
+    "id": "f994df21-bfd9-46a0-9755-ab694f6b714e",
+    "email": "khatu@fhb.vn",
+    "role": "employee",
+    "department": "Ban điều hành",
+    "manager_id": "e8f30a09-94b8-4cc8-97d7-73d8b1c330ec",
+    "roles": {
+      "id": "393b0db2-c963-47d1-a1b8-a4dfacb9c014",
+      "name": "admin",
+      "permissions": [
+        "*"
+      ]
+    }
+  }
+]

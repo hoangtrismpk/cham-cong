@@ -169,12 +169,21 @@ export default async function AdminDashboard() {
     })
 
     // Colors matching design: Blue, Green, Yellow, Red
-    const deptColors = ['#3b82f6', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6']
-    const deptData = Object.keys(deptCounts).map((dept, idx) => ({
-        name: dept,
-        value: deptCounts[dept],
-        color: deptColors[idx % deptColors.length]
-    }))
+    const deptColors = ['#3b82f6', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6', '#0ea5e9', '#ec4899']
+
+    let colorIndex = 0
+    const deptData = Object.keys(deptCounts).map(dept => {
+        let color = '#ffffff' // Default white for Ban điều hành
+        if (dept !== 'Ban điều hành') {
+            color = deptColors[colorIndex % deptColors.length]
+            colorIndex++
+        }
+        return {
+            name: dept,
+            value: deptCounts[dept],
+            color
+        }
+    })
 
     // 4. Active Personnel Table Data
     const { data: activeLogs } = await supabase

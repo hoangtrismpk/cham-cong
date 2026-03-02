@@ -394,9 +394,16 @@ export async function createEmployee(formData: Partial<Employee> & { password?: 
     if (!authData.user) return { error: 'Không thể tạo tài khoản' }
 
     // 4. Update Profile
+    let roleName = 'employee';
+    if (formData.role_id) {
+        const { data: roleData } = await supabaseAdmin.from('roles').select('name').eq('id', formData.role_id).single();
+        if (roleData) roleName = roleData.name;
+    }
+
     const { error: updateError } = await supabaseAdmin
         .from('profiles')
         .update({
+            role: roleName,
             phone: formData.phone || null,
             address: formData.address || null,
             city: formData.city || null,
@@ -482,9 +489,21 @@ export async function updateEmployee(employeeId: string | number, formData: Part
     }
 
     // 5. Update Profile
+    // Synchronize legacy `role` column with `role_id`
+    let roleName = undefined;
+    if (formData.role_id !== undefined) {
+        if (!formData.role_id) {
+            roleName = 'employee';
+        } else {
+            const { data: roleData } = await supabaseAdmin.from('roles').select('name').eq('id', formData.role_id).single();
+            if (roleData) roleName = roleData.name;
+        }
+    }
+
     const { error } = await supabaseAdmin
         .from('profiles')
         .update({
+            ...(roleName !== undefined ? { role: roleName } : {}),
             first_name: formData.first_name,
             last_name: formData.last_name,
             full_name: `${formData.first_name} ${formData.last_name}`,

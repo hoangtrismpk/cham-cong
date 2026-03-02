@@ -75,7 +75,7 @@ export default async function AttendancePage(props: {
             return (
                 <AttendanceClient
                     initialEmployees={[]}
-                    stats={{ totalEmployees: 0, totalWorkDays: 0, totalLateDays: 0, totalLeaveDays: 0 }}
+                    stats={{ totalEmployees: 0, totalWorkDays: 0, totalLateMinutes: 0, totalLeaveMinutes: 0 }}
                     startDateStr={startDateStr}
                     endDateStr={endDateStr}
                     viewScope={viewScope}
@@ -92,7 +92,7 @@ export default async function AttendancePage(props: {
     ] = await Promise.all([
         profilesQuery,
         supabase.from('attendance_logs').select('*').gte('work_date', startDateStr).lte('work_date', endDateStr),
-        supabase.from('leave_requests').select('user_id, leave_date').gte('leave_date', startDateStr).lte('leave_date', endDateStr).eq('status', 'approved'),
+        supabase.from('leave_requests').select('user_id, leave_date, total_hours').gte('leave_date', startDateStr).lte('leave_date', endDateStr).eq('status', 'approved'),
     ])
 
     const profiles = profilesResult.data || []
@@ -105,8 +105,10 @@ export default async function AttendancePage(props: {
     const leaveRequests = (allLeaveRequests || []).filter(l => profileIdSet.has(l.user_id))
 
     let totalWorkDaysAll = 0
-    let totalLateDaysAll = 0
-    let totalLeaveDaysAll = 0
+    let totalLateMinutesAll = 0
+    let totalLeaveMinutesAll = 0
+
+    const deptStats: Record<string, { total: number, onTime: number }> = {}
 
     // 5. Merge Data for Table (Monthly Aggregation)
     const employees = profiles.map(profile => {
@@ -115,16 +117,25 @@ export default async function AttendancePage(props: {
 
         const daysWorked = new Set(userLogs.map(l => l.work_date))
         const workDays = daysWorked.size
-        const leaveDays = new Set(userLeaves.map(l => l.leave_date)).size
 
-        let lateDays = 0
+        let leaveMinutes = 0
+        userLeaves.forEach(l => {
+            leaveMinutes += (l.total_hours || 0) * 60
+        })
+
+        let lateMinutes = 0
+        let lateDaysLocal = 0
         let totalHours = 0
         let totalOvertimeHours = 0
 
         daysWorked.forEach(date => {
             const dayLogs = userLogs.filter(l => l.work_date === date)
             dayLogs.sort((a, b) => new Date(a.check_in_time).getTime() - new Date(b.check_in_time).getTime())
-            if (dayLogs[0].status === 'late') lateDays++
+
+            if (dayLogs[0].status === 'late') {
+                lateMinutes += (dayLogs[0].late_minutes || 0)
+                lateDaysLocal++
+            }
 
             dayLogs.forEach(lg => {
                 let dailyHours = 0
@@ -140,8 +151,14 @@ export default async function AttendancePage(props: {
         })
 
         totalWorkDaysAll += workDays
-        totalLateDaysAll += lateDays
-        totalLeaveDaysAll += leaveDays
+        totalLateMinutesAll += lateMinutes
+        totalLeaveMinutesAll += leaveMinutes
+
+        if (profile.department) {
+            if (!deptStats[profile.department]) deptStats[profile.department] = { total: 0, onTime: 0 }
+            deptStats[profile.department].total += workDays
+            deptStats[profile.department].onTime += (workDays - lateDaysLocal)
+        }
 
         return {
             id: profile.id,
@@ -151,8 +168,8 @@ export default async function AttendancePage(props: {
             avatar: profile.avatar_url,
             department: profile.department || 'Unassigned',
             workDays,
-            lateDays,
-            leaveDays,
+            lateMinutes,
+            leaveMinutes,
             totalHours,
             totalOvertimeHours
         }
@@ -161,14 +178,59 @@ export default async function AttendancePage(props: {
     const stats = {
         totalEmployees: profiles.length,
         totalWorkDays: totalWorkDaysAll,
-        totalLateDays: totalLateDaysAll,
-        totalLeaveDays: totalLeaveDaysAll
+        totalLateMinutes: totalLateMinutesAll,
+        totalLeaveMinutes: totalLeaveMinutesAll
+    }
+
+    // --- Calculate Daily Insight ---
+    const today = getVNNow()
+    const todayStrFull = today.toISOString().split('T')[0]
+    const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
+    const lastWeekStr = lastWeek.toISOString().split('T')[0]
+
+    const [{ data: todayLogsData }, { data: lastWeekLogsData }] = await Promise.all([
+        supabase.from('attendance_logs').select('user_id').eq('work_date', todayStrFull),
+        supabase.from('attendance_logs').select('user_id').eq('work_date', lastWeekStr)
+    ])
+
+    const todayCount = new Set((todayLogsData || [])
+        .filter(l => profileIdSet.has(l.user_id))
+        .map(l => l.user_id)).size
+
+    const lastWeekCount = new Set((lastWeekLogsData || [])
+        .filter(l => profileIdSet.has(l.user_id))
+        .map(l => l.user_id)).size
+
+    const totalAllowedEmployees = profileIdSet.size || 1
+    const todayRate = (todayCount / totalAllowedEmployees) * 100
+    const lastWeekRate = (lastWeekCount / totalAllowedEmployees) * 100
+    const trendPercent = Math.abs(todayRate - lastWeekRate).toFixed(1)
+    const isUp = todayRate >= lastWeekRate
+
+    let bestDept = '...'
+    let bestPunctuality = -1
+    for (const [dept, info] of Object.entries(deptStats)) {
+        if (info.total > 0) {
+            const punctuality = info.onTime / info.total
+            if (punctuality > bestPunctuality) {
+                bestPunctuality = punctuality
+                bestDept = dept
+            }
+        }
+    }
+
+    const insight = {
+        trendPercent,
+        isUp,
+        dayOfWeekIdx: Math.max(0, today.getDay()),
+        bestDepartment: bestDept
     }
 
     return (
         <AttendanceClient
             initialEmployees={employees}
             stats={stats}
+            insight={insight}
             startDateStr={startDateStr}
             endDateStr={endDateStr}
             viewScope={viewScope}

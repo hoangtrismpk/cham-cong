@@ -25,8 +25,8 @@ interface EmployeeData {
     avatar: string | null
     department: string
     workDays: number
-    lateDays: number
-    leaveDays: number
+    lateMinutes: number
+    leaveMinutes: number
     totalHours: number
     totalOvertimeHours: number
 }
@@ -36,15 +36,21 @@ interface AttendancePageProps {
     stats: {
         totalEmployees: number
         totalWorkDays: number
-        totalLateDays: number
-        totalLeaveDays: number
+        totalLateMinutes: number
+        totalLeaveMinutes: number
     }
     startDateStr: string
     endDateStr: string
     viewScope?: 'all' | 'team'
+    insight?: {
+        trendPercent: string
+        isUp: boolean
+        dayOfWeekIdx: number
+        bestDepartment: string
+    }
 }
 
-export function AttendanceClient({ initialEmployees, stats, startDateStr, endDateStr, viewScope = 'all' }: AttendancePageProps) {
+export function AttendanceClient({ initialEmployees, stats, startDateStr, endDateStr, viewScope = 'all', insight }: AttendancePageProps) {
     const router = useRouter()
     const { t, locale } = useI18n()
     const { can } = usePermissions()
@@ -87,6 +93,17 @@ export function AttendanceClient({ initialEmployees, stats, startDateStr, endDat
         return `${h}h ${m}m`
     }
 
+    const formatMinutesToDays = (minutes: number | null | undefined) => {
+        if (!minutes) return locale === 'vi' ? '0 phút' : '0 mins'
+        if (minutes < 240) return locale === 'vi' ? `${minutes} phút` : `${minutes} mins`
+
+        const days = minutes / 480
+        const formattedDays = days % 1 === 0 ? days : Number(days.toFixed(2))
+        return locale === 'vi'
+            ? `${minutes}P/${formattedDays}N`
+            : `${minutes}M/${formattedDays}D`
+    }
+
 
     const handleExportReport = async () => {
         try {
@@ -110,7 +127,7 @@ export function AttendanceClient({ initialEmployees, stats, startDateStr, endDat
 
             profiles.forEach((emp: any) => {
                 let totalWorkDays = 0
-                let totalLeaveDays = 0
+                let totalLeaveMinutes = 0
                 let totalOnTimeDays = 0
                 let totalLateDays = 0
                 let totalLateMinutes = 0
@@ -148,7 +165,9 @@ export function AttendanceClient({ initialEmployees, stats, startDateStr, endDat
                             totalOnTimeDays++
                         }
                     }
-                    if (leave) totalLeaveDays++
+                    if (leave) {
+                        totalLeaveMinutes += (leave.total_hours || 0) * 60
+                    }
 
                     let employeeIdStr = `#EMP-${emp.id.substring(0, 4)}`
 
@@ -181,10 +200,8 @@ export function AttendanceClient({ initialEmployees, stats, startDateStr, endDat
                     'ID': `#EMP-${emp.id.substring(0, 4)}`,
                     'Phòng ban': emp.department || 'Chưa phân bổ',
                     'Tổng ngày chấm công': totalWorkDays,
-                    'Tổng ngày nghỉ phép': totalLeaveDays,
-                    'Số ngày đi đúng giờ': totalOnTimeDays,
-                    'Số ngày đi trễ': totalLateDays,
-                    'Tổng thời gian đi trễ (phút)': totalLateMinutes,
+                    'Tổng thời gian đi trễ': formatMinutesToDays(totalLateMinutes),
+                    'Tổng thời gian nghỉ phép': formatMinutesToDays(totalLeaveMinutes),
                     'Tổng thời gian tăng ca (giờ)': totalOvertimeHours
                 })
             })
@@ -301,8 +318,8 @@ export function AttendanceClient({ initialEmployees, stats, startDateStr, endDat
                             <span className="material-symbols-outlined text-[20px] md:text-[24px]">schedule_send</span>
                         </div>
                     </div>
-                    <p className="text-slate-500 text-[10px] md:text-xs font-bold uppercase tracking-wider">{locale === 'vi' ? 'Tổng lượt đi trễ' : 'Total Late Events'}</p>
-                    <p className="text-2xl md:text-3xl font-black text-white mt-1">{stats.totalLateDays}</p>
+                    <p className="text-slate-500 text-[10px] md:text-xs font-bold uppercase tracking-wider">{locale === 'vi' ? 'Tổng thời gian đi trễ' : 'Total Late Time'}</p>
+                    <p className="text-xl md:text-2xl font-black text-white mt-1 whitespace-nowrap overflow-hidden text-ellipsis" title={formatMinutesToDays(stats.totalLateMinutes)}>{formatMinutesToDays(stats.totalLateMinutes)}</p>
                     <div className="mt-4 w-full bg-slate-800 h-1 rounded-full overflow-hidden">
                         <div className="bg-amber-500 h-full rounded-full shadow-[0_0_8px_rgba(245,158,11,0.5)]" style={{ width: '100%' }}></div>
                     </div>
@@ -315,8 +332,8 @@ export function AttendanceClient({ initialEmployees, stats, startDateStr, endDat
                             <span className="material-symbols-outlined text-[20px] md:text-[24px]">logout</span>
                         </div>
                     </div>
-                    <p className="text-slate-500 text-[10px] md:text-xs font-bold uppercase tracking-wider">{locale === 'vi' ? 'Tổng ngày phép' : 'Total Leave Days'}</p>
-                    <p className="text-2xl md:text-3xl font-black text-white mt-1">{stats.totalLeaveDays}</p>
+                    <p className="text-slate-500 text-[10px] md:text-xs font-bold uppercase tracking-wider">{locale === 'vi' ? 'Tổng thời gian phép' : 'Total Leave Time'}</p>
+                    <p className="text-xl md:text-2xl font-black text-white mt-1 whitespace-nowrap overflow-hidden text-ellipsis" title={formatMinutesToDays(stats.totalLeaveMinutes)}>{formatMinutesToDays(stats.totalLeaveMinutes)}</p>
                     <div className="mt-4 w-full bg-slate-800 h-1 rounded-full overflow-hidden">
                         <div className="bg-rose-500 h-full rounded-full shadow-[0_0_8px_rgba(244,63,94,0.5)]" style={{ width: '100%' }}></div>
                     </div>
@@ -447,11 +464,11 @@ export function AttendanceClient({ initialEmployees, stats, startDateStr, endDat
                                                     {emp.workDays} {locale === 'vi' ? 'ngày' : 'days'}
                                                 </Badge>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-amber-500 text-right tabular-nums">
-                                                {emp.lateDays} {locale === 'vi' ? 'ngày' : 'days'}
+                                            <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-amber-500 text-right tabular-nums">
+                                                {formatMinutesToDays(emp.lateMinutes)}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-rose-500 text-right tabular-nums">
-                                                {emp.leaveDays} {locale === 'vi' ? 'ngày' : 'days'}
+                                            <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-rose-500 text-right tabular-nums">
+                                                {formatMinutesToDays(emp.leaveMinutes)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-black text-cyan-400 text-right tabular-nums">
                                                 {formatHours(emp.totalOvertimeHours)}
@@ -533,7 +550,20 @@ export function AttendanceClient({ initialEmployees, stats, startDateStr, endDat
                 </div>
                 <div className="z-10">
                     <h3 className="text-white font-bold text-sm mb-1">{t.admin.attendancePage.insight.title}</h3>
-                    <p className="text-slate-400 text-xs">{t.admin.attendancePage.insight.description.replace('{percent}', '2.4%')}</p>
+                    {insight ? (() => {
+                        const viDays = ['Chủ nhật', 'thứ Hai', 'thứ Ba', 'thứ Tư', 'thứ Năm', 'thứ Sáu', 'thứ Bảy']
+                        const enDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+                        const dayStr = locale === 'vi' ? viDays[insight.dayOfWeekIdx] : enDays[insight.dayOfWeekIdx]
+                        const directionStr = insight.isUp ? (locale === 'vi' ? 'tăng' : 'increased') : (locale === 'vi' ? 'giảm' : 'decreased')
+
+                        const insightText = locale === 'vi'
+                            ? `Tỷ lệ chấm công ${directionStr} ${insight.trendPercent}% so với ${dayStr} tuần trước. ${insight.bestDepartment !== '...' ? `Tỷ lệ đúng giờ cao nhất ở bộ phận ${insight.bestDepartment}.` : ''}`
+                            : `Attendance rate ${directionStr} by ${insight.trendPercent}% compared to last ${dayStr}. ${insight.bestDepartment !== '...' ? `Highest punctuality in the ${insight.bestDepartment} department.` : ''}`
+
+                        return <p className="text-slate-400 text-xs">{insightText}</p>
+                    })() : (
+                        <p className="text-slate-400 text-xs">{t.admin.attendancePage.insight.description.replace('{percent}', '0%')}</p>
+                    )}
                 </div>
             </div>
 
