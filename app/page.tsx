@@ -103,6 +103,7 @@ export default async function DashboardPage() {
                 userName={user.user_metadata.full_name || 'Bạn'}
                 workSettings={workSettings}
                 todayShift={todayShift}
+                checkInTime={todayLog?.check_in_time}
               />
             </div>
           </div>

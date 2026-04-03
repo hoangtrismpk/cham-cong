@@ -24,9 +24,10 @@ interface CheckInButtonProps {
     userName: string
     workSettings: any
     todayShift: any
+    checkInTime?: string | null
 }
 
-export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSettings, todayShift }: CheckInButtonProps) {
+export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSettings, todayShift, checkInTime }: CheckInButtonProps) {
     const { t } = useI18n()
     const [loading, setLoading] = useState(false)
     const [isProcessing, setIsProcessing] = useState(false)
@@ -35,6 +36,7 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
     const [showOTDialog, setShowOTDialog] = useState(false)
     const [suggestedOTMinutes, setSuggestedOTMinutes] = useState(0)
     const [isSubmittingOT, setIsSubmittingOT] = useState(false)
+    const [showEarlyOutDialog, setShowEarlyOutDialog] = useState(false)
 
     const router = useRouter()
     const isRunningRef = useRef(false) // Synchronous lock to prevent race condition
@@ -56,8 +58,7 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
         return next
     }
 
-    const handleAction = () => {
-        // Prevent double actions - isRunningRef is synchronous (vs loading state which is async)
+    const executeAction = () => {
         if (isRunningRef.current || loading || isProcessing) return
         isRunningRef.current = true
 
@@ -141,6 +142,20 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
                 maximumAge: 0  // Do not accept cached position to ensure accuracy
             }
         )
+    }
+
+    const handleAction = () => {
+        // Double check early checkout scenario to avoid accidental double clicks
+        if (isCheckedIn && checkInTime) {
+            const checkedInAt = new Date(checkInTime)
+            const now = new Date()
+            const minsPassed = (now.getTime() - checkedInAt.getTime()) / (1000 * 60)
+            if (minsPassed < 60) {
+                setShowEarlyOutDialog(true)
+                return
+            }
+        }
+        executeAction()
     }
 
 
@@ -292,6 +307,34 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
                             ) : (
                                 'Đồng ý, gửi yêu cầu'
                             )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Early CheckOut Suggestion Dialog */}
+            <AlertDialog open={showEarlyOutDialog} onOpenChange={setShowEarlyOutDialog}>
+                <AlertDialogContent className="bg-slate-900 border-slate-800 text-white">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="text-xl font-bold flex items-center gap-2">
+                            <span className="material-symbols-outlined text-amber-500">warning</span>
+                            Xác nhận Clock Out sớm
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-slate-400">
+                            Bạn vừa mới Clock In chưa đầy 1 tiếng trước. Bạn có chắc chắn muốn thoát ca làm việc bây giờ không?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel className="bg-transparent border-slate-700 hover:bg-white/5 text-slate-300">Hủy bỏ</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault()
+                                setShowEarlyOutDialog(false)
+                                executeAction()
+                            }}
+                            className="bg-amber-600 text-white font-bold hover:bg-amber-700"
+                        >
+                            Chắc chắn Clock Out
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
