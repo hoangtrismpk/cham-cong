@@ -110,11 +110,10 @@ export async function getEmployees(filters: EmployeeFilters = {}) {
         .eq('id', user.id)
         .single()
 
-    // Determine Role Scopes
-    const isAdmin = currentUserProfile?.role === 'admin' || (currentUserProfile?.roles as any)?.name === 'admin'
-    const isHR = (currentUserProfile?.roles as any)?.name === 'hr'
-    const isAccountant = (currentUserProfile?.roles as any)?.name === 'accountant'
-    const isManager = (currentUserProfile?.roles as any)?.name === 'manager'
+    // Determine Role Scopes using actual permissions
+    const canViewAll = await checkPermission('users.view_all') || await checkPermission('users.manage')
+    const canViewTeam = await checkPermission('my_team.view') || await checkPermission('attendance.view_team')
+    const legacyAdmin = currentUserProfile?.role === 'admin' && !(currentUserProfile as any)?.role_id
 
     let query = supabase
         .from('profiles')
@@ -154,10 +153,10 @@ export async function getEmployees(filters: EmployeeFilters = {}) {
         .order('created_at', { ascending: false })
 
     // SCOPE FILTERING
-    // If not Admin/HR/Accountant, assume Manager/Employee -> Limit scope
-    if (!isAdmin && !isHR && !isAccountant) {
+    // Limit scope based on actual permissions instead of hardcoded role names
+    if (!canViewAll && !legacyAdmin) {
         // Manager sees their team + themselves
-        if (isManager) {
+        if (canViewTeam) {
             query = query.eq('manager_id', user.id)
         } else {
             // Normal user -> See themselves only 

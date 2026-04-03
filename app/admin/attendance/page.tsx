@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/admin'
 import { AttendanceClient } from './client-page'
 import { ClientRedirect } from '@/components/client-redirect'
 import { checkPermission } from '@/utils/auth-guard'
@@ -64,7 +65,10 @@ export default async function AttendancePage(props: {
     }
 
     // 3. Fetch Data in Parallel (apply scope filter)
-    let profilesQuery = supabase
+    // Use Admin Client to bypass RLS since we already checked permissions
+    const supabaseAdmin = createAdminClient()
+
+    let profilesQuery = supabaseAdmin
         .from('profiles')
         .select('id, full_name, email, avatar_url, department, job_title')
         .eq('status', 'active')
@@ -92,8 +96,8 @@ export default async function AttendancePage(props: {
         { data: allLeaveRequests }
     ] = await Promise.all([
         profilesQuery,
-        supabase.from('attendance_logs').select('*').gte('work_date', startDateStr).lte('work_date', endDateStr),
-        supabase.from('leave_requests').select('user_id, leave_date, total_hours').gte('leave_date', startDateStr).lte('leave_date', endDateStr).eq('status', 'approved'),
+        supabaseAdmin.from('attendance_logs').select('*').gte('work_date', startDateStr).lte('work_date', endDateStr),
+        supabaseAdmin.from('leave_requests').select('user_id, leave_date, total_hours').gte('leave_date', startDateStr).lte('leave_date', endDateStr).eq('status', 'approved'),
     ])
 
     const profiles = profilesResult.data || []

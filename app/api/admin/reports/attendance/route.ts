@@ -4,6 +4,8 @@ import { checkPermission } from '@/utils/auth-guard'
 
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: Request) {
     try {
         const hasAccess = await checkPermission('attendance.view')
@@ -27,7 +29,9 @@ export async function GET(request: Request) {
         const hasViewTeam = await checkPermission('attendance.view_team')
 
         // Effective scope: server-side re-validation (don't trust client param alone)
-        const effectiveScope: 'all' | 'team' = hasViewAll ? 'all' : (hasViewTeam ? 'team' : 'all')
+        // If they have NO view_all and NO view_team, they should only see their own logs technically, but this is a report endpoint
+        // so we default to 'team' which returns empty if they manage no one.
+        const effectiveScope: 'all' | 'team' = hasViewAll ? 'all' : 'team'
 
         // Get current user for team filter
         const { data: { user } } = await supabase.auth.getUser()
