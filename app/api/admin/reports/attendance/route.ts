@@ -2,6 +2,8 @@ import { createClient } from '@/utils/supabase/server'
 import { NextResponse } from 'next/server'
 import { checkPermission } from '@/utils/auth-guard'
 
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+
 export async function GET(request: Request) {
     try {
         const hasAccess = await checkPermission('attendance.view')
@@ -33,8 +35,14 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
+        // Initialize admin client to bypass RLS since authorization is handled above
+        const supabaseAdmin = createSupabaseClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+        )
+
         // Build profile query with scope filter
-        let profileQuery = supabase
+        let profileQuery = supabaseAdmin
             .from('profiles')
             .select('id, full_name, email, department, job_title')
             .eq('status', 'active')
@@ -61,7 +69,7 @@ export async function GET(request: Request) {
         const allowedIds = profiles.map(p => p.id)
 
         // Filter attendance logs for the date range
-        const { data: allLogs, error: logError } = await supabase
+        const { data: allLogs, error: logError } = await supabaseAdmin
             .from('attendance_logs')
             .select('*')
             .gte('work_date', startDateStr)
@@ -70,7 +78,7 @@ export async function GET(request: Request) {
         if (logError) throw logError
 
         // Fetch leave requests for the date range
-        const { data: allLeaves, error: leaveError } = await supabase
+        const { data: allLeaves, error: leaveError } = await supabaseAdmin
             .from('leave_requests')
             .select('*')
             .eq('status', 'approved')
