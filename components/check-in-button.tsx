@@ -139,7 +139,7 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
                 },
                 {
                     enableHighAccuracy: true,
-                    timeout: 10000, // Reduced back to 10s max
+                    timeout: 30000, // Elevated to 30s as this is now the final fallback
                     maximumAge: 0 
                 }
             )
