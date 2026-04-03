@@ -122,10 +122,20 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
                     setLoading(false)
                 }
             },
-            // GPS failed/blocked → try IP-only
             async (err) => {
                 try {
+                    let errMsg = err.message
+                    if (err.code === err.PERMISSION_DENIED) {
+                        errMsg = 'Bạn đã từ chối quyền Vị trí hoặc thiết bị đang chặn quyền này (Đặc biệt trên iPhone/iOS). Vui lòng vào Cài đặt để cấp quyền.'
+                        toast.error(errMsg, { duration: 8000 })
+                    } else if (err.code === err.TIMEOUT) {
+                        errMsg = 'Quá thời gian lấy Vị trí (GPS yếu). Thử đứng gần cửa sổ hoặc ra ngoài trời.'
+                        toast.warning(errMsg, { duration: 5000 })
+                    } else {
+                        toast.warning(`Không thể lấy GPS (${err.message}). Định vị có thể kém chính xác hơn.`)
+                    }
                     console.log('📍 GPS unavailable, trying IP-only...', err.message)
+                    
                     const result = isCheckedIn ? await checkOut() : await checkIn()
                     if (result.error) { isRunningRef.current = false; setError(result.error); setLoading(false) }
                     else onSuccess()
@@ -138,7 +148,7 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
             },
             {
                 enableHighAccuracy: true, // Force GPS
-                timeout: 15000, // Wait 15s for the first satellite lock
+                timeout: 30000, // Wait 30s instead of 15s (iOS can be slow to prompt)
                 maximumAge: 0  // Do not accept cached position to ensure accuracy
             }
         )
