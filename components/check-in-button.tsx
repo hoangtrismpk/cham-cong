@@ -58,7 +58,7 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
         return next
     }
 
-    const executeAction = () => {
+    const executeAction = async () => {
         if (isRunningRef.current || loading || isProcessing) return
         isRunningRef.current = true
 
@@ -85,45 +85,41 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
             setTimeout(() => { setSuccess(null); setIsProcessing(false) }, 5000)
         }
 
-        if (!navigator.geolocation) {
-            // No GPS API → try IP-only directly
-            ; (async () => {
-                try {
-                    const result = isCheckedIn ? await checkOut() : await checkIn()
-                    if (result.error) { isRunningRef.current = false; setError(result.error); setLoading(false) }
-                    else onSuccess()
-                } catch (e) { isRunningRef.current = false; setError(t.common.error); setLoading(false) }
-            })()
-            return
-        }
+        const fallbackToGPS = () => {
+            if (!navigator.geolocation) {
+                isRunningRef.current = false
+                setError(t.common.error)
+                setLoading(false)
+                return
+            }
 
-        navigator.geolocation.getCurrentPosition(
-            // GPS success → try with GPS coords
-            async (position) => {
-                try {
-                    const { latitude, longitude } = position.coords
-                    const result = isCheckedIn
-                        ? await checkOut(latitude, longitude)
-                        : await checkIn(latitude, longitude)
+            navigator.geolocation.getCurrentPosition(
+                // GPS success → try with GPS coords
+                async (position) => {
+                    try {
+                        const { latitude, longitude } = position.coords
+                        const result = isCheckedIn
+                            ? await checkOut(latitude, longitude)
+                            : await checkIn(latitude, longitude)
 
-                    if (!result.error) {
-                        onSuccess()
-                    } else {
-                        // GPS location rejected by server → Show exact error instead of falling back to IP which breaks the distance tracking
-                        console.log('📍 GPS rejected by server:', result.error)
+                        if (!result.error) {
+                            onSuccess()
+                        } else {
+                            // GPS location rejected by server
+                            console.log('📍 GPS rejected by server:', result.error)
+                            isRunningRef.current = false
+                            setError(result.error)
+                            setLoading(false)
+                        }
+                    } catch (e) {
+                        console.error('❌ [CheckInButton] GPS action error:', e)
                         isRunningRef.current = false
-                        setError(result.error)
+                        setError(t.common.error)
                         setLoading(false)
                     }
-                } catch (e) {
-                    console.error('❌ [CheckInButton] GPS action error:', e)
-                    isRunningRef.current = false
-                    setError(t.common.error)
-                    setLoading(false)
-                }
-            },
-            async (err) => {
-                try {
+                },
+                // GPS failed/blocked (since IP already failed, we just show error)
+                async (err) => {
                     let errMsg = err.message
                     if (err.code === err.PERMISSION_DENIED) {
                         errMsg = 'Bạn đã từ chối quyền Vị trí hoặc thiết bị đang chặn quyền này (Đặc biệt trên iPhone/iOS). Vui lòng vào Cài đặt để cấp quyền.'
@@ -132,26 +128,52 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
                         errMsg = 'Quá thời gian lấy Vị trí (GPS yếu). Thử đứng gần cửa sổ hoặc ra ngoài trời.'
                         toast.warning(errMsg, { duration: 5000 })
                     } else {
-                        toast.warning(`Không thể lấy GPS (${err.message}). Định vị có thể kém chính xác hơn.`)
+                        toast.warning(`Không thể lấy GPS (${err.message}).`)
                     }
-                    console.log('📍 GPS unavailable, trying IP-only...', err.message)
+                    console.log('📍 GPS unavailable...', err.message)
                     
-                    const result = isCheckedIn ? await checkOut() : await checkIn()
-                    if (result.error) { isRunningRef.current = false; setError(result.error); setLoading(false) }
-                    else onSuccess()
-                } catch (e) {
-                    console.error('❌ [CheckInButton] IP fallback error:', e)
+                    // Already failed IP check, so we can't fallback to IP safely. Show error to user.
                     isRunningRef.current = false
-                    setError(t.common.error)
+                    setError('Không có Wifi công ty & Lỗi định vị GPS. Vui lòng kết nối Wifi công ty hoặc bật GPS Điện thoại.')
                     setLoading(false)
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000, // Reduced back to 10s max
+                    maximumAge: 0 
                 }
-            },
-            {
-                enableHighAccuracy: true, // Force GPS
-                timeout: 30000, // Wait 30s instead of 15s (iOS can be slow to prompt)
-                maximumAge: 0  // Do not accept cached position to ensure accuracy
+            )
+        }
+
+        // --- ENTRY POINT ---
+        try {
+            // First Priority: Try IP/Wifi Without GPS (Instantly fast)
+            const result = isCheckedIn ? await checkOut() : await checkIn()
+
+            if (!result.error) {
+                onSuccess()
+                return
             }
-        )
+
+            // IP failed. Check if it's a location error that requires GPS fallback
+            const errStr = result.error.toLowerCase()
+            const isLocationError = errStr.includes('vị trí') || errStr.includes('wifi') || errStr.includes('gps') || errStr.includes('ip') || errStr.includes('bán kính')
+
+            if (isLocationError) {
+                // Now we explicitly ask for GPS
+                fallbackToGPS()
+            } else {
+                // Logical errors like "Bạn đã check out rồi", "Tài khoản bị khóa"...
+                isRunningRef.current = false
+                setError(result.error)
+                setLoading(false)
+            }
+        } catch (e) {
+            console.error('❌ [CheckInButton] IP action error:', e)
+            isRunningRef.current = false
+            setError(t.common.error)
+            setLoading(false)
+        }
     }
 
     const handleAction = () => {
