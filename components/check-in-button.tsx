@@ -314,7 +314,7 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
 
             {/* Early CheckOut Suggestion Dialog */}
             <AlertDialog open={showEarlyOutDialog} onOpenChange={setShowEarlyOutDialog}>
-                <AlertDialogContent className="bg-slate-900 border-slate-800 text-white">
+                <AlertDialogContent className="bg-slate-900 border-slate-800 text-white !top-auto !bottom-4 !translate-y-0 sm:!bottom-8 w-[90vw] md:w-full">
                     <AlertDialogHeader>
                         <AlertDialogTitle className="text-xl font-bold flex items-center gap-2">
                             <span className="material-symbols-outlined text-amber-500">warning</span>
@@ -324,18 +324,23 @@ export function CheckInButton({ isCheckedIn, isCheckedOut, userName, workSetting
                             Bạn vừa mới Clock In chưa đầy 1 tiếng trước. Bạn có chắc chắn muốn thoát ca làm việc bây giờ không?
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel className="bg-transparent border-slate-700 hover:bg-white/5 text-slate-300">Hủy bỏ</AlertDialogCancel>
+                    <AlertDialogFooter className="!flex-row w-full justify-between gap-4 space-x-0 sm:space-x-0 mt-6 !space-y-0">
                         <AlertDialogAction
                             onClick={(e) => {
                                 e.preventDefault()
                                 setShowEarlyOutDialog(false)
                                 executeAction()
                             }}
-                            className="bg-amber-600 text-white font-bold hover:bg-amber-700"
+                            className="bg-amber-600 text-white font-bold hover:bg-amber-700 flex-1 m-0"
                         >
-                            Chắc chắn Clock Out
+                            Xác nhận Out
                         </AlertDialogAction>
+                        <AlertDialogCancel 
+                            onClick={() => setShowEarlyOutDialog(false)}
+                            className="bg-transparent border-slate-700 hover:bg-white/5 text-slate-300 flex-1 m-0 sm:m-0 mt-0"
+                        >
+                            Hủy bỏ
+                        </AlertDialogCancel>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
