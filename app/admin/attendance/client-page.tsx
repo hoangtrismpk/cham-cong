@@ -144,7 +144,13 @@ export function AttendanceClient({ initialEmployees, stats, startDateStr, endDat
     const [localStartDate, setLocalStartDate] = useState(startDateStr)
     const [localEndDate, setLocalEndDate] = useState(endDateStr)
     const [currentPage, setCurrentPage] = useState(1)
+    const [isFiltering, setIsFiltering] = useState(false)
     const itemsPerPage = 8
+
+    // Reset filtering state when new data arrives
+    React.useEffect(() => {
+        setIsFiltering(false)
+    }, [startDateStr, endDateStr, initialEmployees])
 
     // --- Derived Data ---
     const departments = useMemo(() => {
@@ -474,13 +480,22 @@ export function AttendanceClient({ initialEmployees, stats, startDateStr, endDat
 
                         <Button
                             className="w-full sm:w-auto bg-cyan-600 hover:bg-cyan-700 text-white"
+                            disabled={isFiltering}
                             onClick={() => {
                                 if (localStartDate && localEndDate) {
+                                    setIsFiltering(true)
                                     router.push(`/admin/attendance?from=${localStartDate}&to=${localEndDate}`)
                                 }
                             }}
                         >
-                            {locale === 'vi' ? 'Lọc' : 'Filter'}
+                            {isFiltering ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin inline-block" />
+                                    {locale === 'vi' ? 'Đang lọc...' : 'Filtering...'}
+                                </>
+                            ) : (
+                                locale === 'vi' ? 'Lọc' : 'Filter'
+                            )}
                         </Button>
 
                         <Button
