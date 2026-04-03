@@ -194,8 +194,8 @@ export default async function AttendancePage(props: {
     const lastWeekStr = lastWeek.toISOString().split('T')[0]
 
     const [{ data: todayLogsData }, { data: lastWeekLogsData }] = await Promise.all([
-        supabase.from('attendance_logs').select('user_id').eq('work_date', todayStrFull),
-        supabase.from('attendance_logs').select('user_id').eq('work_date', lastWeekStr)
+        supabaseAdmin.from('attendance_logs').select('user_id').eq('work_date', todayStrFull),
+        supabaseAdmin.from('attendance_logs').select('user_id').eq('work_date', lastWeekStr)
     ])
 
     const todayCount = new Set((todayLogsData || [])
