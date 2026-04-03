@@ -131,6 +131,11 @@ export async function checkPermission(permission: string): Promise<boolean> {
     // 3. Exact Match
     if (permissions.includes(permission)) return true
 
+    // 3.5 Implicit Match
+    if (permission === 'attendance.view') {
+        if (permissions.includes('attendance.view_all') || permissions.includes('attendance.view_team')) return true
+    }
+
     // 4. Resource Wildcard (e.g., "users.*" grants "users.view")
     const [resource] = permission.split('.')
     if (permissions.includes(`${resource}.*`)) return true
@@ -180,6 +185,7 @@ export async function checkPermissions(
 
     const hasPermission = (perm: string) => {
         if (userPermissions.includes(perm)) return true
+        if (perm === 'attendance.view' && (userPermissions.includes('attendance.view_all') || userPermissions.includes('attendance.view_team'))) return true
         const [resource] = perm.split('.')
         if (userPermissions.includes(`${resource}.*`)) return true
         return false

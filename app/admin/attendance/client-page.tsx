@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { Search, Loader2, Download, Plus, RefreshCw, XCircle, CheckCircle2, AlertCircle, Clock, Calendar, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, Loader2, Download, Plus, RefreshCw, XCircle, CheckCircle2, AlertCircle, Clock, Calendar as CalendarIcon, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,6 +12,8 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { format } from 'date-fns'
 import { vi as viLocale, enUS } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Calendar } from '@/components/ui/calendar'
 import { useI18n } from '@/contexts/i18n-context'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
@@ -29,6 +31,87 @@ interface EmployeeData {
     leaveMinutes: number
     totalHours: number
     totalOvertimeHours: number
+}
+
+const DateInputPicker = ({ value, onChange, placeholder }: { value: string, onChange: (val: string) => void, placeholder?: string }) => {
+    const [inputValue, setInputValue] = useState('')
+
+    React.useEffect(() => {
+        if (value) {
+            const [y, m, d] = value.split('-')
+            if (y && m && d) setInputValue(`${d}/${m}/${y}`)
+        } else {
+            setInputValue('')
+        }
+    }, [value])
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        let val = e.target.value.replace(/[^0-9/]/g, '')
+        
+        if (val.length === 2 && inputValue.length < val.length && !val.includes('/')) val += '/'
+        if (val.length === 5 && inputValue.length < val.length && val.split('/').length === 2) val += '/'
+        
+        setInputValue(val)
+        
+        if (val.length === 10) {
+            const [d, m, y] = val.split('/')
+            if (d && m && y && d.length === 2 && m.length === 2 && y.length === 4) {
+                const date = new Date(Number(y), Number(m)-1, Number(d))
+                if (!isNaN(date.getTime())) {
+                    onChange(format(date, 'yyyy-MM-dd'))
+                }
+            }
+        }
+        if (val.length === 0) {
+            onChange('')
+        }
+    }
+
+    const dateVal = value ? new Date(value) : undefined
+
+    return (
+        <Popover>
+            <div className="relative w-full sm:w-[140px]">
+                <Input 
+                    type="text" 
+                    value={inputValue}
+                    onChange={handleInputChange}
+                    placeholder={placeholder || "dd/mm/yyyy"}
+                    maxLength={10}
+                    className="w-full bg-[#0d1117] border-slate-700 text-slate-300 font-medium pr-10"
+                />
+                <PopoverTrigger asChild>
+                    <button className="absolute right-0 top-0 h-full px-3 text-slate-400 hover:text-cyan-500 transition-colors flex items-center justify-center">
+                        <CalendarIcon className="w-4 h-4" />
+                    </button>
+                </PopoverTrigger>
+            </div>
+            <PopoverContent className="w-auto p-0 bg-slate-900 border-slate-700 text-slate-300 z-[200]" align="start">
+                <Calendar
+                    mode="single"
+                    selected={dateVal}
+                    onSelect={(d) => {
+                        if (d) {
+                            onChange(format(d, 'yyyy-MM-dd'))
+                            setInputValue(format(d, 'dd/MM/yyyy'))
+                        } else {
+                            onChange('')
+                            setInputValue('')
+                        }
+                    }}
+                    initialFocus
+                    className="bg-slate-900 rounded-md"
+                    classNames={{
+                        day_selected: "bg-cyan-600 text-white hover:bg-cyan-600 hover:text-white focus:bg-cyan-600 focus:text-white",
+                        day_today: "bg-slate-800 text-cyan-400 font-bold",
+                        day_outside: "text-slate-600",
+                        day_disabled: "text-slate-800",
+                        head_cell: "text-slate-500 font-bold uppercase text-[10px] tracking-widest",
+                    }}
+                />
+            </PopoverContent>
+        </Popover>
+    )
 }
 
 interface AttendancePageProps {
@@ -152,14 +235,14 @@ export function AttendanceClient({ initialEmployees, stats, startDateStr, endDat
                     let status = 'VẮNG MẶT'
                     if (leave) status = 'NGHỈ PHÉP'
                     else if (firstLog) {
-                        status = firstLog.status === 'late' ? 'ĐI TRỄ' : 'ĐÚNG GIỜ'
+                        status = (firstLog.status === 'late' || (firstLog.late_minutes && firstLog.late_minutes > 0)) ? 'ĐI TRỄ' : 'ĐÚNG GIỜ'
                     }
 
                     if (firstLog) {
                         totalWorkDays++
                         totalLateMinutes += (firstLog.late_minutes || 0)
                         totalOvertimeHours += dayLogs.reduce((sum: number, lg: any) => sum + (lg.overtime_hours || 0), 0)
-                        if (firstLog.status === 'late') {
+                        if (firstLog.status === 'late' || (firstLog.late_minutes && firstLog.late_minutes > 0)) {
                             totalLateDays++
                         } else {
                             totalOnTimeDays++
@@ -181,12 +264,17 @@ export function AttendanceClient({ initialEmployees, stats, startDateStr, endDat
                         }
                     })
 
+                    const firstCheckIn = firstLog?.check_in_time ? format(new Date(firstLog.check_in_time), 'HH:mm') : ''
+                    const lastCheckOut = lastLog?.check_out_time ? format(new Date(lastLog.check_out_time), 'HH:mm') : ''
+
                     sheet1Data.push({
                         'Ngày': dateStr,
                         'Nhân viên': emp.full_name || 'Chưa cập nhật',
                         'ID': employeeIdStr,
                         'Phòng ban': emp.department || 'Chưa phân bổ',
                         'Trạng thái': status,
+                        'Giờ vào': firstCheckIn,
+                        'Giờ ra': lastCheckOut,
                         'Đi trễ (phút)': firstLog?.late_minutes || 0,
                         'Tăng ca (giờ)': dayLogs.reduce((sum: number, lg: any) => sum + (lg.overtime_hours || 0), 0),
                         'Tổng giờ': formatHours(dailyHours)
@@ -245,7 +333,7 @@ export function AttendanceClient({ initialEmployees, stats, startDateStr, endDat
                         {t.admin.attendancePage.title}
                     </h1>
                     <div className="flex items-center gap-2 mt-1 text-slate-400 text-sm">
-                        <Calendar className="w-4 h-4" />
+                        <CalendarIcon className="w-4 h-4" />
                         <span>{locale === 'vi' ? 'Từ' : 'From'} {format(new Date(startDateStr), 'dd/MM/yyyy')} {locale === 'vi' ? 'đến' : 'to'} {format(new Date(endDateStr), 'dd/MM/yyyy')}</span>
                         {viewScope === 'team' && (
                             <Badge className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20 text-[10px] font-bold uppercase tracking-wider ml-2">
@@ -368,21 +456,19 @@ export function AttendanceClient({ initialEmployees, stats, startDateStr, endDat
 
                         <div className="flex items-center gap-2 w-full sm:w-auto">
                             <span className="text-slate-400 text-sm hidden sm:inline">{locale === 'vi' ? 'Từ' : 'From'}:</span>
-                            <Input
-                                type="date"
-                                className="w-full sm:w-[130px] bg-[#0d1117] border-slate-700 text-slate-300 font-medium"
-                                value={localStartDate}
-                                onChange={(e) => setLocalStartDate(e.target.value)}
+                            <DateInputPicker 
+                                value={localStartDate} 
+                                onChange={setLocalStartDate} 
+                                placeholder="dd/mm/yyyy" 
                             />
                         </div>
 
                         <div className="flex items-center gap-2 w-full sm:w-auto">
                             <span className="text-slate-400 text-sm hidden sm:inline">{locale === 'vi' ? 'Đến' : 'To'}:</span>
-                            <Input
-                                type="date"
-                                className="w-full sm:w-[130px] bg-[#0d1117] border-slate-700 text-slate-300 font-medium"
-                                value={localEndDate}
-                                onChange={(e) => setLocalEndDate(e.target.value)}
+                            <DateInputPicker 
+                                value={localEndDate} 
+                                onChange={setLocalEndDate} 
+                                placeholder="dd/mm/yyyy" 
                             />
                         </div>
 

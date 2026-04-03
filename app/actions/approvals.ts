@@ -505,6 +505,42 @@ export async function approveActivity(id: string, type: string): Promise<{ succe
                     if (checkInFull) updatePayload.check_in_time = checkInFull
                     if (checkOutFull) updatePayload.check_out_time = checkOutFull
 
+                    // Recalculate late_minutes if check-in time was updated
+                    if (checkInFull && work_date) {
+                        try {
+                            const { getWorkSettings } = await import('@/app/actions/settings')
+                            const settings = await getWorkSettings()
+                            const { data: schedule } = await supabase
+                                .from('work_schedules')
+                                .select('start_time')
+                                .eq('user_id', userId)
+                                .eq('work_date', work_date)
+                                .maybeSingle()
+                            
+                            const startTimeStr = schedule?.start_time || settings.work_start_time
+                            const targetTime = startTimeStr.substring(0, 5)
+                            
+                            const checkInDate = new Date(checkInFull)
+                            const inHHMM = new Intl.DateTimeFormat('en-GB', {
+                                hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Ho_Chi_Minh'
+                            }).format(checkInDate)
+
+                            if (inHHMM > targetTime) {
+                                const [hNow, mNow] = inHHMM.split(':').map(Number)
+                                const [hTarget, mTarget] = targetTime.split(':').map(Number)
+                                let lMins = (hNow * 60 + mNow) - (hTarget * 60 + mTarget)
+                                if (settings.allow_grace_period && lMins <= (settings.grace_period_minutes || 5)) {
+                                    lMins = 0
+                                }
+                                updatePayload.late_minutes = lMins
+                            } else {
+                                updatePayload.late_minutes = 0
+                            }
+                        } catch (err) {
+                            console.error('[Approve CheckIn Recalc Late Mins] Error:', err)
+                        }
+                    }
+
                     const { error: logError } = await supabase.from('attendance_logs').update(updatePayload).eq('id', log_id)
                     if (logError) throw logError
                 }

@@ -105,6 +105,7 @@ export function AdminSidebar({ className, mobile, onLinkClick, preloadedPermissi
         if (perms.length === 0) return false
         if (perms.includes('*')) return true
         if (perms.includes(permission)) return true
+        if (permission === 'attendance.view' && (perms.includes('attendance.view_all') || perms.includes('attendance.view_team'))) return true
 
         const [resource] = permission.split('.')
         if (perms.includes(`${resource}.*`)) return true

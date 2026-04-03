@@ -67,6 +67,7 @@ export default async function AttendancePage(props: {
     let profilesQuery = supabase
         .from('profiles')
         .select('id, full_name, email, avatar_url, department, job_title')
+        .eq('status', 'active')
 
     if (allowedUserIds !== null) {
         // Team scope: only fetch allowed profiles

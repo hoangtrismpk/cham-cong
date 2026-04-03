@@ -37,6 +37,7 @@ export async function GET(request: Request) {
         let profileQuery = supabase
             .from('profiles')
             .select('id, full_name, email, department, job_title')
+            .eq('status', 'active')
 
         if (effectiveScope === 'team') {
             // Only direct reports of the current user
